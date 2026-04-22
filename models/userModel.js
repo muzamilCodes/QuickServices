@@ -2,62 +2,46 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    username: { 
-      type: String, 
-      required: true,
-      trim: true
-    },
+    username: { type: String, required: true },
+
     email: {
       type: String,
       required: true,
       unique: true,
-      lowercase: true,
-      trim: true
+      lowercase: true
     },
+
     password: {
       type: String,
       required: true,
       minlength: 6
     },
-    phone: {
+
+    profilePic: { type: String },
+
+    // 🔥 FIXED MOBILE FIELD
+    mobile: {
       type: String,
       required: true,
       unique: true,
       validate: {
-        validator: function(v) {
+        validator: function (v) {
           return /^[0-9]{10}$/.test(v);
         },
-        message: "Phone number must be 10 digits"
+        message: "Mobile number must be 10 digits"
       }
     },
-    profilePic: { 
-      type: String, 
-      default: "" 
-    },
-    role: {
-      type: String,
-      enum: ['user', 'provider', 'admin'],
-      default: 'user'
-    },
-    isActive: { 
-      type: Boolean, 
-      default: true 
-    },
-    otp: { 
-      type: String 
-    },
-    otpExpiry: { 
-      type: Date 
-    },
-    isVerified: { 
-      type: Boolean, 
-      default: false 
-    },
-    refreshToken: {
-      type: String
-    }
+
+    isAdmin: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
+
+    otp: { type: String },
+    otpExpiry: { type: Date },
+    isVerified: { type: Boolean, default: false }
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+
+module.exports = { User };

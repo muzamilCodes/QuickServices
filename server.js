@@ -1,32 +1,84 @@
-require("dotenv").config();
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
-const helmet = require("helmet");
-const userRoutes = require("./routes/userRoutes");
+const cookieParser = require("cookie-parser");
+require("dotenv").config();
+
+const connectDb = require("./config/connectDb");
 
 const app = express();
+const port = process.env.PORT || 4000;
 
-// Middleware
-app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+// Connect DB
+connectDb();
+
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err));
+// ✅ CORS with FRONTEND_URL from env
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  process.env.FRONTEND_URL  // ✅ Yahan use ho raha hai
+].filter(Boolean);
+
+console.log("Allowed origins:", allowedOrigins);
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('❌ Blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
+
+// Static uploads
+app.use("/uploads", express.static("uploads"));
 
 // Routes
-app.use("/api/auth", userRoutes);
+app.use("/user", require("./routes/userRoutes"));
+app.use("/product", require("./routes/productRoutes"));
+app.use("/category", require("./routes/categoryRoutes"));
+app.use("/brand", require("./routes/brandRoutes"));
+app.use("/orders", require("./routes/orderRoutes"));
+app.use("/addresses", require("./routes/addressRoutes"));
+app.use("/cart", require("./routes/cartRoutes"));
+app.use("/api/payment", require("./routes/paymentRoutes"));
+app.use("/refund", require("./routes/refundRoutes"));
+app.use("/admin", require("./routes/adminRoutes"));
+app.use("/contact", require("./routes/contactRoutes"));
+app.use("/posts", require("./routes/postRoutes"));
 
-// Test route
+// Health check
 app.get("/", (req, res) => {
-  res.json({ message: "QuickServices API is running!" });
+  res.status(200).json({ success: true, message: "API is running!" });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+// 404 handler
+app.use("*", (req, res) => {
+  res.status(404).json({ success: false, message: "Route not found" });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Error:", err.stack);
+  res.status(500).json({ success: false, message: err.message || "Something went wrong!" });
+});
+
+// Start server
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`📍 Frontend URL: ${process.env.FRONTEND_URL || "Not set"}`);
 });
