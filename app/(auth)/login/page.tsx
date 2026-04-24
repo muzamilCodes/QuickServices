@@ -1,186 +1,156 @@
-// app/(auth)/login/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Eye, EyeOff, Lock, Mail, LogIn } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
-    const router = useRouter();
-    const { login, sendLoginOTP, verifyLoginOTP, isLoading } = useAuthStore();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const [mode, setMode] = useState<'password' | 'otp'>('password');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [otp, setOtp] = useState('');
-    const [error, setError] = useState('');
-    const [otpSent, setOtpSent] = useState(false);
+    if (!formData.email || !formData.password) {
+      toast.error("Please fill all fields");
+      return;
+    }
 
-    const handlePasswordLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
+    setIsLoading(true);
 
-        const success = await login(email, password);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiUrl}/user/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("user", JSON.stringify(result.user));
+        toast.success("Login successful!");
         
-        if (success) {
-            router.push('/');
+        if (result.user.isAdmin) {
+          router.push("/admin");
         } else {
-            setError('Invalid email or password');
+          router.push("/");
         }
-    };
+      } else {
+        toast.error(result.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Network error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleSendOTP = async () => {
-        setError('');
-        const success = await sendLoginOTP(email);
-        
-        if (success) {
-            setOtpSent(true);
-            alert('OTP sent to your email!');
-        } else {
-            setError('User not found. Please register first.');
-        }
-    };
-
-    const handleOTPLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-
-        const success = await verifyLoginOTP(email, otp);
-        
-        if (success) {
-            router.push('/');
-        } else {
-            setError('Invalid or expired OTP');
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center mb-6">Welcome Back</h1>
-                
-                {/* Mode Toggle */}
-                <div className="flex gap-2 mb-6">
-                    <button
-                        onClick={() => { setMode('password'); setOtpSent(false); setError(''); }}
-                        className={`flex-1 py-2 rounded-lg transition ${mode === 'password' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                    >
-                        Password Login
-                    </button>
-                    <button
-                        onClick={() => { setMode('otp'); setOtpSent(false); setError(''); }}
-                        className={`flex-1 py-2 rounded-lg transition ${mode === 'otp' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                    >
-                        OTP Login
-                    </button>
-                </div>
-                
-                {mode === 'password' ? (
-                    <form onSubmit={handlePasswordLogin} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Email</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                        </div>
-                        
-                        {error && (
-                            <div className="text-red-600 text-sm text-center">
-                                {error}
-                            </div>
-                        )}
-                        
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                        >
-                            {isLoading ? 'Logging in...' : 'Login'}
-                        </button>
-                    </form>
-                ) : (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Email</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                                disabled={otpSent}
-                            />
-                        </div>
-                        
-                        {!otpSent ? (
-                            <button
-                                onClick={handleSendOTP}
-                                disabled={!email || isLoading}
-                                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                            >
-                                Send OTP
-                            </button>
-                        ) : (
-                            <form onSubmit={handleOTPLogin} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">OTP</label>
-                                    <input
-                                        type="text"
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value)}
-                                        maxLength={6}
-                                        className="w-full px-3 py-2 text-center text-2xl tracking-widest border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="123456"
-                                        required
-                                    />
-                                </div>
-                                
-                                {error && (
-                                    <div className="text-red-600 text-sm text-center">
-                                        {error}
-                                    </div>
-                                )}
-                                
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                                >
-                                    {isLoading ? 'Verifying...' : 'Verify & Login'}
-                                </button>
-                            </form>
-                        )}
-                    </div>
-                )}
-                
-                <div className="text-center mt-6 space-y-2">
-                    <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline block">
-                        Forgot Password?
-                    </Link>
-                    <p className="text-sm text-gray-600">
-                        Don't have an account?{' '}
-                        <Link href="/register" className="text-blue-600 hover:underline">
-                            Register
-                        </Link>
-                    </p>
-                </div>
-            </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
+          <p className="text-gray-600">Login to your QuickServices account</p>
         </div>
-    );
+
+        <div className="bg-white rounded-2xl shadow-xl p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                >
+                  {showPassword ? <EyeOff size={20} className="text-gray-400" /> : <Eye size={20} className="text-gray-400" />}
+                </button>
+              </div>
+            </div>
+
+            {/* ✅ Forgot Password Link */}
+            <div className="text-right">
+            <Link href="/forgot-password" className="text-sm text-orange-600 hover:underline">
+  Forgot Password?
+</Link>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 rounded-lg font-semibold hover:from-orange-600 hover:to-red-600 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  <LogIn size={20} />
+                  Login
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Don't have an account?{" "}
+              <Link href="/register" className="text-orange-600 hover:underline font-medium">
+                Sign up here
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,159 +1,89 @@
-// app/(auth)/forgot-password/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Mail, ArrowLeft, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function ForgotPasswordPage() {
-    const { forgotPassword, resetPassword, isLoading } = useAuthStore();
-    
-    const [step, setStep] = useState<'email' | 'otp'>('email');
-    const [email, setEmail] = useState('');
-    const [otp, setOtp] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const handleSendOTP = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        
-        const success = await forgotPassword(email);
-        
-        if (success) {
-            setStep('otp');
-            alert('OTP sent to your email!');
-        } else {
-            setError('User not found with this email');
-        }
-    };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email");
+      return;
+    }
+    setLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const res = await fetch(`${apiUrl}/user/forgot-pass`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("resetEmail", email);
+        toast.success("OTP sent to your email!");
+        // ✅ FIX: redirect to /reset-password (not /auth/reset-password)
+        router.push("/reset-password");
+      } else {
+        toast.error(data.message || "User not found");
+      }
+    } catch (error) {
+      toast.error("Network error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleResetPassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        
-        if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-        
-        if (newPassword.length < 6) {
-            setError('Password must be at least 6 characters');
-            return;
-        }
-        
-        const success = await resetPassword(email, otp, newPassword);
-        
-        if (success) {
-            setSuccess('Password reset successfully! Please login with your new password.');
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 3000);
-        } else {
-            setError('Invalid or expired OTP');
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center mb-6">Reset Password</h1>
-                
-                {success && (
-                    <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-center">
-                        {success}
-                    </div>
-                )}
-                
-                {step === 'email' ? (
-                    <form onSubmit={handleSendOTP} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Email Address</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                        </div>
-                        
-                        {error && (
-                            <div className="text-red-600 text-sm text-center">
-                                {error}
-                            </div>
-                        )}
-                        
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                        >
-                            {isLoading ? 'Sending OTP...' : 'Send Reset OTP'}
-                        </button>
-                    </form>
-                ) : (
-                    <form onSubmit={handleResetPassword} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-2">OTP</label>
-                            <input
-                                type="text"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                maxLength={6}
-                                className="w-full px-3 py-2 text-center text-xl tracking-widest border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="123456"
-                                required
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium mb-2">New Password</label>
-                            <input
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                                minLength={6}
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Confirm Password</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                        </div>
-                        
-                        {error && (
-                            <div className="text-red-600 text-sm text-center">
-                                {error}
-                            </div>
-                        )}
-                        
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                        >
-                            {isLoading ? 'Resetting...' : 'Reset Password'}
-                        </button>
-                    </form>
-                )}
-                
-                <p className="text-center text-sm text-gray-600 mt-6">
-                    <Link href="/login" className="text-blue-600 hover:underline">
-                        Back to Login
-                    </Link>
-                </p>
-            </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
+            <h1 className="text-2xl font-bold text-white text-center">Reset Password</h1>
+          </div>
+          <div className="p-6">
+            <p className="text-gray-600 text-center mb-6">
+              Enter your email address and we'll send you an OTP to reset your password.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                    required
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send OTP"}
+              </button>
+            </form>
+            <Link
+              href="/login"
+              className="mt-4 flex items-center justify-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Login
+            </Link>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
