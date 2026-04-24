@@ -48,17 +48,11 @@ app.use("/uploads", express.static("uploads"));
 
 // Routes
 app.use("/user", require("./routes/userRoutes"));
-app.use("/product", require("./routes/productRoutes"));
-app.use("/category", require("./routes/categoryRoutes"));
-app.use("/brand", require("./routes/brandRoutes"));
-app.use("/orders", require("./routes/orderRoutes"));
-app.use("/addresses", require("./routes/addressRoutes"));
-app.use("/cart", require("./routes/cartRoutes"));
-app.use("/api/payment", require("./routes/paymentRoutes"));
-app.use("/refund", require("./routes/refundRoutes"));
+// Add this with other routes
+app.use("/bookings", require("./routes/bookingRoutes"));
+app.use("/providers", require("./routes/providerRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
-app.use("/contact", require("./routes/contactRoutes"));
-app.use("/posts", require("./routes/postRoutes"));
+
 
 // Health check
 app.get("/", (req, res) => {
@@ -66,8 +60,11 @@ app.get("/", (req, res) => {
 });
 
 // 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({ success: false, message: "Route not found" });
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
 });
 
 // Error handler

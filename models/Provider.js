@@ -6,9 +6,18 @@ const providerSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    name: {
+        type: String,
+        required: true
+    },
+    phone: {
+        type: String,
+        required: true
+    },
+    email: String,
     services: [{
         type: String,
-        enum: ['plumber', 'electrician', 'driver', 'cleaner', 'carpenter', 'painter']
+        enum: ['plumber', 'electrician', 'driver', 'cleaner', 'carpenter', 'painter', 'mechanic', 'gardener']
     }],
     whatsappNumber: {
         type: String,
@@ -30,11 +39,18 @@ const providerSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    currentLocation: {
+    experience: {
+        type: Number,
+        default: 0
+    },
+    description: String,
+    location: {
+        city: String,
+        address: String,
         lat: Number,
-        lng: Number,
-        lastUpdated: Date
-    }
+        lng: Number
+    },
+    pricePerHour: Number
 }, { timestamps: true });
 
 module.exports = mongoose.model('Provider', providerSchema);

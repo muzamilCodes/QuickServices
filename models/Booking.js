@@ -12,7 +12,7 @@ const bookingSchema = new mongoose.Schema({
     },
     serviceType: {
         type: String,
-        enum: ['plumber', 'electrician', 'driver', 'cleaner', 'carpenter', 'painter'],
+        enum: ['plumber', 'electrician', 'driver', 'cleaner', 'carpenter', 'painter', 'mechanic', 'gardener'],
         required: true
     },
     status: {
@@ -20,34 +20,58 @@ const bookingSchema = new mongoose.Schema({
         enum: ['pending', 'accepted', 'in-progress', 'completed', 'cancelled'],
         default: 'pending'
     },
+    customerName: {
+        type: String,
+        required: true
+    },
+    customerPhone: {
+        type: String,
+        required: true
+    },
     address: {
-        street: String,
-        city: String,
-        pincode: String,
+        fullAddress: { type: String, required: true },
+        city: { type: String, required: true },
+        pincode: { type: String, required: true },
+        landmark: String,
         location: {
             lat: Number,
             lng: Number
         }
     },
-    description: String,
+    description: {
+        type: String,
+        required: true
+    },
+    preferredDate: Date,
+    preferredTime: String,
     amount: {
         type: Number,
-        required: true
+        default: 0
     },
     paymentMethod: {
         type: String,
-        enum: ['cod', 'online'],
-        default: 'cod'
+        enum: ['cod', 'online', 'pending'],
+        default: 'pending'
     },
     paymentStatus: {
         type: String,
         enum: ['pending', 'paid', 'failed'],
         default: 'pending'
     },
-    whatsappMode: {
+    bookingMode: {
+        type: String,
+        enum: ['whatsapp', 'system', 'emergency'],
+        default: 'system'
+    },
+    isEmergency: {
         type: Boolean,
         default: false
-    }
+    },
+    otpVerified: {
+        type: Boolean,
+        default: false
+    },
+    whatsappLink: String
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);
