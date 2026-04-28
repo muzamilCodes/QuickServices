@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
@@ -13,17 +13,16 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("resetEmail") || "" : ""
+  );
 
   useEffect(() => {
-    const stored = localStorage.getItem("resetEmail");
-    if (!stored) {
+    if (!email) {
       toast.error("Session expired. Please request OTP again.");
       router.push("/forgot-password");
-    } else {
-      setEmail(stored);
     }
-  }, []);
+  }, [email, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +67,7 @@ export default function ResetPasswordPage() {
       } else {
         toast.error(resetData.message || "Failed to reset password");
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error");
     } finally {
       setLoading(false);
@@ -84,7 +83,7 @@ export default function ResetPasswordPage() {
           </div>
           <div className="p-6">
             <p className="text-gray-600 text-center mb-4">
-              We've sent a 6-digit OTP to <strong>{email}</strong>
+              We&apos;ve sent a 6-digit OTP to <strong>{email}</strong>
             </p>
 
             {/* ✅ Spam folder warning */}

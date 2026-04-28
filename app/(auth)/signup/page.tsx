@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Eye, EyeOff, Lock, Mail, User, Phone, Upload, Camera, X, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -110,10 +111,12 @@ export default function RegisterPage() {
               <div className="flex items-center gap-4">
                 {previewUrl ? (
                   <div className="relative">
-                    <img
+                    <Image
                       src={previewUrl}
                       alt="Profile preview"
-                      className="w-20 h-20 rounded-full object-cover border-2 border-orange-500"
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 rounded-full border-2 border-orange-500 object-cover"
                     />
                     <button
                       type="button"

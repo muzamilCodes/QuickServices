@@ -1,127 +1,89 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Headphones, Mail, MapPin, Phone, ShieldCheck, TimerReset, Wrench } from 'lucide-react';
+
+const footerGroups = [
+  {
+    title: 'Explore',
+    links: [
+      { name: 'Home', href: '/' },
+      { name: 'Services', href: '/services' },
+      { name: 'Bookings', href: '/history' },
+      { name: 'Profile', href: '/profile' },
+    ],
+  },
+  {
+    title: 'Top Services',
+    links: [
+      { name: 'Plumber', href: '/booking?service=plumber' },
+      { name: 'Electrician', href: '/booking?service=electrician' },
+      { name: 'Driver', href: '/booking?service=driver' },
+      { name: 'Cleaner', href: '/booking?service=cleaner' },
+    ],
+  },
+];
+
+const trustPoints = [
+  { icon: TimerReset, text: 'Fast dispatch across major cities' },
+  { icon: ShieldCheck, text: 'Verified professionals and OTP confirmation' },
+  { icon: Headphones, text: 'Real support before and after the booking' },
+];
 
 export default function Footer() {
-    const router = useRouter();
-
-    const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const footerLinks = {
-        'Quick Links': [
-            { name: 'Home', href: '/' },
-            { name: 'Services', href: '/#services' },
-            { name: 'Features', href: '/#features' },
-            { name: 'How It Works', href: '/#howitworks' },
-        ],
-        'Services': [
-            { name: 'Plumber', href: '/dashboard/booking?service=plumber' },
-            { name: 'Electrician', href: '/dashboard/booking?service=electrician' },
-            { name: 'Driver', href: '/dashboard/booking?service=driver' },
-            { name: 'Cleaner', href: '/dashboard/booking?service=cleaner' },
-            { name: 'Carpenter', href: '/dashboard/booking?service=carpenter' },
-            { name: 'Painter', href: '/dashboard/booking?service=painter' },
-        ],
-        'Support': [
-            { name: 'Contact Us', href: '/contact' },
-            { name: 'FAQs', href: '/faq' },
-            { name: 'Privacy Policy', href: '/privacy' },
-            { name: 'Terms of Service', href: '/terms' },
-        ],
-    };
-
-    return (
-        <footer className="bg-gray-900 text-white">
-            {/* Main Footer */}
-            <div className="pt-16 pb-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {/* Brand Column */}
-                        <div>
-                            <div 
-                                onClick={scrollToTop}
-                                className="flex items-center gap-2 mb-4 cursor-pointer"
-                            >
-                                <span className="text-3xl">🔧</span>
-                                <span className="text-xl font-bold">QuickServices</span>
-                            </div>
-                            <p className="text-gray-400 text-sm mb-4">
-                                Professional services at your doorstep. Quick, reliable, and affordable.
-                            </p>
-                            <div className="flex gap-4">
-                                {['📘', '🐦', '📷', '💼'].map((icon, i) => (
-                                    <button key={i} className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition">
-                                        <span>{icon}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Links Columns */}
-                        {Object.entries(footerLinks).map(([title, links]) => (
-                            <div key={title}>
-                                <h3 className="font-bold text-lg mb-4">{title}</h3>
-                                <ul className="space-y-2">
-                                    {links.map((link) => (
-                                        <li key={link.name}>
-                                            <button
-                                                onClick={() => {
-                                                    if (link.href.startsWith('/#')) {
-                                                        const element = document.querySelector(link.href.substring(1));
-                                                        if (element) element.scrollIntoView({ behavior: 'smooth' });
-                                                    } else {
-                                                        router.push(link.href);
-                                                    }
-                                                }}
-                                                className="text-gray-400 hover:text-white transition text-sm"
-                                            >
-                                                {link.name}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-
-                        {/* Contact Column */}
-                        <div>
-                            <h3 className="font-bold text-lg mb-4">Contact Us</h3>
-                            <ul className="space-y-3 text-gray-400 text-sm">
-                                <li className="flex items-center gap-3">
-                                    <span>📞</span>
-                                    <span>+91 12345 67890</span>
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <span>✉️</span>
-                                    <span>support@quickservices.com</span>
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <span>📍</span>
-                                    <span>India</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+  return (
+    <footer className="border-t border-black/5 bg-slate-950 text-white">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr]">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)]">
+                <Wrench className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-lg font-semibold">QuickServices</p>
+                <p className="text-sm text-slate-400">Reliable help at your doorstep</p>
+              </div>
             </div>
 
-            {/* Bottom Bar */}
-            <div className="border-t border-gray-800 py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-gray-400 text-sm text-center md:text-left">
-                            © 2024 QuickServices. All rights reserved.
-                        </p>
-                        <div className="flex gap-6">
-                            <button className="text-gray-400 hover:text-white text-sm transition">Privacy Policy</button>
-                            <button className="text-gray-400 hover:text-white text-sm transition">Terms of Service</button>
-                            <button className="text-gray-400 hover:text-white text-sm transition">Cookies</button>
-                        </div>
-                    </div>
+            <p className="max-w-md text-sm leading-6 text-slate-400">
+              Book everyday services without the usual phone-tag. Choose the job, confirm the details,
+              verify the OTP, and track the request in one place.
+            </p>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {trustPoints.map(({ icon: Icon, text }) => (
+                <div key={text} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+                  <Icon className="mb-3 h-5 w-5 text-orange-300" />
+                  <p>{text}</p>
                 </div>
+              ))}
             </div>
-        </footer>
-    );
+          </div>
+
+          {footerGroups.map((group) => (
+            <div key={group.title}>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">{group.title}</h3>
+              <div className="space-y-3">
+                {group.links.map((link) => (
+                  <Link key={link.name} href={link.href} className="block text-sm text-slate-400 transition hover:text-white">
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
+            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> +91 12345 67890</span>
+            <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> support@quickservices.com</span>
+            <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> India</span>
+          </div>
+          <p>© 2026 QuickServices. Built for easier local bookings.</p>
+        </div>
+      </div>
+    </footer>
+  );
 }

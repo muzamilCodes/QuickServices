@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -9,18 +9,17 @@ export default function OTPPage() {
   const router = useRouter();
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("verifyEmail") || "" : ""
+  );
+  const hasEmail = useMemo(() => email.trim().length > 0, [email]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("verifyEmail");
-    if (!stored) {
+    if (!hasEmail) {
       toast.error("Session expired. Please register again.");
       router.push("/register");
-    } else {
-      setEmail(stored);
-      console.log("Verifying OTP for email:", stored);
     }
-  }, []);
+  }, [hasEmail, router]);
 
   const handleVerify = async () => {
     const cleanOtp = otp.trim();
@@ -46,7 +45,7 @@ export default function OTPPage() {
       } else {
         toast.error(data.message || "Invalid OTP");
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error");
     } finally {
       setLoading(false);
@@ -64,7 +63,7 @@ export default function OTPPage() {
       const data = await res.json();
       if (data.success) toast.success("OTP resent!");
       else toast.error(data.message);
-    } catch (error) {
+    } catch {
       toast.error("Failed to resend");
     }
   };
@@ -89,7 +88,7 @@ export default function OTPPage() {
           <div className="p-8">
             {/* Email display */}
             <div className="text-center mb-6">
-              <p className="text-gray-600">We've sent a code to</p>
+              <p className="text-gray-600">We&apos;ve sent a code to</p>
               <p className="font-semibold text-gray-800 text-lg mt-1">{email}</p>
             </div>
 
@@ -144,7 +143,7 @@ export default function OTPPage() {
                 onClick={handleResend}
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium transition"
               >
-                Didn't receive OTP? Click here to resend
+                Didn&apos;t receive OTP? Click here to resend
               </button>
             </div>
           </div>

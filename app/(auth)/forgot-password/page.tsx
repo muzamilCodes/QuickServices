@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
       } else {
         toast.error(data.message || "User not found");
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error");
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
           </div>
           <div className="p-6">
             <p className="text-gray-600 text-center mb-6">
-              Enter your email address and we'll send you an OTP to reset your password.
+              Enter your email address and we&apos;ll send you an OTP to reset your password.
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
