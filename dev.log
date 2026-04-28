@@ -1,0 +1,53 @@
+
+> server@1.0.0 dev
+> nodemon server.js
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node server.js`[39m
+◇ injected env (18) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Allowed origins: [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://localhost:3000'
+]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+🚀 Server running on port 4000
+📍 Environment: development
+📍 Frontend URL: http://localhost:3000
+✅ MongoDB Connected: localhost
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17
+(node:10420) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Email sent to warmuzamil113@gmail.com
+Booking OTP sent to warmuzamil113@gmail.com: 548282
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17
+Auth header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWViN2Y1ZWQ1NzAyYTcyZGIyNjNkMTciLCJlbWFpbCI6Indhcm11emFtaWwxMTNAZ21haWwuY29tIiwiaWF0IjoxNzc3MzkzNjEzLCJleHAiOjE3Nzc5OTg0MTN9.kTr0Mioz9YEw2fgziQKWq4AH07JWbJhCU-98kJBKO5U
+Token extracted
+Token verified, userId: 69eb7f5ed5702a72db263d17

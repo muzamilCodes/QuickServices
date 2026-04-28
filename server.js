@@ -20,8 +20,11 @@ app.use(cookieParser());
 // ✅ CORS with FRONTEND_URL from env
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://localhost:5000',
-  process.env.FRONTEND_URL  // ✅ Yahan use ho raha hai
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  process.env.FRONTEND_URL
 ].filter(Boolean);
 
 console.log("Allowed origins:", allowedOrigins);
@@ -31,7 +34,11 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       console.log('❌ Blocked origin:', origin);
