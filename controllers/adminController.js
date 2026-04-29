@@ -1,6 +1,19 @@
 const Booking = require('../models/Booking');
 const Provider = require('../models/Provider');
+const Service = require('../models/Service');
 const { User } = require('../models/userModel');
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({})
+            .select('-password')
+            .sort({ createdAt: -1 });
+        res.json({ success: true, data: users });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 // ===================== ADMIN: GET ALL BOOKINGS =====================
 exports.getAllBookings = async (req, res) => {
@@ -93,7 +106,56 @@ exports.approveProvider = async (req, res) => {
         await provider.save();
 
         res.json({ success: true, message: 'Provider approved successfully', provider });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
+// ===================== ADMIN: SERVICES CRUD =====================
+exports.getServices = async (req, res) => {
+    try {
+        const services = await Service.find({}).sort({ createdAt: -1 });
+        res.json({ success: true, services });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.createService = async (req, res) => {
+    try {
+        const service = new Service(req.body);
+        await service.save();
+        res.status(201).json({ success: true, service });
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateService = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const service = await Service.findOneAndUpdate({ _id: id }, req.body, { new: true });
+        if (!service) {
+            return res.status(404).json({ success: false, message: 'Service not found' });
+        }
+        res.json({ success: true, service });
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+exports.deleteService = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const service = await Service.findByIdAndDelete(id);
+        if (!service) {
+            return res.status(404).json({ success: false, message: 'Service not found' });
+        }
+        res.json({ success: true, message: 'Service deleted' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });

@@ -6,7 +6,12 @@ const {
     updateBookingStatus,
     getAllProviders,
     approveProvider,
-    getDashboardStats
+    getDashboardStats,
+    getServices,
+    createService,
+    updateService,
+    deleteService,
+    getAllUsers
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -20,5 +25,12 @@ router.get('/bookings', getAllBookings);
 router.put('/bookings/:bookingId', updateBookingStatus);
 router.get('/providers', getAllProviders);
 router.put('/providers/:providerId/approve', approveProvider);
+
+router.get('/services', getServices);
+router.post('/services', createService);
+router.put('/services/:id', updateService);
+router.delete('/services/:id', deleteService);
+
+router.get('/users', getAllUsers);
 
 module.exports = router;
