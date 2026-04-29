@@ -209,15 +209,35 @@ export default function AdminPage() {
                 Review platform activity, recent service requests, provider approvals, and customer accounts from one place.
               </p>
             </div>
-            <button
-              onClick={() => void loadAdminData()}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-white"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </button>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => void loadAdminData()}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-white"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
+            </div>
           </div>
+
+          {/* Admin Navigation */}
+          <nav className="mt-6 flex flex-wrap gap-3">
+            <a href="/admin/booking" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
+              All Bookings
+            </a>
+            <a href="/admin/services" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
+              Services
+            </a>
+            <a href="/admin/providers" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
+              Providers
+            </a>
+            <a href="/admin/users" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
+              Users
+            </a>
+          </nav>
         </section>
+
 
         {stats && (
           <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
