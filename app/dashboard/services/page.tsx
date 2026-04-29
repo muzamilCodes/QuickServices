@@ -1,18 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BadgeCheck, Clock3, Shield } from 'lucide-react';
-
-const allServices = [
-  { id: 'plumber', name: 'Plumber', icon: '🔧', description: 'Leaks, fittings, blocked drains, bathroom repairs.', price: '₹499', color: 'from-sky-500 to-blue-700', popular: true },
-  { id: 'electrician', name: 'Electrician', icon: '⚡', description: 'Switchboards, fans, wiring, lights and faults.', price: '₹499', color: 'from-amber-400 to-orange-500', popular: true },
-  { id: 'driver', name: 'Driver', icon: '🚗', description: 'Local trips, pickups, drops and event transport.', price: '₹399/hr', color: 'from-emerald-500 to-green-700', popular: false },
-  { id: 'cleaner', name: 'Cleaner', icon: '🧹', description: 'Homes, rentals, offices and deep cleaning visits.', price: '₹399', color: 'from-cyan-500 to-teal-600', popular: true },
-  { id: 'carpenter', name: 'Carpenter', icon: '🔨', description: 'Furniture fixes, wall mounts, shelves and fittings.', price: '₹599', color: 'from-orange-500 to-amber-700', popular: false },
-  { id: 'painter', name: 'Painter', icon: '🎨', description: 'Touch-ups, feature walls and complete room refresh.', price: '₹699', color: 'from-rose-500 to-pink-700', popular: false },
-  { id: 'mechanic', name: 'Mechanic', icon: '🛠️', description: 'Basic car and bike diagnosis with doorstep support.', price: '₹499', color: 'from-slate-600 to-slate-800', popular: false },
-  { id: 'gardener', name: 'Gardener', icon: '🌿', description: 'Pruning, cleaning, watering and seasonal upkeep.', price: '₹399', color: 'from-lime-500 to-emerald-700', popular: false },
-];
+import { ArrowRight, BadgeCheck, Clock3, Shield, Star } from 'lucide-react';
+import { allServices } from '@/lib/services';
 
 const highlights = [
   { icon: Clock3, label: 'Fast arrival', text: 'Designed for same-day local requests.' },
@@ -55,7 +45,7 @@ export default function ServicesPage() {
             <button
               key={service.id}
               onClick={() => router.push(`/booking?service=${service.id}`)}
-              className="relative rounded-[28px] border border-black/5 bg-white/90 p-6 text-left shadow-lg shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
+              className="relative flex min-h-[360px] flex-col rounded-[28px] border border-black/5 bg-white/90 p-6 text-left shadow-lg shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
             >
               {service.popular && (
                 <span className="absolute right-5 top-5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
@@ -67,8 +57,24 @@ export default function ServicesPage() {
               </div>
               <h2 className="mt-5 text-xl font-semibold text-slate-950">{service.name}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">{service.description}</p>
-              <div className="mt-6 flex items-center justify-between">
-                <span className="text-base font-semibold text-slate-900">{service.price}</span>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {service.details.slice(0, 3).map((detail) => (
+                  <span key={detail} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    {detail}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-auto flex items-center justify-between pt-6">
+                <div>
+                  <span className="text-base font-semibold text-slate-900">{service.price}</span>
+                  <span className="text-xs text-slate-500">/{service.priceUnit}</span>
+                  <span className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-600">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    {service.rating.toFixed(1)}
+                  </span>
+                </div>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-blue-700">
                   Book
                   <ArrowRight className="h-4 w-4" />

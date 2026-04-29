@@ -2,19 +2,9 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, ShieldCheck } from 'lucide-react';
+import { Clock3, IndianRupee, MapPin, ShieldCheck, Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-
-const serviceCatalog: Record<string, { name: string; icon: string; eta: string }> = {
-  plumber: { name: 'Plumber', icon: '🔧', eta: '30 min average dispatch' },
-  electrician: { name: 'Electrician', icon: '⚡', eta: 'Fast home visit support' },
-  driver: { name: 'Driver', icon: '🚗', eta: 'Flexible hourly bookings' },
-  cleaner: { name: 'Cleaner', icon: '🧹', eta: 'Routine or deep cleaning slots' },
-  carpenter: { name: 'Carpenter', icon: '🔨', eta: 'Furniture and fittings help' },
-  painter: { name: 'Painter', icon: '🎨', eta: 'Room refresh and touch-ups' },
-  mechanic: { name: 'Mechanic', icon: '🛠️', eta: 'Basic diagnosis support' },
-  gardener: { name: 'Gardener', icon: '🌿', eta: 'Outdoor upkeep and trimming' },
-};
+import { servicesById } from '@/lib/services';
 
 function BookingPageContent() {
   const router = useRouter();
@@ -26,7 +16,7 @@ function BookingPageContent() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const service = useMemo(() => serviceCatalog[serviceId] || serviceCatalog.plumber, [serviceId]);
+  const service = useMemo(() => servicesById[serviceId] || servicesById.plumber, [serviceId]);
 
   const [form, setForm] = useState({
     customerName: '',
@@ -120,7 +110,33 @@ function BookingPageContent() {
           </div>
           <p className="mt-6 text-sm uppercase tracking-[0.2em] text-slate-400">Service booking</p>
           <h1 className="mt-3 text-3xl font-semibold">{service.name}</h1>
-          <p className="mt-4 text-sm leading-6 text-slate-300">{service.eta}</p>
+          <p className="mt-4 text-sm leading-6 text-slate-300">{service.description}</p>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
+              <p className="mt-2 text-lg font-semibold">{service.rating.toFixed(1)}</p>
+              <p className="text-xs text-slate-400">Rating</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <IndianRupee className="h-4 w-4 text-emerald-300" />
+              <p className="mt-2 text-lg font-semibold">{service.price}</p>
+              <p className="text-xs text-slate-400">per {service.priceUnit}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <Clock3 className="h-4 w-4 text-blue-300" />
+              <p className="mt-2 text-sm font-semibold">{service.eta}</p>
+              <p className="text-xs text-slate-400">Timing</p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {service.details.map((detail) => (
+              <span key={detail} className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/85">
+                {detail}
+              </span>
+            ))}
+          </div>
 
           <div className="mt-8 space-y-4">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -186,7 +202,7 @@ function BookingPageContent() {
               />
             </div>
             <textarea
-              placeholder="Describe the issue or request"
+              placeholder={`Describe your ${service.name.toLowerCase()} request`}
               rows={4}
               className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
               value={form.description}

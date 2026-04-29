@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { allServices } from '@/lib/services';
 
 export default function DashboardHome() {
     const router = useRouter();
@@ -18,12 +19,7 @@ export default function DashboardHome() {
         return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     }
 
-    const services = [
-        { id: 'plumber', name: 'Plumber', icon: '🔧', price: '₹499' },
-        { id: 'electrician', name: 'Electrician', icon: '⚡', price: '₹499' },
-        { id: 'driver', name: 'Driver', icon: '🚗', price: '₹399' },
-        { id: 'cleaner', name: 'Cleaner', icon: '🧹', price: '₹399' },
-    ];
+    const services = allServices.filter((service) => service.popular).slice(0, 8);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -40,7 +36,7 @@ export default function DashboardHome() {
                 <div className="grid md:grid-cols-4 gap-6 mb-10">
                     <div className="bg-white p-6 rounded-xl shadow text-center">
                         <div className="text-3xl mb-2">🔧</div>
-                        <div className="text-2xl font-bold">8+</div>
+                        <div className="text-2xl font-bold">{allServices.length}+</div>
                         <div className="text-gray-500">Services</div>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow text-center">
@@ -71,7 +67,8 @@ export default function DashboardHome() {
                         >
                             <div className="text-5xl mb-3">{service.icon}</div>
                             <h3 className="font-bold text-lg">{service.name}</h3>
-                            <p className="text-blue-600 font-bold mt-2">{service.price}</p>
+                            <p className="text-blue-600 font-bold mt-2">{service.price}/{service.priceUnit}</p>
+                            <p className="mt-1 text-xs font-medium text-amber-600">⭐ {service.rating.toFixed(1)}</p>
                             <button className="mt-3 text-blue-600 text-sm">Book Now →</button>
                         </div>
                     ))}

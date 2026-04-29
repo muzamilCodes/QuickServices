@@ -39,13 +39,20 @@ export default function ProfilePage() {
         },
         body: JSON.stringify(formData),
       });
-      const data = (await res.json()) as { success?: boolean; message?: string };
+      const data = (await res.json()) as {
+        success?: boolean;
+        message?: string;
+        user?: typeof user;
+        payload?: typeof user;
+      };
 
       if (data.success) {
-        if (user) {
+        const returnedUser = data.user || data.payload;
+        if (user || returnedUser) {
           const updatedUser = {
             ...user,
             ...formData,
+            ...returnedUser,
           };
           localStorage.setItem('user', JSON.stringify(updatedUser));
           useAuthStore.setState({ user: updatedUser });

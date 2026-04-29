@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { BriefcaseBusiness, CircleUserRound, House, Menu, ReceiptText, Wrench, X } from 'lucide-react';
+import { BadgePercent, BriefcaseBusiness, CircleUserRound, House, Info, Menu, MessageSquareText, ReceiptText, Wrench, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 const navLinks = [
   { name: 'Home', href: '/', icon: House },
   { name: 'Services', href: '/services', icon: Wrench },
+  { name: 'Offers', href: '/offers', icon: BadgePercent },
+  { name: 'About', href: '/about', icon: Info },
+  { name: 'Contact', href: '/contact', icon: MessageSquareText },
   { name: 'Bookings', href: '/history', icon: ReceiptText },
   { name: 'Profile', href: '/profile', icon: CircleUserRound },
 ];
@@ -63,7 +66,9 @@ export default function Navbar() {
                 key={name}
                 href={href}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
-                  active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  active
+                    ? 'border border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                    : 'text-slate-600 hover:bg-orange-50 hover:text-orange-700'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -130,7 +135,9 @@ export default function Navbar() {
                   href={href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm ${
-                    active ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-700'
+                    active
+                      ? 'border border-blue-200 bg-blue-50 text-blue-700'
+                      : 'bg-slate-50 text-slate-700'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
