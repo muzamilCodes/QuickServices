@@ -1,6 +1,6 @@
 const Booking = require('../models/Booking');
 const Provider = require('../models/Provider');
-const User = require('../models/userModel');
+const { User } = require('../models/userModel');
 
 // ===================== ADMIN: GET ALL BOOKINGS =====================
 exports.getAllBookings = async (req, res) => {

@@ -20,6 +20,7 @@ router.post("/register", upload.single('profilePicture'), controller.register);
 router.post("/login", controller.login);
 router.post("/logout",controller.logout);
 router.post("/update-profile", authorize, upload.single("profilePic"), controller.updateProfile);
+router.put("/update-profile", authorize, upload.single("profilePic"), controller.updateProfile);
 
 router.post("/send-otp", controller.sendOTP);
 router.post("/verify-otp", controller.verifyOTP);
