@@ -1,19 +1,68 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BadgePercent, Clock3, Sparkles, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, BadgePercent, Clock3, Sparkles, Star, Loader2 } from 'lucide-react';
 
-const offers = [
-  { title: 'First Booking Saver', code: 'QUICK100', text: 'Get ₹100 off on your first confirmed service booking.', service: 'Any service', href: '/services' },
-  { title: 'Deep Cleaning Combo', code: 'CLEAN15', text: 'Save 15% when you book bathroom and kitchen cleaning together.', service: 'Cleaning', href: '/booking?service=kitchen' },
-  { title: 'AC Service Deal', code: 'COOL10', text: 'Flat 10% off on AC service, gas check, and installation visits.', service: 'AC Technician', href: '/booking?service=ac' },
-  { title: 'Moving Day Support', code: 'MOVE200', text: 'Get ₹200 off on local house shifting and packing support.', service: 'Mover', href: '/booking?service=moving' },
-  { title: 'Care Visit Offer', code: 'CARE50', text: 'Save on elder care, nurse visit, or babysitter hourly bookings.', service: 'Care services', href: '/booking?service=eldercare' },
-  { title: 'Device Repair Pack', code: 'FIX75', text: 'Use on computer, TV, WiFi, appliance, or water purifier repair.', service: 'Repairs', href: '/booking?service=computer' },
+interface Offer {
+  _id: string;
+  title: string;
+  code: string;
+  text: string;
+  discount: number;
+  discountType: string;
+  service: string;
+  href: string;
+  isActive: boolean;
+  expiryDate: string | null;
+}
+
+const defaultOffers: Offer[] = [
+  { _id: '1', title: 'First Booking Saver', code: 'QUICK100', text: 'Get ₹100 off on your first confirmed service booking.', discount: 100, discountType: 'fixed', service: 'Any service', href: '/services', isActive: true, expiryDate: null },
+  { _id: '2', title: 'Deep Cleaning Combo', code: 'CLEAN15', text: 'Save 15% when you book bathroom and kitchen cleaning together.', discount: 15, discountType: 'percent', service: 'Cleaning', href: '/booking?service=cleaner', isActive: true, expiryDate: null },
+  { _id: '3', title: 'AC Service Deal', code: 'COOL10', text: 'Flat 10% off on AC service, gas check, and installation visits.', discount: 10, discountType: 'percent', service: 'AC', href: '/booking?service=ac', isActive: true, expiryDate: null },
+  { _id: '4', title: 'Moving Day Support', code: 'MOVE200', text: 'Get ₹200 off on local house shifting and packing support.', discount: 200, discountType: 'fixed', service: 'Mover', href: '/booking?service=moving', isActive: true, expiryDate: null },
+  { _id: '5', title: 'Care Visit Offer', code: 'CARE50', text: 'Save on elder care, nurse visit, or babysitter hourly bookings.', discount: 50, discountType: 'fixed', service: 'Care services', href: '/booking?service=eldercare', isActive: true, expiryDate: null },
+  { _id: '6', title: 'Device Repair Pack', code: 'FIX75', text: 'Use on computer, TV, WiFi, appliance, or water purifier repair.', discount: 75, discountType: 'fixed', service: 'Repairs', href: '/booking?service=computer', isActive: true, expiryDate: null },
 ];
 
 export default function OffersPage() {
   const router = useRouter();
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+const res = await fetch('http://localhost:4000/public/offers');
+        const data = await res.json();
+        if (data.success && data.offers?.length > 0) {
+          // Filter active offers and not expired
+          const activeOffers = data.offers.filter((o: Offer) => {
+            if (!o.isActive) return false;
+            if (o.expiryDate && new Date(o.expiryDate) < new Date()) return false;
+            return true;
+          });
+          setOffers(activeOffers);
+        } else {
+          setOffers(defaultOffers);
+        }
+      } catch {
+        setOffers(defaultOffers);
+      } finally {
+        setLoading(false);
+      }
+};
+    fetchOffers();
+  }, []);
+
+  if (loading) return (
+    <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
@@ -33,9 +82,12 @@ export default function OffersPage() {
 
         <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {offers.map((offer) => (
-            <button
+<button
               key={offer.code}
-              onClick={() => router.push(offer.href)}
+              onClick={() => {
+                navigator.clipboard.writeText(offer.code);
+                alert(`Code copied: ${offer.code}`);
+              }}
               className="rounded-[28px] border border-black/5 bg-white/90 p-6 text-left shadow-lg shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
             >
               <div className="flex items-start justify-between gap-4">

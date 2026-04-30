@@ -41,7 +41,7 @@ export default function ServicesPage() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await fetch('http://localhost:4000/admin/services');
+const res = await fetch('http://localhost:4000/public/services');
         const data = await res.json();
         if (data.success && data.services?.length > 0) {
           setServices(data.services.map((s: any) => ({
