@@ -59,6 +59,8 @@ app.use("/user", require("./routes/userRoutes"));
 app.use("/bookings", require("./routes/bookingRoutes"));
 app.use("/providers", require("./routes/providerRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
+// Public routes (no auth required)
+app.use("/public", require("./routes/publicRoutes"));
 
 
 // Health check

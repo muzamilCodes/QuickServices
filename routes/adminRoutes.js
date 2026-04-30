@@ -11,6 +11,10 @@ const {
     createService,
     updateService,
     deleteService,
+    getOffers,
+    createOffer,
+    updateOffer,
+    deleteOffer,
     getAllUsers,
     updateUserDetails,
     updateUserAdmin,
@@ -34,6 +38,11 @@ router.get('/services', getServices);
 router.post('/services', createService);
 router.put('/services/:id', updateService);
 router.delete('/services/:id', deleteService);
+
+router.get('/offers', getOffers);
+router.post('/offers', createOffer);
+router.put('/offers/:id', updateOffer);
+router.delete('/offers/:id', deleteOffer);
 
 router.get('/users', getAllUsers);
 router.put('/users/:userId', updateUserDetails);

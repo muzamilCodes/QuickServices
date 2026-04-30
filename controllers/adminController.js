@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Provider = require('../models/Provider');
 const Service = require('../models/Service');
+const Offer = require('../models/Offer');
 const { User } = require('../models/userModel');
 
 exports.getAllUsers = async (req, res) => {
@@ -237,6 +238,56 @@ exports.deleteService = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Service not found' });
         }
         res.json({ success: true, message: 'Service deleted' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ===================== ADMIN: OFFERS CRUD =====================
+exports.getOffers = async (req, res) => {
+    try {
+        const offers = await Offer.find({}).sort({ createdAt: -1 });
+        res.json({ success: true, offers });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.createOffer = async (req, res) => {
+    try {
+        const offer = new Offer(req.body);
+        await offer.save();
+        res.status(201).json({ success: true, offer });
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateOffer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const offer = await Offer.findOneAndUpdate({ _id: id }, req.body, { new: true });
+        if (!offer) {
+            return res.status(404).json({ success: false, message: 'Offer not found' });
+        }
+        res.json({ success: true, offer });
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+exports.deleteOffer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const offer = await Offer.findByIdAndDelete(id);
+        if (!offer) {
+            return res.status(404).json({ success: false, message: 'Offer not found' });
+        }
+        res.json({ success: true, message: 'Offer deleted' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
