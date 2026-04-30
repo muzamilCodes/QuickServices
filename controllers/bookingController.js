@@ -174,6 +174,23 @@ const cancelBooking = async (req, res) => {
   }
 };
 
+const getBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findOne({ _id: bookingId, user: req.userId })
+      .populate('user', 'username email')
+      .populate('provider', 'name phone');
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    return res.json({ success: true, booking });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getServices = async (req, res) => {
   const services = [
     { id: 'plumber', name: 'Plumber', icon: '🔧', description: 'Leak repair, tap fitting, blocked drains and bathroom plumbing', details: ['Leak repair', 'Tap fitting', 'Drain cleaning'], basePrice: 499, priceUnit: 'visit', rating: 4.8 },
@@ -225,4 +242,5 @@ module.exports = {
   getMyBookings,
   cancelBooking,
   getServices,
+  getBooking,
 };

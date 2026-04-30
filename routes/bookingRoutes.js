@@ -8,7 +8,8 @@ const {
     verifyBookingOTP,
     getMyBookings,
     cancelBooking,
-    getServices
+    getServices,
+    getBooking
 } = require('../controllers/bookingController');
 
 // All routes require authentication
@@ -19,6 +20,7 @@ router.get('/services', getServices);
 router.post('/create', createBooking);
 router.post('/verify-otp', verifyBookingOTP);
 router.get('/my-bookings', getMyBookings);
+router.get('/:bookingId', getBooking);
 router.put('/:bookingId/cancel', cancelBooking);
 
 module.exports = router;

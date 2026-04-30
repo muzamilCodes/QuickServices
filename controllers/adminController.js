@@ -8,7 +8,88 @@ exports.getAllUsers = async (req, res) => {
         const users = await User.find({})
             .select('-password')
             .sort({ createdAt: -1 });
-        res.json({ success: true, data: users });
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateUserDetails = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { mobile, address } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (mobile) user.mobile = mobile;
+        if (address) {
+            if (!user.address) user.address = {};
+            if (address.street) user.address.street = address.street;
+            if (address.city) user.address.city = address.city;
+            if (address.state) user.address.state = address.state;
+            if (address.pincode) user.address.pincode = address.pincode;
+        }
+
+        await user.save();
+        res.json({ success: true, message: 'User details updated', user });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateUserAdmin = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { isAdmin } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        user.isAdmin = isAdmin;
+        await user.save();
+        res.json({ success: true, message: 'User admin status updated', user });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateUserActive = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { isActive } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        user.isActive = isActive;
+        await user.save();
+        res.json({ success: true, message: 'User active status updated', user });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.deleteUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findByIdAndDelete(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.json({ success: true, message: 'User deleted' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });

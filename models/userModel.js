@@ -19,7 +19,6 @@ const userSchema = new mongoose.Schema(
 
     profilePic: { type: String },
 
-    // 🔥 FIXED MOBILE FIELD
     mobile: {
       type: String,
       required: true,
@@ -34,6 +33,13 @@ const userSchema = new mongoose.Schema(
 
     isAdmin: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+
+    address: {
+      street: { type: String },
+      city: { type: String },
+      state: { type: String },
+      pincode: { type: String }
+    },
 
     otp: { type: String },
     otpExpiry: { type: Date },

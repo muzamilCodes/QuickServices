@@ -11,7 +11,11 @@ const {
     createService,
     updateService,
     deleteService,
-    getAllUsers
+    getAllUsers,
+    updateUserDetails,
+    updateUserAdmin,
+    updateUserActive,
+    deleteUser
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -32,5 +36,9 @@ router.put('/services/:id', updateService);
 router.delete('/services/:id', deleteService);
 
 router.get('/users', getAllUsers);
+router.put('/users/:userId', updateUserDetails);
+router.put('/users/:userId/admin', updateUserAdmin);
+router.put('/users/:userId/active', updateUserActive);
+router.delete('/users/:userId', deleteUser);
 
 module.exports = router;
