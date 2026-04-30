@@ -197,7 +197,13 @@ export default function HistoryPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 lg:justify-end">
+<div className="flex flex-wrap gap-3 lg:justify-end">
+                      <button
+                        onClick={() => router.push(`/dashboard/booking/${booking._id}`)}
+                        className="inline-flex items-center gap-2 self-start rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-600"
+                      >
+                        View Details
+                      </button>
                       {booking.status === 'pending' && (
                         <button
                           onClick={() => void cancelBooking(booking._id)}

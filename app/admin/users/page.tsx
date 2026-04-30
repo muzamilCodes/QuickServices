@@ -2,14 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit3, Trash2, Loader2, Save, Shield, Mail, Phone, User as UserIcon } from "lucide-react";
+import { Plus, Edit3, Trash2, Loader2, Save, Shield, Phone, MapPin, X } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}
 
 interface User {
   _id: string;
   username: string;
   email: string;
-  phone?: string;
+  mobile?: string;
+  address?: Address;
   isAdmin: boolean;
   isActive: boolean;
   createdAt: string;
@@ -23,6 +31,8 @@ export default function AdminUsersPage() {
   const [message, setMessage] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [filterAdmin, setFilterAdmin] = useState("all");
+  const [editModal, setEditModal] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ mobile: "", street: "", city: "", state: "", pincode: "" });
 
   const API_URL = "http://localhost:4000";
 
@@ -114,6 +124,46 @@ export default function AdminUsersPage() {
     }
   };
 
+  const openEditModal = (user: User) => {
+    setEditModal(user);
+    setEditForm({
+      mobile: user.mobile || "",
+      street: user.address?.street || "",
+      city: user.address?.city || "",
+      state: user.address?.state || "",
+      pincode: user.address?.pincode || ""
+    });
+  };
+
+  const saveUserDetails = async () => {
+    if (!editModal) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${editModal._id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          mobile: editForm.mobile,
+          address: {
+            street: editForm.street,
+            city: editForm.city,
+            state: editForm.state,
+            pincode: editForm.pincode
+          }
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(users.map(u => u._id === editModal._id ? {...u, mobile: editForm.mobile, address: { street: editForm.street, city: editForm.city, state: editForm.state, pincode: editForm.pincode }} : u));
+        setEditModal(null);
+        setMessage("User details updated!");
+      } else {
+        setMessage(data.message || "Failed to update");
+      }
+    } catch (error) {
+      setMessage("Failed to update");
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) fetchUsers();
   }, [isAuthenticated, fetchUsers]);
@@ -142,7 +192,6 @@ export default function AdminUsersPage() {
           </div>
         )}
 
-        {/* Create New User */}
         <div className="rounded-[28px] bg-white/90 p-8 mb-8 shadow-xl">
           <h2 className="text-2xl font-semibold mb-6">Create New User</h2>
           <div className="flex gap-3 max-w-md">
@@ -163,7 +212,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Filter */}
         <div className="mb-8 flex items-center gap-4">
           <select
             value={filterAdmin}
@@ -176,7 +224,6 @@ export default function AdminUsersPage() {
           </select>
         </div>
 
-        {/* Users List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {users?.map((user) => (
             <div key={user._id} className="rounded-[24px] border border-slate-200 bg-white/90 p-6 shadow-lg hover:shadow-xl transition-all">
@@ -184,14 +231,19 @@ export default function AdminUsersPage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                      {user.username.charAt(0).toUpperCase()}
+{(user.username || "U").charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-950">{user.username}</h3>
                       <p className="text-sm text-slate-600">{user.email}</p>
                     </div>
                   </div>
-                  {user.phone && <p className="text-sm text-slate-500 mt-2 flex items-center gap-1"><Phone className="h-4 w-4" /> {user.phone}</p>}
+                  {user.mobile && <p className="text-sm text-slate-500 mt-2 flex items-center gap-1"><Phone className="h-4 w-4" /> {user.mobile}</p>}
+                  {user.address?.street && (
+                    <p className="text-sm text-slate-500 mt-1 flex items-center gap-1"><MapPin className="h-4 w-4" /> 
+                      {user.address.street}{user.address.city ? `, ${user.address.city}` : ""}{user.address.pincode ? ` - ${user.address.pincode}` : ""}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1 text-right">
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -211,6 +263,13 @@ export default function AdminUsersPage() {
                 Joined {new Date(user.createdAt).toLocaleDateString()}
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => openEditModal(user)}
+                  className="flex-1 py-2 px-3 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition flex items-center justify-center gap-1"
+                >
+                  <Edit3 className="h-3 w-3" />
+                  Edit
+                </button>
                 <button
                   onClick={() => toggleAdmin(user._id, user.isAdmin)}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition ${
@@ -243,7 +302,7 @@ export default function AdminUsersPage() {
           ))}
         </div>
 
-        {users.length === 0 && (
+{users?.length === 0 && (
           <div className="text-center py-20">
             <div className="mx-auto h-16 w-16 rounded-3xl bg-slate-100 p-4 text-2xl mb-4">👤</div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">No users found</h3>
@@ -251,7 +310,90 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {editModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Edit User Details</h2>
+              <button onClick={() => setEditModal(null)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Mobile</label>
+                <input
+                  type="tel"
+                  value={editForm.mobile}
+                  onChange={(e) => setEditForm({...editForm, mobile: e.target.value})}
+                  placeholder="1234567890"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Street Address</label>
+                <input
+                  type="text"
+                  value={editForm.street}
+                  onChange={(e) => setEditForm({...editForm, street: e.target.value})}
+                  placeholder="123 Main Road"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={editForm.city}
+                    onChange={(e) => setEditForm({...editForm, city: e.target.value})}
+                    placeholder="City"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    value={editForm.state}
+                    onChange={(e) => setEditForm({...editForm, state: e.target.value})}
+                    placeholder="State"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Pincode</label>
+                <input
+                  type="text"
+                  value={editForm.pincode}
+                  onChange={(e) => setEditForm({...editForm, pincode: e.target.value})}
+                  placeholder="123456"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditModal(null)}
+                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveUserDetails}
+                className="flex-1 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
