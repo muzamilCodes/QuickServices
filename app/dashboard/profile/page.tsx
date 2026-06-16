@@ -13,8 +13,14 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    // Ensure store is hydrated from localStorage (fixes empty profile after refresh)
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        useAuthStore.getState().checkAuth();
+      }
+      if (!useAuthStore.getState().isAuthenticated) {
+        router.push('/login');
+      }
     }
   }, [isAuthenticated, isLoading, router]);
 

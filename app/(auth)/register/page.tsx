@@ -18,11 +18,18 @@ export default function RegisterPage() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "mobile") {
+      setFormData({ ...formData, [name]: value.replace(/\D/g, "").slice(0, 10) });
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log("Register submit", formData);
 
     if (!formData.username || !formData.email || !formData.mobile || !formData.password) {
       toast.error("Please fill all fields");
@@ -43,22 +50,38 @@ export default function RegisterPage() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+      const payload = {
+        username: formData.username.trim(),
+        email: formData.email.trim().toLowerCase(),
+        // backend accepts mobile OR phone; keep both to avoid mismatch
+        mobile: formData.mobile,
+        phone: formData.mobile,
+        password: formData.password,
+      };
+
       const response = await fetch(`${apiUrl}/user/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
+      let result: { success?: boolean; message?: string } | null = null;
+      try {
+        result = await response.json();
+      } catch {
+        // ignore non-json responses
+      }
 
-      if (result.success) {
-        localStorage.setItem("verifyEmail", formData.email.trim().toLowerCase());
+      if (response.ok && result?.success) {
+        localStorage.setItem("verifyEmail", payload.email);
         toast.success("OTP sent successfully! Please verify your email.");
         setTimeout(() => {
           router.push("/otp");
         }, 500);
       } else {
-        toast.error(result.message || "Registration failed");
+        console.log("/user/register response", { status: response.status, result });
+        toast.error(result?.message || `Registration failed (${response.status})`);
       }
     } catch (error) {
       console.error(error);
@@ -70,9 +93,9 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200 rounded-full opacity-20 blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-200 rounded-full opacity-20 blur-3xl"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200 rounded-full opacity-20 blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-200 rounded-full opacity-20 blur-3xl pointer-events-none"></div>
       </div>
 
       <div className="relative w-full max-w-md">
@@ -182,6 +205,7 @@ export default function RegisterPage() {
           </div>
 
           <button
+            type="button"
             onClick={() => router.push("/login")}
             className="w-full border-2 border-orange-500 text-orange-500 py-3 rounded-xl font-semibold hover:bg-orange-50 transition"
           >
@@ -192,3 +216,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

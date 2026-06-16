@@ -57,11 +57,24 @@ function BookingPageContent() {
           },
         }),
       });
-      const data = (await res.json()) as { success?: boolean; message?: string };
-      if (data.success) {
+      let data: { success?: boolean; message?: string } = {};
+      try {
+        data = (await res.json()) as { success?: boolean; message?: string };
+      } catch {
+        // ignore
+      }
+
+      // Helpful log when backend returns non-JSON or empty body
+      if (!data || Object.keys(data).length === 0) {
+        console.error('booking/create empty response body', { status: res.status });
+      }
+
+
+      if (res.ok && data.success) {
         setShowOTP(true);
       } else {
-        setMessage(data.message || 'Unable to create booking.');
+        console.error('booking/create failed', { status: res.status, data });
+        setMessage(data.message || `Unable to create booking (${res.status}).`);
       }
     } catch {
       setMessage('Booking failed.');
