@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const sendEmail = require('../utilities/emailService');
 
 // Public routes - no authentication required
 
@@ -31,6 +32,35 @@ router.get('/offers', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.post('/contact', async (req, res) => {
+    try {
+        const { name, phone, email, topic, message } = req.body;
+
+        if (!name || !phone || !email || !message) {
+            return res.status(400).json({ success: false, message: 'Name, phone, email, and message are required' });
+        }
+
+        await sendEmail(
+            process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER,
+            `QuickServices Contact: ${topic || 'General support'}`,
+            `
+                <h2>New contact message</h2>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Phone:</strong> ${phone}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Topic:</strong> ${topic || 'General support'}</p>
+                <p><strong>Message:</strong></p>
+                <p>${message}</p>
+            `
+        );
+
+        res.json({ success: true, message: 'Message sent successfully' });
+    } catch (error) {
+        console.error('Contact message failed:', error);
+        res.status(500).json({ success: false, message: 'Unable to send message right now' });
     }
 });
 

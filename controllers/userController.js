@@ -6,34 +6,83 @@ require("dotenv").config();
 
 // all exports.register, login, updateProfile, etc...
 
+const shouldExposeOtpFallback = () => process.env.NODE_ENV !== "production";
+
+const sendOtpEmail = async (to, subject, html) => {
+  try {
+    await sendEmail(to, subject, html);
+    return true;
+  } catch (emailError) {
+    console.log("EMAIL ERROR (ignored):", emailError.message);
+    return false;
+  }
+};
+
 // ===================== REGISTER =====================
 // ===================== REGISTER =====================
 exports.register = async (req, res) => {
   try {
-    const { username, email, password, mobile } = req.body;
+    console.log('Register invoked, body:', req.body);
+    const { username, email, password, mobile, phone } = req.body;
+    const rawMobile = mobile || phone;
 
-    if (!username || !email || !password || !mobile) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields required",
-      });
+    const missing = [];
+    if (!username) missing.push('username');
+    if (!email) missing.push('email');
+    if (!password) missing.push('password');
+    if (!rawMobile) missing.push('mobile');
+    if (missing.length > 0) {
+      console.warn('Register validation failed - missing fields:', missing);
+      return res.status(400).json({ success: false, message: `Missing fields: ${missing.join(', ')}` });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
-    }
-
-    // 🔥 CLEAN MOBILE
-    const cleanMobile = mobile.replace(/\D/g, "").slice(-10);
+    const cleanMobile = rawMobile.replace(/\D/g, "").slice(-10);
 
     if (cleanMobile.length !== 10) {
-      return res.status(400).json({
-        success: false,
-        message: "Mobile number must be 10 digits",
+      console.warn('Register validation failed - invalid mobile after cleaning:', cleanMobile);
+      return res.status(400).json({ success: false, message: `Mobile number must be 10 digits (got ${cleanMobile})` });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const [existingEmailUser, existingMobileUser] = await Promise.all([
+      User.findOne({ email: normalizedEmail }),
+      User.findOne({ mobile: cleanMobile })
+    ]);
+    const existingUser = existingEmailUser || existingMobileUser;
+
+    if (existingUser) {
+      if (existingMobileUser && existingMobileUser.email !== normalizedEmail) {
+        console.warn('Register conflict - mobile belongs to another user:', { mobile: cleanMobile, id: existingMobileUser._id });
+        return res.status(400).json({ success: false, message: "User already exists with same mobile" });
+      }
+
+      if (existingUser.isVerified) {
+        console.warn('Register conflict - existing user found:', { email: existingUser.email, mobile: existingUser.mobile, id: existingUser._id });
+        return res.status(400).json({ success: false, message: "User already exists with same email" });
+      }
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      existingUser.username = username.trim();
+      existingUser.mobile = cleanMobile;
+      existingUser.password = await bcrypt.hash(password, 12);
+      existingUser.otp = otp;
+      existingUser.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      await existingUser.save();
+
+      const emailSent = await sendOtpEmail(
+        normalizedEmail,
+        "Your OTP Verification Code",
+        `<h2>Your OTP is ${otp}</h2>
+   <p>Valid for 10 minutes.</p>
+   <p><strong>⚠️ If you don't see the email in your inbox, please check your Spam/Junk folder in your email client.</strong></p>`
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: emailSent ? "OTP sent successfully" : "Email failed. Use the OTP shown on this page.",
+        email: existingUser.email,
+        emailSent,
+        devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
       });
     }
 
@@ -44,7 +93,7 @@ exports.register = async (req, res) => {
 
     const newUser = await User.create({
       username: username.trim(),
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       mobile: cleanMobile,
       password: hashedPassword,
       otp,
@@ -52,25 +101,20 @@ exports.register = async (req, res) => {
       isVerified: false,
     });
 
-    // 🔥 EMAIL SEND (SAFE - NO CRASH)
-    try {
-      await sendEmail(
-        email,
-        "Your OTP Verification Code",
-        `<h2>Your OTP is ${otp}</h2>
+    const emailSent = await sendOtpEmail(
+      normalizedEmail,
+      "Your OTP Verification Code",
+      `<h2>Your OTP is ${otp}</h2>
    <p>Valid for 10 minutes.</p>
    <p><strong>⚠️ If you don't see the email in your inbox, please check your Spam/Junk folder in your email client.</strong></p>`
-      );
-      console.log("OTP sent:", otp);
-    } catch (emailError) {
-      console.log("EMAIL ERROR (ignored):", emailError.message);
-      // ❗ IMPORTANT: user create still success
-    }
+    );
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      message: emailSent ? "OTP sent successfully" : "Email failed. Use the OTP shown on this page.",
       email: newUser.email,
+      emailSent,
+      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
     });
 
   } catch (error) {
@@ -300,13 +344,18 @@ exports.resendOTP = async (req, res) => {
 
     await user.save();
 
-    await sendEmail(
+    const emailSent = await sendOtpEmail(
       email,
       "Resend OTP",
       `<h2>Your new OTP is ${otp}</h2><p>Valid for 5 minutes.</p>`
     );
 
-    return res.status(200).json({ success: true, message: "OTP resent successfully" });
+    return res.status(200).json({
+      success: true,
+      message: emailSent ? "OTP resent successfully" : "Email failed. Use the OTP shown on this page.",
+      emailSent,
+      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
+    });
 
   } catch (error) {
     console.error(error);

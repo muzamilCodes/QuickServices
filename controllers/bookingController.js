@@ -6,9 +6,17 @@ const WhatsAppService = require('../services/whatsappService');
 
 const bookingOTPs = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const shouldExposeOtpFallback = () => process.env.NODE_ENV !== 'production';
 
 const createBooking = async (req, res) => {
   try {
+    console.log('CreateBooking invoked');
+    console.log('Headers:', {
+      authorization: req.headers.authorization,
+      origin: req.headers.origin,
+      'content-type': req.headers['content-type'],
+    });
+    console.log('Body:', req.body);
     const userId = req.userId;
     const {
       serviceType,
@@ -46,6 +54,7 @@ const createBooking = async (req, res) => {
       },
     });
 
+    let emailSent = true;
     try {
       await sendEmail(
         user.email,
@@ -59,19 +68,54 @@ const createBooking = async (req, res) => {
         `,
       );
     } catch (emailError) {
-      console.error('Booking OTP email failed:', emailError.message);
-      return res.status(500).json({
-        success: false,
-        message: 'Unable to send booking OTP email right now. Please try again.',
-      });
+      emailSent = false;
+      console.error('Booking OTP email failed:', emailError && emailError.message ? emailError.message : emailError);
+
+      if (process.env.ALLOW_BOOKING_WITHOUT_EMAIL === 'true') {
+        try {
+          const bookingData = bookingOTPs.get(userId).bookingData;
+          const newBooking = new Booking({
+            user: userId,
+            serviceType: bookingData.serviceType,
+            customerName: bookingData.customerName,
+            customerPhone: bookingData.customerPhone,
+            address: bookingData.address,
+            description: bookingData.description,
+            preferredDate: bookingData.preferredDate,
+            preferredTime: bookingData.preferredTime,
+            isEmergency: bookingData.isEmergency,
+            bookingMode: 'system',
+            otpVerified: false,
+            status: 'pending',
+          });
+
+          await newBooking.save();
+          bookingOTPs.delete(userId);
+
+          console.log('Booking created without email OTP (fallback) for user:', user.email);
+          return res.json({ success: true, message: 'Booking created (email failed). Please contact support if you did not receive confirmation.', booking: newBooking });
+        } catch (createErr) {
+          console.error('Fallback booking creation failed:', createErr);
+          return res.status(500).json({ success: false, message: 'Unable to send booking OTP email right now. Please try again.' });
+        }
+      }
+
+      if (!shouldExposeOtpFallback()) {
+        return res.status(500).json({
+          success: false,
+          message: 'Unable to send booking OTP email right now. Please try again.',
+        });
+      }
     }
 
-    console.log(`Booking OTP sent to ${user.email}: ${otp}`);
+    console.log(`Booking OTP ${emailSent ? 'sent' : 'fallback shown'} for ${user.email}: ${otp}`);
 
     return res.json({
       success: true,
-      message: 'OTP sent to your email. Please verify to confirm booking.',
+      message: emailSent ? 'OTP sent to your email. Please verify to confirm booking.' : 'Email failed. Use the OTP shown on this page.',
       requiresOTP: true,
+      emailSent,
+      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
     });
   } catch (error) {
     console.error(error);
