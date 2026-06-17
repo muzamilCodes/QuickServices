@@ -23,6 +23,7 @@ export default function AdminServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingServiceState, setEditingServiceState] = useState<Service | null>(null);
   const [newService, setNewService] = useState<Service>({
     id: "",
     name: "",
@@ -122,6 +123,12 @@ export default function AdminServicesPage() {
     setNewService({ ...newService, details: [...newService.details, ""] });
   };
 
+  const startEdit = (service: Service) => {
+    setEditingId(service._id || null);
+    setEditingServiceState({ ...service });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     if (isAuthenticated) fetchServices();
   }, [isAuthenticated, fetchServices]);
@@ -135,7 +142,7 @@ export default function AdminServicesPage() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex items-center gap-4">
           <button 
-            onClick={() => router.back()} 
+            onClick={() => router.push('/admin')} 
             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
           >
             ←
@@ -161,69 +168,81 @@ export default function AdminServicesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <input
               placeholder="Service ID (plumber, electrician)"
-              value={editingId ? editingService?.id || "" : newService.id}
-              onChange={(e) => editingId ? null : setNewService({...newService, id: e.target.value})}
+              value={editingId ? editingServiceState?.id || "" : newService.id}
+              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, id: e.target.value } : prev) : setNewService({...newService, id: e.target.value})}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               disabled={!!editingId}
             />
             <input
               placeholder="Service Name"
-              value={editingId ? editingService?.name || "" : newService.name}
-              onChange={(e) => editingId ? null : setNewService({...newService, name: e.target.value})}
+              value={editingId ? editingServiceState?.name || "" : newService.name}
+              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, name: e.target.value } : prev) : setNewService({...newService, name: e.target.value})}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               placeholder="Emoji Icon (🔧)"
-              value={editingId ? editingService?.icon || "" : newService.icon}
-              onChange={(e) => editingId ? null : setNewService({...newService, icon: e.target.value})}
+              value={editingId ? editingServiceState?.icon || "" : newService.icon}
+              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, icon: e.target.value } : prev) : setNewService({...newService, icon: e.target.value})}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               placeholder="Base Price"
               type="number"
-              value={editingId ? editingService?.basePrice || 0 : newService.basePrice}
-              onChange={(e) => editingId ? null : setNewService({...newService, basePrice: parseInt(e.target.value) || 0})}
+              value={editingId ? editingServiceState?.basePrice || 0 : newService.basePrice}
+              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, basePrice: parseInt(e.target.value) || 0 } : prev) : setNewService({...newService, basePrice: parseInt(e.target.value) || 0})}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               placeholder="Price Unit (visit, hr, day)"
-              value={editingId ? editingService?.priceUnit || "" : newService.priceUnit}
-              onChange={(e) => editingId ? null : setNewService({...newService, priceUnit: e.target.value})}
+              value={editingId ? editingServiceState?.priceUnit || "" : newService.priceUnit}
+              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, priceUnit: e.target.value } : prev) : setNewService({...newService, priceUnit: e.target.value})}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               placeholder="Rating (4.5)"
               type="number"
               step="0.1"
-              value={editingId ? editingService?.rating || 4.5 : newService.rating}
-              onChange={(e) => editingId ? null : setNewService({...newService, rating: parseFloat(e.target.value) || 4.5})}
+              value={editingId ? editingServiceState?.rating || 4.5 : newService.rating}
+              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, rating: parseFloat(e.target.value) || 4.5 } : prev) : setNewService({...newService, rating: parseFloat(e.target.value) || 4.5})}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <textarea
               placeholder="Description"
-              value={editingId ? editingService?.description || "" : newService.description}
-              onChange={(e) => editingId ? null : setNewService({...newService, description: e.target.value})}
+              value={editingId ? editingServiceState?.description || "" : newService.description}
+              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, description: e.target.value } : prev) : setNewService({...newService, description: e.target.value})}
               rows={3}
               className="md:col-span-2 w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <div className="md:col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-2 block">Details (bullet points)</label>
-              {newService.details.map((detail, index) => (
+              {(editingId ? (editingServiceState?.details || []) : newService.details).map((detail, index) => (
                 <input
                   key={index}
                   placeholder={`Detail ${index + 1}`}
                   value={detail}
                   onChange={(e) => {
-                    const newDetails = [...newService.details];
-                    newDetails[index] = e.target.value;
-                    setNewService({...newService, details: newDetails});
+                    if (editingId && editingServiceState) {
+                      const newDetails = [...(editingServiceState.details || [])];
+                      newDetails[index] = e.target.value;
+                      setEditingServiceState({ ...editingServiceState, details: newDetails });
+                    } else {
+                      const newDetails = [...newService.details];
+                      newDetails[index] = e.target.value;
+                      setNewService({...newService, details: newDetails});
+                    }
                   }}
                   className="w-full rounded-lg border border-slate-200 p-3 mb-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               ))}
               <button
                 type="button"
-                onClick={addDetailField}
+                onClick={() => {
+                  if (editingId && editingServiceState) {
+                    setEditingServiceState({ ...editingServiceState, details: [...(editingServiceState.details || []), ''] });
+                  } else {
+                    addDetailField();
+                  }
+                }}
                 className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
               >
                 + Add detail
@@ -233,8 +252,8 @@ export default function AdminServicesPage() {
           <div className="mt-6 flex gap-3">
             <button
               onClick={() => {
-                if (editingId) {
-                  updateService({...editingService!, details: editingService!.details || []});
+                if (editingId && editingServiceState) {
+                  updateService(editingServiceState);
                 } else {
                   createService(newService);
                 }
@@ -246,7 +265,7 @@ export default function AdminServicesPage() {
             </button>
             {editingId && (
               <button
-                onClick={() => setEditingId(null)}
+                onClick={() => { setEditingId(null); setEditingServiceState(null); }}
                 className="rounded-xl border border-slate-200 px-6 py-3 text-slate-700 hover:bg-slate-50"
               >
                 Cancel
@@ -272,9 +291,9 @@ export default function AdminServicesPage() {
                       <p className="text-sm font-mono text-slate-500 mt-1">ID: {service.id}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                    <div className="flex gap-2">
                     <button
-                      onClick={() => setEditingId(service._id || "")}
+                      onClick={() => startEdit(service)}
                       className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
                       title="Edit"
                     >

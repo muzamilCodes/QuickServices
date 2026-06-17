@@ -6,6 +6,19 @@ import { Clock3, IndianRupee, MapPin, ShieldCheck, Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { servicesById } from '@/lib/services';
 
+interface Service {
+  _id?: string;
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  details: string[];
+  price: string;
+  priceUnit: string;
+  rating: number;
+  eta: string;
+}
+
 function BookingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -13,10 +26,45 @@ function BookingPageContent() {
   const { user, isAuthenticated, isLoading } = useAuthStore();
   const [showOTP, setShowOTP] = useState(false);
   const [otp, setOtp] = useState('');
+  const [devBookingOtp, setDevBookingOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [backendServices, setBackendServices] = useState<Service[]>([]);
 
-  const service = useMemo(() => servicesById[serviceId] || servicesById.plumber, [serviceId]);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/public/services`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.services)) {
+          const services = data.services.map((s: any) => ({
+            _id: s._id,
+            id: s.id || s._id,
+            name: s.name,
+            icon: s.icon || '🔧',
+            description: s.description || '',
+            details: s.details || [],
+            price: `₹${s.basePrice || 499}`,
+            priceUnit: s.priceUnit || 'visit',
+            rating: s.rating || 4.5,
+            eta: s.eta || '30 min average dispatch',
+          }));
+          setBackendServices(services);
+        }
+      } catch (error) {
+        // ignore backend service fetch failures, fallback to local services
+      }
+    };
+
+    void fetchServices();
+  }, [apiUrl]);
+
+  const service = useMemo(() => {
+    const backend = backendServices.find((s) => s.id === serviceId || s._id === serviceId);
+    return backend || servicesById[serviceId] || servicesById.plumber;
+  }, [backendServices, serviceId]);
 
   const [form, setForm] = useState({
     customerName: '',
@@ -39,7 +87,8 @@ function BookingPageContent() {
     setMessage('');
 
     try {
-      const res = await fetch('http://localhost:4000/bookings/create', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${apiUrl}/bookings/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,24 +106,30 @@ function BookingPageContent() {
           },
         }),
       });
-      let data: { success?: boolean; message?: string } = {};
+      let data: { success?: boolean; message?: string; devOtp?: string } = {};
+      let rawBody = '';
       try {
-        data = (await res.json()) as { success?: boolean; message?: string };
+        rawBody = await res.text();
+        try {
+          data = JSON.parse(rawBody) as { success?: boolean; message?: string };
+        } catch {
+          // body was not JSON
+        }
       } catch {
-        // ignore
+        // ignore read errors
       }
 
       // Helpful log when backend returns non-JSON or empty body
       if (!data || Object.keys(data).length === 0) {
-        console.error('booking/create empty response body', { status: res.status });
+        console.error('booking/create empty or non-JSON response body', { status: res.status, statusText: res.statusText, rawBody });
       }
 
-
       if (res.ok && data.success) {
+        setDevBookingOtp(data.devOtp || '');
         setShowOTP(true);
       } else {
-        console.error('booking/create failed', { status: res.status, data });
-        setMessage(data.message || `Unable to create booking (${res.status}).`);
+        console.error('booking/create failed', { status: res.status, statusText: res.statusText, data, rawBody });
+        setMessage(data.message || (rawBody ? `Unable to create booking (${res.status}): ${rawBody}` : `Unable to create booking (${res.status}).`));
       }
     } catch {
       setMessage('Booking failed.');
@@ -88,7 +143,8 @@ function BookingPageContent() {
     setMessage('');
 
     try {
-      const res = await fetch('http://localhost:4000/bookings/verify-otp', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${apiUrl}/bookings/verify-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,6 +154,7 @@ function BookingPageContent() {
       });
       const data = (await res.json()) as { success?: boolean; message?: string };
       if (data.success) {
+        setDevBookingOtp('');
         router.push('/history');
       } else {
         setMessage(data.message || 'Verification failed.');
@@ -243,6 +300,12 @@ function BookingPageContent() {
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Enter the 6-digit code sent to your email to finish the booking.
             </p>
+            {devBookingOtp && (
+              <div className="mt-5 rounded-2xl border border-orange-300 bg-orange-50 p-4 text-center">
+                <p className="text-sm font-semibold text-orange-900">Email is not working right now. Use this OTP:</p>
+                <p className="mt-2 text-3xl font-bold tracking-[0.35em] text-orange-700">{devBookingOtp}</p>
+              </div>
+            )}
             <input
               type="text"
               placeholder="6-digit OTP"

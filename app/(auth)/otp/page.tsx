@@ -4,13 +4,18 @@ import { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/authStore";
 
 export default function OTPPage() {
   const router = useRouter();
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
   const [email] = useState(() =>
     typeof window !== "undefined" ? localStorage.getItem("verifyEmail") || "" : ""
+  );
+  const [devOtp, setDevOtp] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("devRegisterOtp") || "" : ""
   );
   const hasEmail = useMemo(() => email.trim().length > 0, [email]);
 
@@ -40,6 +45,8 @@ export default function OTPPage() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("verifyEmail");
+        localStorage.removeItem("devRegisterOtp");
+        checkAuth();
         toast.success("Verified successfully!");
         router.push("/");
       } else {
@@ -61,8 +68,17 @@ export default function OTPPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (data.success) toast.success("OTP resent!");
-      else toast.error(data.message);
+      if (data.success) {
+        if (data.devOtp) {
+          localStorage.setItem("devRegisterOtp", data.devOtp);
+          setDevOtp(data.devOtp);
+          toast.error("Email failed. OTP is shown on this page.");
+        } else {
+          localStorage.removeItem("devRegisterOtp");
+          setDevOtp("");
+          toast.success("OTP resent!");
+        }
+      } else toast.error(data.message);
     } catch {
       toast.error("Failed to resend");
     }
@@ -102,6 +118,13 @@ export default function OTPPage() {
                 </p>
               </div>
             </div>
+
+            {devOtp && (
+              <div className="mb-6 rounded-xl border border-orange-300 bg-orange-50 p-4 text-center">
+                <p className="text-sm font-semibold text-orange-900">Email is not working right now. Use this OTP:</p>
+                <p className="mt-2 text-3xl font-bold tracking-[0.35em] text-orange-700">{devOtp}</p>
+              </div>
+            )}
 
             {/* OTP Input */}
             <div className="mb-8">

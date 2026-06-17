@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { Mail, MapPin, MessageSquareText, Phone, Send } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const contactCards = [
   { icon: Phone, title: 'Call', value: '+91 9682645127', text: 'For urgent booking or provider support.' },
@@ -9,6 +11,41 @@ const contactCards = [
 ];
 
 export default function ContactPage() {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    topic: 'Booking support',
+    message: '',
+  });
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${apiUrl}/public/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = (await res.json()) as { success?: boolean; message?: string };
+
+      if (data.success) {
+        toast.success('Message sent successfully');
+        setForm({ name: '', phone: '', email: '', topic: 'Booking support', message: '' });
+      } else {
+        toast.error(data.message || 'Message send failed');
+      }
+    } catch {
+      toast.error('Message send failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
@@ -38,24 +75,25 @@ export default function ContactPage() {
           <h2 className="text-3xl font-semibold text-slate-950">Send a message</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">This form is ready for UI flow and can be connected to the backend mail service later.</p>
 
-          <form className="mt-8 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <input className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Full name" type="text" />
-              <input className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Phone number" type="tel" />
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Full name" type="text" required />
+              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Phone number" type="tel" required />
             </div>
-            <input className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Email address" type="email" />
-            <select className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-600 outline-none transition focus:border-blue-500">
-              <option>Booking support</option>
-              <option>Provider signup</option>
-              <option>Offer question</option>
-              <option>General support</option>
+            <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Email address" type="email" required />
+            <select value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-600 outline-none transition focus:border-blue-500">
+              <option value="Booking support">Booking support</option>
+              <option value="Provider signup">Provider signup</option>
+              <option value="Offer question">Offer question</option>
+              <option value="General support">General support</option>
             </select>
-            <textarea className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Write your message" rows={6} />
+            <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Write your message" rows={6} required />
             <button
-              type="button"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+              type="submit"
+              disabled={loading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
-              Send message
+              {loading ? 'Sending...' : 'Send message'}
               <Send className="h-4 w-4" />
             </button>
           </form>

@@ -24,7 +24,7 @@ export default function AdminOffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [newOffer, setNewOffer] = useState<Offer>({
+  const defaultOffer: Offer = {
     title: "",
     code: "",
     text: "",
@@ -34,7 +34,8 @@ export default function AdminOffersPage() {
     href: "/services",
     isActive: true,
     expiryDate: null,
-  });
+  };
+  const [offerForm, setOfferForm] = useState<Offer>(defaultOffer);
   const [message, setMessage] = useState("");
 
   const API_URL = "http://localhost:4000";
@@ -68,17 +69,7 @@ export default function AdminOffersPage() {
       const data = await res.json();
       if (data.success) {
         setMessage("Offer created!");
-        setNewOffer({
-          title: "",
-          code: "",
-          text: "",
-          discount: 0,
-          discountType: "percent",
-          service: "Any service",
-          href: "/services",
-          isActive: true,
-          expiryDate: null,
-        });
+        setOfferForm(defaultOffer);
         await fetchOffers();
       } else {
         setMessage(data.message || "Failed to create");
@@ -100,7 +91,10 @@ export default function AdminOffersPage() {
       if (data.success) {
         setMessage("Offer updated!");
         setEditingId(null);
+        setOfferForm(defaultOffer);
         await fetchOffers();
+      } else {
+        setMessage(data.message || "Failed to update");
       }
     } catch (error) {
       setMessage("Update failed");
@@ -121,20 +115,33 @@ export default function AdminOffersPage() {
     }
   };
 
+  const startEdit = (offer: Offer) => {
+    setEditingId(offer._id || null);
+    setOfferForm({
+      ...offer,
+      expiryDate: offer.expiryDate ? new Date(offer.expiryDate).toISOString().split('T')[0] : null,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setOfferForm(defaultOffer);
+  };
+
   useEffect(() => {
     if (isAuthenticated) fetchOffers();
   }, [isAuthenticated, fetchOffers]);
 
   if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
-  const editingOffer = editingId ? offers.find(o => o._id === editingId) : null;
+  const isEditing = Boolean(editingId);
 
   return (
     <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex items-center gap-4">
           <button 
-            onClick={() => router.back()} 
+            onClick={() => router.push('/admin')} 
             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
           >
             ←
@@ -158,28 +165,28 @@ export default function AdminOffersPage() {
             {editingId ? "Edit Offer" : "Add New Offer"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-<input
+            <input
               placeholder="Offer Title (e.g., First Booking Saver)"
-              value={editingId ? editingOffer?.title || "" : newOffer.title}
-              onChange={(e) => editingId ? setEditingId(null) && setNewOffer({...newOffer, title: e.target.value}) : setNewOffer({...newOffer, title: e.target.value})}
+              value={offerForm.title}
+              onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               placeholder="Offer Code (e.g., QUICK100)"
-              value={editingId ? editingOffer?.code || "" : newOffer.code}
-              onChange={(e) => setNewOffer({...newOffer, code: e.target.value.toUpperCase()})}
+              value={offerForm.code}
+              onChange={(e) => setOfferForm({ ...offerForm, code: e.target.value.toUpperCase() })}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               placeholder="Discount (e.g., 100 or 15)"
               type="number"
-              value={editingId ? editingOffer?.discount || 0 : newOffer.discount}
-              onChange={(e) => setNewOffer({...newOffer, discount: parseInt(e.target.value) || 0})}
+              value={offerForm.discount}
+              onChange={(e) => setOfferForm({ ...offerForm, discount: parseInt(e.target.value) || 0 })}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <select
-              value={editingId ? editingOffer?.discountType || "percent" : newOffer.discountType}
-              onChange={(e) => setNewOffer({...newOffer, discountType: e.target.value})}
+              value={offerForm.discountType}
+              onChange={(e) => setOfferForm({ ...offerForm, discountType: e.target.value })}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             >
               <option value="percent">Percentage (%)</option>
@@ -187,46 +194,46 @@ export default function AdminOffersPage() {
             </select>
             <input
               placeholder="Service (e.g., Any service, Plumber, Cleaner)"
-              value={editingId ? editingOffer?.service || "" : newOffer.service}
-              onChange={(e) => setNewOffer({...newOffer, service: e.target.value})}
+              value={offerForm.service}
+              onChange={(e) => setOfferForm({ ...offerForm, service: e.target.value })}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               placeholder="Booking URL (e.g., /booking?service=plumber)"
-              value={editingId ? editingOffer?.href || "" : newOffer.href}
-              onChange={(e) => setNewOffer({...newOffer, href: e.target.value})}
+              value={offerForm.href}
+              onChange={(e) => setOfferForm({ ...offerForm, href: e.target.value })}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <input
               type="date"
-              value={editingId ? editingOffer?.expiryDate ? editingOffer.expiryDate.split('T')[0] : "" : newOffer.expiryDate ? newOffer.expiryDate.split('T')[0] : ""}
-              onChange={(e) => setNewOffer({...newOffer, expiryDate: e.target.value ? e.target.value : null})}
+              value={offerForm.expiryDate || ""}
+              onChange={(e) => setOfferForm({ ...offerForm, expiryDate: e.target.value ? e.target.value : null })}
               className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={editingId ? editingOffer?.isActive ?? true : newOffer.isActive}
-                onChange={(e) => setNewOffer({...newOffer, isActive: e.target.checked})}
+                checked={offerForm.isActive}
+                onChange={(e) => setOfferForm({ ...offerForm, isActive: e.target.checked })}
                 className="h-5 w-5 rounded border-slate-300"
               />
               <span className="text-sm text-slate-700">Active (visible to users)</span>
             </label>
             <textarea
               placeholder="Description text"
-              value={editingId ? editingOffer?.text || "" : newOffer.text}
-              onChange={(e) => setNewOffer({...newOffer, text: e.target.value})}
+              value={offerForm.text}
+              onChange={(e) => setOfferForm({ ...offerForm, text: e.target.value })}
               rows={3}
               className="md:col-span-2 w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div className="mt-6 flex gap-3">
             <button
-onClick={() => {
-                if (editingId) {
-                  updateOffer(editingOffer!);
+              onClick={() => {
+                if (isEditing) {
+                  updateOffer(offerForm);
                 } else {
-                  createOffer(newOffer);
+                  createOffer(offerForm);
                 }
               }}
               className="flex items-center gap-2 rounded-xl bg-orange-600 px-6 py-3 text-white hover:bg-orange-700"
@@ -234,9 +241,9 @@ onClick={() => {
               <Save className="h-4 w-4" />
               {editingId ? "Update Offer" : "Create Offer"}
             </button>
-            {editingId && (
+            {isEditing && (
               <button
-                onClick={() => setEditingId(null)}
+                onClick={cancelEdit}
                 className="rounded-xl border border-slate-200 px-6 py-3 text-slate-700 hover:bg-slate-50"
               >
                 Cancel
@@ -265,7 +272,7 @@ onClick={() => {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setEditingId(offer._id || "")}
+                      onClick={() => startEdit(offer)}
                       className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
                       title="Edit"
                     >

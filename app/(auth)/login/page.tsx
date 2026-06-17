@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail, LogIn } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
+  const checkAuth = useAuthStore((state) => state.checkAuth);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -42,6 +44,7 @@ export default function LoginPage() {
       if (result.success) {
         localStorage.setItem("token", result.token);
         localStorage.setItem("user", JSON.stringify(result.user));
+        checkAuth();
         toast.success("Login successful!");
         
         if (result.user.isAdmin) {

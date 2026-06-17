@@ -76,6 +76,7 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -98,22 +99,25 @@ export default function AdminPage() {
 
       setAuthorized(true);
 
-      const [dashboardRes, bookingsRes, providersRes, usersRes] = await Promise.all([
+      const [dashboardRes, bookingsRes, providersRes, usersRes, contactsRes] = await Promise.all([
         fetch(`${API_URL}/admin/dashboard`, { headers: getHeaders() }),
         fetch(`${API_URL}/admin/bookings?limit=8`, { headers: getHeaders() }),
         fetch(`${API_URL}/admin/providers`, { headers: getHeaders() }),
         fetch(`${API_URL}/user/getAll`, { headers: getHeaders() }),
+        fetch(`${API_URL}/admin/contacts?limit=6`, { headers: getHeaders() }),
       ]);
 
       const dashboardData = (await dashboardRes.json()) as { success?: boolean; stats?: AdminStats };
       const bookingsData = (await bookingsRes.json()) as { success?: boolean; bookings?: Booking[] };
       const providersData = (await providersRes.json()) as { success?: boolean; providers?: Provider[] };
       const usersData = (await usersRes.json()) as { success?: boolean; data?: UserRow[] };
+      const contactsData = (await contactsRes.json()) as { success?: boolean; contacts?: any[] };
 
       if (dashboardData.success && dashboardData.stats) setStats(dashboardData.stats);
       if (bookingsData.success && bookingsData.bookings) setBookings(bookingsData.bookings);
       if (providersData.success && providersData.providers) setProviders(providersData.providers);
       if (usersData.success && usersData.data) setUsers(usersData.data);
+      if (contactsData.success && contactsData.contacts) setContacts(contactsData.contacts);
     } catch {
       setMessage('Unable to load admin dashboard. Check that the backend server is running.');
     } finally {
@@ -232,8 +236,14 @@ export default function AdminPage() {
             <a href="/admin/providers" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
               Providers
             </a>
+            <a href="/admin/offers" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
+              Offers
+            </a>
             <a href="/admin/users" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
               Users
+            </a>
+            <a href="/admin/contacts" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
+              Contacts
             </a>
           </nav>
         </section>
@@ -349,6 +359,28 @@ export default function AdminPage() {
                   </div>
                 ))}
                 {users.length === 0 && <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">No users found yet.</p>}
+              </div>
+            </div>
+
+            <div className="rounded-[28px] bg-white/90 p-6 shadow-xl shadow-slate-100">
+              <h2 className="text-2xl font-semibold text-slate-950">Recent contacts</h2>
+              <div className="mt-5 space-y-3">
+                {contacts.length === 0 ? (
+                  <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">No contact messages yet.</p>
+                ) : (
+                  contacts.slice(0, 6).map((c) => (
+                    <div key={c._id} className="rounded-2xl border border-black/5 bg-slate-50 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-slate-950">{c.name} · {c.topic}</h3>
+                          <p className="mt-1 text-sm text-slate-600">{c.email} · {c.phone}</p>
+                        </div>
+                        <span className="text-xs text-slate-500">{new Date(c.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-600">{c.message.length > 120 ? `${c.message.slice(0, 120)}...` : c.message}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
