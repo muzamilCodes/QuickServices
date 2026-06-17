@@ -15,6 +15,9 @@ const {
     createOffer,
     updateOffer,
     deleteOffer,
+    // contacts
+    getContacts,
+    deleteContact,
     getAllUsers,
     updateUserDetails,
     updateUserAdmin,
@@ -43,6 +46,10 @@ router.get('/offers', getOffers);
 router.post('/offers', createOffer);
 router.put('/offers/:id', updateOffer);
 router.delete('/offers/:id', deleteOffer);
+
+// Contacts management
+router.get('/contacts', getContacts);
+router.delete('/contacts/:contactId', deleteContact);
 
 router.get('/users', getAllUsers);
 router.put('/users/:userId', updateUserDetails);

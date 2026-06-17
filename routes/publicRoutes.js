@@ -43,6 +43,17 @@ router.post('/contact', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Name, phone, email, and message are required' });
         }
 
+        // Persist contact to DB so admin can review messages
+        try {
+            const Contact = require('../models/Contact');
+            const contact = new Contact({ name, phone, email, topic, message });
+            await contact.save();
+        } catch (err) {
+            console.error('Failed saving contact to DB:', err);
+            // continue to attempt to send email even if DB save fails
+        }
+
+        // Send notification email
         await sendEmail(
             process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER,
             `QuickServices Contact: ${topic || 'General support'}`,

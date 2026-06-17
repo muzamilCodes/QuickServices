@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const Provider = require('../models/Provider');
 const Service = require('../models/Service');
 const Offer = require('../models/Offer');
+const Contact = require('../models/Contact');
 const { User } = require('../models/userModel');
 
 exports.getAllUsers = async (req, res) => {
@@ -255,6 +256,46 @@ exports.getOffers = async (req, res) => {
     }
 };
 
+// ===================== ADMIN: CONTACTS =====================
+exports.getContacts = async (req, res) => {
+    try {
+        const { page = 1, limit = 20 } = req.query;
+
+        const contacts = await Contact.find({})
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        const total = await Contact.countDocuments();
+
+        res.json({
+            success: true,
+            contacts,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.deleteContact = async (req, res) => {
+    try {
+        const { contactId } = req.params;
+        const contact = await Contact.findByIdAndDelete(contactId);
+        if (!contact) return res.status(404).json({ success: false, message: 'Contact not found' });
+        res.json({ success: true, message: 'Contact deleted' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.createOffer = async (req, res) => {
     try {
         const offer = new Offer(req.body);
@@ -309,7 +350,8 @@ exports.getDashboardStats = async (req, res) => {
             .populate('user', 'username')
             .sort({ createdAt: -1 })
             .limit(5);
-
+        // recent contacts count (for quick overview)
+        const recentContacts = await Contact.find().sort({ createdAt: -1 }).limit(5);
         res.json({
             success: true,
             stats: {
@@ -320,7 +362,8 @@ exports.getDashboardStats = async (req, res) => {
                 totalProviders,
                 pendingProviders
             },
-            recentBookings
+            recentBookings,
+            recentContacts
         });
 
     } catch (error) {
