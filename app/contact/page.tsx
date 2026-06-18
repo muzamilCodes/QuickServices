@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Mail, MapPin, MessageSquareText, Phone, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -11,6 +12,7 @@ const contactCards = [
 ];
 
 export default function ContactPage() {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -19,6 +21,13 @@ export default function ContactPage() {
     topic: 'Booking support',
     message: '',
   });
+
+  useEffect(() => {
+    const topic = searchParams?.get('topic');
+    if (topic) {
+      setForm((f) => ({ ...f, topic }));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -84,9 +93,13 @@ export default function ContactPage() {
             <select value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-600 outline-none transition focus:border-blue-500">
               <option value="Booking support">Booking support</option>
               <option value="Provider signup">Provider signup</option>
+              <option value="Offer proposal">Offer proposal</option>
               <option value="Offer question">Offer question</option>
               <option value="General support">General support</option>
             </select>
+            {form.topic === 'Offer proposal' && (
+              <p className="mt-2 text-sm text-slate-500">Propose your offer: include code, title, discount type/value, applicable services, expiry, and brief terms.</p>
+            )}
             <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500" placeholder="Write your message" rows={6} required />
             <button
               type="submit"

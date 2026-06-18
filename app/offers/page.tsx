@@ -81,37 +81,76 @@ const res = await fetch('http://localhost:4000/public/offers');
         </section>
 
         <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {offers.map((offer) => (
-<button
-              key={offer.code}
-              onClick={() => {
-                navigator.clipboard.writeText(offer.code);
-                alert(`Code copied: ${offer.code}`);
-              }}
-              className="rounded-[28px] border border-black/5 bg-white/90 p-6 text-left shadow-lg shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
-                  <Sparkles className="h-5 w-5" />
+            {offers.map((offer) => (
+              <div key={offer.code} className="rounded-[28px] border border-black/5 bg-white/90 p-6 text-left shadow-lg shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">{offer.code}</span>
                 </div>
-                <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">{offer.code}</span>
+                <p className="mt-5 text-sm font-medium text-blue-700">{offer.service}</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-950">{offer.title}</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{offer.text}</p>
+                <div className="mt-6 flex items-center justify-between text-sm gap-3">
+                  <div className="inline-flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(offer.code);
+                        alert(`Code copied: ${offer.code}`);
+                      }}
+                      className="rounded-full border px-4 py-2 text-sm font-medium text-slate-950"
+                    >
+                      Copy code
+                    </button>
+                    <button
+                      onClick={() => router.push(offer.href)}
+                      className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white"
+                    >
+                      Book now
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <span className="inline-flex items-center gap-1 font-medium text-amber-600">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    Limited offer
+                  </span>
+                </div>
               </div>
-              <p className="mt-5 text-sm font-medium text-blue-700">{offer.service}</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">{offer.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{offer.text}</p>
-              <div className="mt-6 flex items-center justify-between text-sm">
-                <span className="inline-flex items-center gap-1 font-medium text-amber-600">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  Limited offer
-                </span>
-                <span className="inline-flex items-center gap-1 font-medium text-blue-700">
-                  Book now
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-            </button>
-          ))}
+            ))}
         </section>
+
+          <section className="mt-8 rounded-[26px] border border-slate-200 bg-white/95 p-6 text-sm leading-6 text-slate-900">
+            <h3 className="text-lg font-semibold">Propose an offer / Give an offer</h3>
+            <p className="mt-2 text-sm text-slate-700">If you are a provider or admin and want to give an offer to customers, follow these simple steps:</p>
+            <ul className="mt-3 list-disc pl-5 text-sm text-slate-700">
+              <li>Choose a short code (e.g. QUICK100) and a clear title.</li>
+              <li>Decide discount type: <strong>fixed</strong> (₹) or <strong>percent</strong> (%), and set the value.</li>
+              <li>Limit by service (optional) and set an expiry date or usage limits.</li>
+              <li>Provide brief terms (what's included/excluded) so the customer knows exactly what to expect.</li>
+              <li>Use the button below to propose the offer — our team will review and publish it.</li>
+            </ul>
+            <div className="mt-4 flex gap-3">
+              <button onClick={() => router.push('/contact?topic=Offer%20proposal')} className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white">Propose an offer</button>
+              <button onClick={() => router.push('/admin') } className="rounded-full border px-4 py-2 text-sm font-medium">Admin panel</button>
+            </div>
+          </section>
+
+            <section className="mt-8 rounded-[26px] border border-slate-100 bg-white/95 p-6 text-sm leading-6 text-slate-900">
+              <h3 className="text-lg font-semibold">How to give offers to customers (for providers)</h3>
+              <p className="mt-2 text-sm text-slate-700">Simple, effective offer types and how to present them to customers:</p>
+              <ul className="mt-3 list-disc pl-5 text-sm text-slate-700">
+                <li>First-time discount: a fixed amount or percent for a customer's first confirmed booking (e.g. QUICK100: ₹100 off).</li>
+                <li>Bundle offers: combine two services (bathroom + kitchen) and give a percent discount.</li>
+                <li>Loyalty / repeat: reward customers after N bookings (e.g. after 3rd booking give ₹150 credit).</li>
+                <li>Referral: give both referrer and referee a small credit or discount.</li>
+                <li>Service-specific rules: prefer percent discounts on higher-margin services, fixed amounts on low-margin services.</li>
+                <li>Time-limited flash deals: short expiry offers for weekends or seasonal demand to increase bookings.</li>
+                <li>Clear terms: always show minimum spend, eligible services, expiry, and per-user limits.</li>
+                <li>Auto-apply vs code: for eligible users auto-apply discounts in checkout; otherwise show a copyable code.</li>
+              </ul>
+              <p className="mt-3 text-sm text-slate-700">Example: "First Booking Saver — QUICK100: ₹100 off on first confirmed booking. Valid once per user, expires 30 days from issue."</p>
+            </section>
 
         <div className="mt-8 rounded-[26px] border border-blue-100 bg-blue-50 p-6 text-sm leading-6 text-blue-900">
           <Clock3 className="mb-3 h-5 w-5" />

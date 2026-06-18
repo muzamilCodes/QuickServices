@@ -63,6 +63,15 @@ export default function AboutPage() {
           </div>
         </section>
 
+        <section className="mt-8 rounded-[20px] border border-slate-100 bg-white/95 p-6 text-sm text-slate-900">
+          <h3 className="text-lg font-semibold">Want to collaborate or run offers?</h3>
+          <p className="mt-2 text-sm text-slate-700">Providers can propose offers or reach out to our team for partnerships.</p>
+          <div className="mt-4 flex gap-3">
+            <button onClick={() => router.push('/offers')} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white">See offers</button>
+            <button onClick={() => router.push('/contact?topic=Offer%20proposal')} className="rounded-full border px-4 py-2 text-sm font-medium">Propose an offer</button>
+          </div>
+        </section>
+
         <section className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {values.map(({ icon: Icon, title, text }) => (
             <div key={title} className="rounded-[26px] border border-black/5 bg-white/90 p-6 shadow-lg shadow-slate-100">
@@ -73,6 +82,30 @@ export default function AboutPage() {
               <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
             </div>
           ))}
+        </section>
+        <section className="mt-8 rounded-[20px] border border-slate-100 bg-white/95 p-6 text-sm text-slate-900">
+          <h3 className="text-lg font-semibold">Our address</h3>
+          <p className="mt-2 text-sm text-slate-700">QuickServices</p>
+          <p className="text-sm text-slate-700">Handwara Qalamabad</p>
+          <p className="text-sm text-slate-700">Jammu & Kashmir, India</p>
+          <p className="mt-3 text-sm text-slate-700">Phone: +91 9682645127 · Email: Quickservices@gmail.com</p>
+          <p className="mt-2 text-sm text-slate-700">Hours: Mon–Sat 09:00–18:00</p>
+        </section>
+
+        <section className="mt-4 rounded-[20px] border border-slate-200 bg-white/95 p-4 text-sm text-slate-900">
+          <h4 className="font-medium">Location map</h4>
+          <div className="mt-4 overflow-hidden rounded-[20px] border border-slate-200 bg-slate-100">
+            <iframe
+              title="QuickServices location"
+              src="https://maps.google.com/maps?q=Handwara+Qalamabad&output=embed"
+              className="h-96 w-full"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+          <p className="mt-3 text-sm text-slate-700">If the map does not display, open it directly on Google Maps.</p>
+          <a href="https://www.google.com/maps/search/?api=1&query=Handwara+Qalamabad" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-blue-700">Open Google Maps</a>
         </section>
       </div>
     </div>
