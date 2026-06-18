@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarDays, MapPin, Search, Filter, User, Phone, Loader2 } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin, Search, Filter, User, Phone, Loader2, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { servicesById } from "@/lib/services";
 
@@ -106,6 +106,28 @@ export default function AdminBookingsPage() {
       }
     } catch (error) {
       setMessage("Update failed. Check backend.");
+    } finally {
+      setUpdatingId("");
+    }
+  };
+
+  const deleteBooking = async (bookingId: string) => {
+    if (!confirm('Delete this booking?')) return;
+    setUpdatingId(bookingId);
+    try {
+      const res = await fetch(`${API_URL}/admin/bookings/${bookingId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage("Booking deleted successfully!");
+        await fetchBookings();
+      } else {
+        setMessage(data.message || "Delete failed");
+      }
+    } catch (error) {
+      setMessage("Delete failed. Check backend.");
     } finally {
       setUpdatingId("");
     }
@@ -282,6 +304,14 @@ export default function AdminBookingsPage() {
                       >
                         View Details
                         <ArrowRight className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteBooking(booking._id)}
+                        disabled={updatingId === booking._id}
+                        className="inline-flex items-center gap-2 rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
                       </button>
                     </div>
                   </div>

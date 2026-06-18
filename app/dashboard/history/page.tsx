@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, CalendarDays, MapPin, Star, XCircle } from 'lucide-react';
+import { ArrowRight, CalendarDays, MapPin, Star, Trash2, XCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { servicesById } from '@/lib/services';
 
@@ -20,6 +20,7 @@ interface Booking {
 }
 
 export default function HistoryPage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -29,19 +30,22 @@ export default function HistoryPage() {
 
   const fetchBookings = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:4000/bookings/my-bookings', {
+      const res = await fetch(`${API_URL}/bookings/my-bookings`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       const data = (await res.json()) as { success?: boolean; bookings?: Booking[] };
       if (data.success && data.bookings) {
         setBookings(data.bookings);
+      } else {
+        setMessage(data.message || 'Unable to load bookings.');
       }
     } catch (error) {
       console.error(error);
+      setMessage('Unable to connect to the server. Please check your network or backend URL.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [API_URL]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -71,7 +75,7 @@ export default function HistoryPage() {
     setMessage('');
 
     try {
-      const res = await fetch(`http://localhost:4000/bookings/${bookingId}/cancel`, {
+      const res = await fetch(`${API_URL}/bookings/${bookingId}/cancel`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
@@ -90,6 +94,32 @@ export default function HistoryPage() {
       setMessage('Booking cancelled successfully.');
     } catch {
       setMessage('Cancel failed. Please try again.');
+    } finally {
+      setCancellingId('');
+    }
+  };
+
+  const deleteBooking = async (bookingId: string) => {
+    if (!confirm('Delete this booking from your history?')) return;
+    setCancellingId(bookingId);
+    setMessage('');
+
+    try {
+      const res = await fetch(`${API_URL}/bookings/${bookingId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      const data = (await res.json()) as { success?: boolean; message?: string };
+
+      if (!data.success) {
+        setMessage(data.message || 'Unable to delete booking.');
+        return;
+      }
+
+      setBookings((current) => current.filter((booking) => booking._id !== bookingId));
+      setMessage('Booking removed from history.');
+    } catch {
+      setMessage('Delete failed. Please try again.');
     } finally {
       setCancellingId('');
     }
@@ -212,6 +242,16 @@ export default function HistoryPage() {
                         >
                           <XCircle className="h-4 w-4" />
                           {cancellingId === booking._id ? 'Cancelling...' : 'Cancel'}
+                        </button>
+                      )}
+                      {(booking.status === 'cancelled' || booking.status === 'completed') && (
+                        <button
+                          onClick={() => void deleteBooking(booking._id)}
+                          disabled={cancellingId === booking._id}
+                          className="inline-flex items-center gap-2 self-start rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          {cancellingId === booking._id ? 'Removing...' : 'Delete'}
                         </button>
                       )}
                       <button

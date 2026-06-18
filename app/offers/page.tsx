@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowRight, BadgePercent, Clock3, Sparkles, Star, Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 interface Offer {
   _id: string;
@@ -27,17 +28,19 @@ const defaultOffers: Offer[] = [
 ];
 
 export default function OffersPage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoyalCustomer, setIsLoyalCustomer] = useState(false);
 
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-const res = await fetch('http://localhost:4000/public/offers');
+        const res = await fetch(`${API_URL}/public/offers`);
         const data = await res.json();
         if (data.success && data.offers?.length > 0) {
-          // Filter active offers and not expired
           const activeOffers = data.offers.filter((o: Offer) => {
             if (!o.isActive) return false;
             if (o.expiryDate && new Date(o.expiryDate) < new Date()) return false;
@@ -52,9 +55,36 @@ const res = await fetch('http://localhost:4000/public/offers');
       } finally {
         setLoading(false);
       }
-};
+    };
     fetchOffers();
-  }, []);
+  }, [API_URL]);
+
+  useEffect(() => {
+    const fetchLoyaltyStatus = async () => {
+      if (!isAuthenticated) {
+        setIsLoyalCustomer(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/bookings/my-bookings`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        const data = await res.json();
+        if (data.success && data.bookings?.length >= 5) {
+          setIsLoyalCustomer(true);
+        } else {
+          setIsLoyalCustomer(false);
+        }
+      } catch {
+        setIsLoyalCustomer(false);
+      }
+    };
+
+    if (!authLoading) {
+      void fetchLoyaltyStatus();
+    }
+  }, [API_URL, authLoading, isAuthenticated]);
 
   if (loading) return (
     <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
@@ -79,6 +109,62 @@ const res = await fetch('http://localhost:4000/public/offers');
             </p>
           </div>
         </section>
+
+        {isAuthenticated && !authLoading && !isLoyalCustomer && (
+          <section className="mt-10 rounded-[28px] border border-slate-300 bg-slate-50 p-6 shadow-sm shadow-slate-200">
+            <h2 className="text-3xl font-bold text-slate-950">Loyalty reward in progress</h2>
+            <p className="mt-4 text-lg leading-8 text-slate-700">
+              You have not completed 5 bookings yet. The special 50% loyalty offer is not bookable until you finish 5 confirmed bookings.
+            </p>
+            <p className="mt-3 text-base text-slate-600">
+              After 5 bookings, you will see the loyalty offer separately with the code <span className="font-semibold text-amber-700">LOYAL50</span> and a dedicated booking button. Until then, this offer remains locked.
+            </p>
+          </section>
+        )}
+
+        {!isAuthenticated && !authLoading && (
+          <section className="mt-10 rounded-[28px] border border-blue-200 bg-blue-50 p-6 shadow-sm shadow-blue-100">
+            <h2 className="text-xl font-semibold text-slate-950">Login karein apni loyalty check karne ke liye</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Jab aap is website par 5 booking complete karenge, aap ko 50% off loyalty offer milay ga. Yeh code <span className="font-semibold text-amber-700">LOYAL50</span> aapko alag section mein nazar ayega.
+            </p>
+          </section>
+        )}
+
+        {isLoyalCustomer && (
+          <section className="mt-10 rounded-[28px] border border-amber-200 bg-amber-50 p-6 shadow-lg shadow-amber-100">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">Loyalty offer</p>
+                <h2 className="mt-3 text-3xl font-semibold text-slate-950">50% off for customers with 5+ bookings</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
+                  Aap ne 5 bookings complete kar li hain. Ab aapko 50% off ka special discount code mil gaya hai.
+                </p>
+              </div>
+              <div className="rounded-full bg-white px-5 py-3 text-center text-sm font-semibold text-slate-950 shadow-sm shadow-slate-200">
+                Use code <span className="text-amber-700">LOYAL50</span>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText('LOYAL50');
+                  alert('Code copied: LOYAL50');
+                }}
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm shadow-slate-200"
+              >
+                Copy LOYAL50
+              </button>
+              <button
+                onClick={() => router.push('/services')}
+                className="rounded-full bg-amber-700 px-5 py-3 text-sm font-semibold text-white"
+              >
+                Book now
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {offers.map((offer) => (

@@ -30,6 +30,8 @@ function BookingPageContent() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [backendServices, setBackendServices] = useState<Service[]>([]);
+  const [isLoyalCustomer, setIsLoyalCustomer] = useState(false);
+  const [bookingCount, setBookingCount] = useState(0);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -60,6 +62,33 @@ function BookingPageContent() {
 
     void fetchServices();
   }, [apiUrl]);
+
+  useEffect(() => {
+    const checkLoyaltyStatus = async () => {
+      if (!isAuthenticated) {
+        setIsLoyalCustomer(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${apiUrl}/bookings/my-bookings`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        const data = await res.json();
+        if (data.success && data.bookings) {
+          const completedCount = data.bookings.filter((b: any) => b.status === 'completed').length;
+          setBookingCount(completedCount);
+          setIsLoyalCustomer(completedCount >= 5);
+        }
+      } catch {
+        setIsLoyalCustomer(false);
+      }
+    };
+
+    if (!isLoading) {
+      void checkLoyaltyStatus();
+    }
+  }, [apiUrl, isAuthenticated, isLoading]);
 
   const service = useMemo(() => {
     const backend = backendServices.find((s) => s.id === serviceId || s._id === serviceId);
@@ -227,6 +256,25 @@ function BookingPageContent() {
         <section className="rounded-[30px] bg-white/90 p-8 shadow-xl shadow-slate-100">
           <h2 className="text-2xl font-semibold text-slate-950">Tell us about the job</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">Fill in the details once and we will carry them through the booking confirmation.</p>
+
+          {isLoyalCustomer && (
+            <div className="mt-6 rounded-[28px] border border-amber-200 bg-amber-50 p-6">
+              <h3 className="text-lg font-semibold text-amber-900">✨ 50% Loyalty Discount Applied</h3>
+              <p className="mt-2 text-sm text-amber-800">
+                You have completed {bookingCount} bookings! Your 50% loyalty discount (LOYAL50) will be automatically applied to this booking.
+              </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-amber-200 bg-white p-3">
+                  <p className="text-xs text-slate-600">Original price</p>
+                  <p className="text-lg font-semibold text-slate-950">{service.price}</p>
+                </div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs text-emerald-700">After 50% discount</p>
+                  <p className="text-lg font-semibold text-emerald-700">50% off</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <input
