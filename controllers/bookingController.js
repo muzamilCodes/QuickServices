@@ -74,6 +74,14 @@ const createBooking = async (req, res) => {
       if (process.env.ALLOW_BOOKING_WITHOUT_EMAIL === 'true') {
         try {
           const bookingData = bookingOTPs.get(userId).bookingData;
+          
+          // Check loyalty discount eligibility
+          const completedBookingsCount = await Booking.countDocuments({
+            user: userId,
+            status: 'completed'
+          });
+          const isLoyalCustomer = completedBookingsCount >= 5;
+
           const newBooking = new Booking({
             user: userId,
             serviceType: bookingData.serviceType,
@@ -87,13 +95,21 @@ const createBooking = async (req, res) => {
             bookingMode: 'system',
             otpVerified: false,
             status: 'pending',
+            appliedCoupon: isLoyalCustomer ? 'LOYAL50' : null,
+            isLoyaltyDiscount: isLoyalCustomer,
+            discountAmount: isLoyalCustomer ? 50 : 0,
+            originalAmount: 0,
           });
 
           await newBooking.save();
           bookingOTPs.delete(userId);
 
-          console.log('Booking created without email OTP (fallback) for user:', user.email);
-          return res.json({ success: true, message: 'Booking created (email failed). Please contact support if you did not receive confirmation.', booking: newBooking });
+          const message = isLoyalCustomer 
+            ? 'Booking created with 50% loyalty discount (email failed). Please contact support if you did not receive confirmation.'
+            : 'Booking created (email failed). Please contact support if you did not receive confirmation.';
+          
+          console.log('Booking created without email OTP (fallback) for user:', user.email, isLoyalCustomer ? '- Loyalty discount applied' : '');
+          return res.json({ success: true, message, booking: newBooking, loyaltyDiscount: isLoyalCustomer });
         } catch (createErr) {
           console.error('Fallback booking creation failed:', createErr);
           return res.status(500).json({ success: false, message: 'Unable to send booking OTP email right now. Please try again.' });
@@ -142,6 +158,14 @@ const verifyBookingOTP = async (req, res) => {
 
     const bookingData = otpData.bookingData;
 
+    // Check if user is eligible for loyalty discount (5+ completed bookings)
+    const completedBookingsCount = await Booking.countDocuments({
+      user: userId,
+      status: 'completed'
+    });
+
+    const isLoyalCustomer = completedBookingsCount >= 5;
+
     const newBooking = new Booking({
       user: userId,
       serviceType: bookingData.serviceType,
@@ -155,10 +179,18 @@ const verifyBookingOTP = async (req, res) => {
       bookingMode,
       otpVerified: true,
       status: 'pending',
+      appliedCoupon: isLoyalCustomer ? 'LOYAL50' : null,
+      isLoyaltyDiscount: isLoyalCustomer,
+      discountAmount: isLoyalCustomer ? 50 : 0,
+      originalAmount: 0,
     });
 
     await newBooking.save();
     bookingOTPs.delete(userId);
+
+    if (isLoyalCustomer) {
+      console.log(`Loyalty discount (LOYAL50 - 50%) automatically applied for user: ${userId}`);
+    }
 
     if (bookingMode === 'whatsapp') {
       const providers = await Provider.find({
@@ -172,15 +204,22 @@ const verifyBookingOTP = async (req, res) => {
         const whatsappLink = WhatsAppService.generateWhatsAppLink(providers[0].whatsappNumber, message);
         return res.json({
           success: true,
-          message: 'Booking confirmed!',
+          message: isLoyalCustomer ? 'Booking confirmed with 50% loyalty discount applied!' : 'Booking confirmed!',
           booking: newBooking,
           whatsappLink,
           redirectToWhatsApp: true,
+          loyaltyDiscount: isLoyalCustomer,
         });
       }
     }
 
-    return res.json({ success: true, message: 'Booking confirmed!', booking: newBooking });
+    return res.json({ 
+      success: true, 
+      message: isLoyalCustomer ? 'Booking confirmed with 50% loyalty discount applied!' : 'Booking confirmed!', 
+      booking: newBooking,
+      loyaltyDiscount: isLoyalCustomer,
+      appliedCoupon: isLoyalCustomer ? 'LOYAL50' : null,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, message: error.message });
@@ -213,6 +252,21 @@ const cancelBooking = async (req, res) => {
     await booking.save();
 
     return res.json({ success: true, message: 'Booking cancelled', booking });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const deleteBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findOneAndDelete({ _id: bookingId, user: req.userId });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    return res.json({ success: true, message: 'Booking deleted' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -285,6 +339,7 @@ module.exports = {
   verifyBookingOTP,
   getMyBookings,
   cancelBooking,
+  deleteBooking,
   getServices,
   getBooking,
 };

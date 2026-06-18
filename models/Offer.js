@@ -6,7 +6,8 @@ const offerSchema = new mongoose.Schema({
   text: { type: String, required: true },
   discount: { type: Number, required: true }, // percentage or fixed amount
   discountType: { type: String, enum: ['percent', 'fixed'], default: 'percent' },
-  service: { type: String, default: 'Any service' }, // service category or 'Any service'
+  service: { type: String, default: 'Any service' }, // service category name
+  serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', default: null }, // reference to Service
   href: { type: String, default: '/services' }, // booking URL
   isActive: { type: Boolean, default: true },
   expiryDate: { type: Date, default: null }, // null means no expiry

@@ -8,6 +8,7 @@ const {
     verifyBookingOTP,
     getMyBookings,
     cancelBooking,
+    deleteBooking,
     getServices,
     getBooking
 } = require('../controllers/bookingController');
@@ -22,5 +23,6 @@ router.post('/verify-otp', verifyBookingOTP);
 router.get('/my-bookings', getMyBookings);
 router.get('/:bookingId', getBooking);
 router.put('/:bookingId/cancel', cancelBooking);
+router.delete('/:bookingId', deleteBooking);
 
 module.exports = router;

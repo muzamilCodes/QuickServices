@@ -70,7 +70,23 @@ const bookingSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    whatsappLink: String
+    whatsappLink: String,
+    appliedCoupon: {
+        type: String,
+        default: null
+    },
+    discountAmount: {
+        type: Number,
+        default: 0
+    },
+    originalAmount: {
+        type: Number,
+        default: 0
+    },
+    isLoyaltyDiscount: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

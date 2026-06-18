@@ -155,6 +155,20 @@ exports.updateBookingStatus = async (req, res) => {
     }
 };
 
+exports.deleteBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const booking = await Booking.findByIdAndDelete(bookingId);
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+        res.json({ success: true, message: 'Booking deleted' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // ===================== ADMIN: GET ALL PROVIDERS =====================
 exports.getAllProviders = async (req, res) => {
     try {

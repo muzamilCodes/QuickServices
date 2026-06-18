@@ -20,15 +20,29 @@ router.get('/services', async (req, res) => {
 router.get('/offers', async (req, res) => {
     try {
         const Offer = require('../models/Offer');
+        const Service = require('../models/Service');
         const now = new Date();
+        
         const offers = await Offer.find({
             isActive: true,
             $or: [
                 { expiryDate: null },
                 { expiryDate: { $gt: now } }
             ]
-        }).sort({ createdAt: -1 });
-        res.json({ success: true, offers });
+        })
+        .populate('serviceId', 'id name icon description basePrice')
+        .sort({ createdAt: -1 });
+
+        // Validate that services exist
+        const validOffers = [];
+        for (const offer of offers) {
+            // If offer is for 'Any service' or service exists, include it
+            if (offer.service === 'Any service' || offer.serviceId) {
+                validOffers.push(offer);
+            }
+        }
+
+        res.json({ success: true, offers: validOffers });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
