@@ -6,8 +6,11 @@ require("dotenv").config();
 
 // all exports.register, login, updateProfile, etc...
 
-const shouldExposeOtpFallback = () => process.env.NODE_ENV !== "production";
+// Production me bhi OTP show karna hai (jab email fail ho jaye)
+// So expose flag ko production == true me bhi allow kar rahe hain.
+const shouldExposeOtpFallback = () => true;
 
+// Email send success/failure return kare; OTP response me fallback ho jayega.
 const sendOtpEmail = async (to, subject, html) => {
   try {
     await sendEmail(to, subject, html);
@@ -17,6 +20,7 @@ const sendOtpEmail = async (to, subject, html) => {
     return false;
   }
 };
+
 
 // ===================== REGISTER =====================
 // ===================== REGISTER =====================
