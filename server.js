@@ -52,9 +52,9 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://quick-services-two.vercel.app",
   "https://quick-services-kohl.vercel.app",
+  "https://quick-services-beta.vercel.app",
   process.env.FRONTEND_URL
 ].filter(Boolean);
-
 console.log("Allowed origins:", allowedOrigins);
 
 app.use(cors({
