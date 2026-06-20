@@ -83,6 +83,10 @@ app.use(cors({
   ]
 }));
 
+// Ensure preflight requests always get a valid CORS response
+app.options('*', cors());
+
+
 // Static uploads
 app.use("/uploads", express.static("uploads"));
 
