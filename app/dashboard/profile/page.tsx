@@ -53,15 +53,19 @@ export default function ProfilePage() {
       };
 
       if (data.success) {
-        const returnedUser = data.user || data.payload;
+          const returnedUser = data.user || data.payload;
         if (user || returnedUser) {
+          const guaranteedId = returnedUser?._id ?? user?._id ?? '';
+
           const updatedUser = {
-            ...user,
+            ...(user || { _id: guaranteedId } as any),
             ...formData,
             ...returnedUser,
+            _id: guaranteedId,
           };
+
           localStorage.setItem('user', JSON.stringify(updatedUser));
-          useAuthStore.setState({ user: updatedUser });
+          useAuthStore.setState({ user: updatedUser as any });
         }
         setMessage('Profile updated successfully.');
         setIsEditing(false);

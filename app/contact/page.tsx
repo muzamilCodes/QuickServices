@@ -5,13 +5,16 @@ import { useSearchParams } from 'next/navigation';
 import { Mail, MapPin, MessageSquareText, Phone, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { Suspense } from 'react';
+
 const contactCards = [
   { icon: Phone, title: 'Call', value: '+91 9682645127', text: 'For urgent booking or provider support.' },
   { icon: Mail, title: 'Email', value: 'Quickservices@gmail.com', text: 'For account, offer, and booking questions.' },
   { icon: MapPin, title: 'Location', value: 'Handwara Qalamabad', text: 'Built for local service requests around your area.' },
 ];
 
-export default function ContactPage() {
+
+function ContactPageInner() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -115,3 +118,12 @@ export default function ContactPage() {
     </div>
   );
 }
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContactPageInner />
+    </Suspense>
+  );
+}
+
