@@ -67,11 +67,11 @@ export default function OffersPage() {
       }
 
       try {
-        const res = await fetch(`${API_URL}/bookings/my-bookings`, {
+        const res = await fetch(`${API_URL}/loyalty/status/me`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         const data = await res.json();
-        if (data.success && data.bookings?.length >= 5) {
+        if (data.success && data.stats?.totalCompletedBookings >= 5) {
           setIsLoyalCustomer(true);
         } else {
           setIsLoyalCustomer(false);
@@ -112,7 +112,7 @@ export default function OffersPage() {
 
         {isAuthenticated && !authLoading && !isLoyalCustomer && (
           <section className="mt-10 rounded-[28px] border border-slate-300 bg-slate-50 p-6 shadow-sm shadow-slate-200">
-            <h2 className="text-3xl font-bold text-slate-950">Loyalty reward in progress</h2>
+            <h2 className="text-4xl font-bold text-slate-950">Loyalty reward in progress</h2>
             <p className="mt-4 text-lg leading-8 text-slate-700">
               You have not completed 5 bookings yet. The special 50% loyalty offer is not bookable until you finish 5 confirmed bookings.
             </p>
@@ -136,7 +136,7 @@ export default function OffersPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">Loyalty offer</p>
-                <h2 className="mt-3 text-3xl font-semibold text-slate-950">50% off for customers with 5+ bookings</h2>
+                <h2 className="mt-3 text-4xl font-semibold text-slate-950">50% off for customers with 5+ bookings</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
                   Aap ne 5 bookings complete kar li hain. Ab aapko 50% off ka special discount code mil gaya hai.
                 </p>
@@ -217,8 +217,7 @@ export default function OffersPage() {
               <li>Use the button below to propose the offer — our team will review and publish it.</li>
             </ul>
             <div className="mt-4 flex gap-3">
-              <button onClick={() => router.push('/contact?topic=Offer%20proposal')} className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white">Propose an offer</button>
-              <button onClick={() => router.push('/admin') } className="rounded-full border px-4 py-2 text-sm font-medium">Admin panel</button>
+              <button onClick={() => router.push('/contact?topic=Offer%20proposal')} className="rounded-full bg-blue-600 px-4 py-2 text-base font-semibold text-white">Propose an offer</button>
             </div>
           </section>
 
