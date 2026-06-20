@@ -18,19 +18,50 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ✅ CORS with FRONTEND_URL from env
+// const allowedOrigins = [
+//   'http://localhost:3000',
+//   'https://quick-services-two.vercel.app',
+//  process.env.FRONTEND_URL
+// ].filter(Boolean);
+
+// console.log("Allowed origins:", allowedOrigins);
+
+// app.use(cors({
+//   origin: function(origin, callback) {
+//     // Allow requests with no origin (like mobile apps or curl)
+//     if (!origin) return callback(null, true);
+    
+//     const isAllowed =
+//       allowedOrigins.includes(origin) ||
+//       /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+
+//     if (isAllowed) {
+//       callback(null, true);
+//     } else {
+//       console.log('❌ Blocked origin:', origin);
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+// }));
+
+// ✅ CORS
 const allowedOrigins = [
-  // 'http://localhost:3000',
-  // 'https://quick-services-two.vercel.app',
- process.env.FRONTEND_URL
+  "http://localhost:3000",
+  "https://quick-services-two.vercel.app",
+  "https://quick-services-kohl.vercel.app",
+  process.env.FRONTEND_URL
 ].filter(Boolean);
 
 console.log("Allowed origins:", allowedOrigins);
 
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
+  origin: function (origin, callback) {
+    // Allow requests without origin
     if (!origin) return callback(null, true);
-    
+
     const isAllowed =
       allowedOrigins.includes(origin) ||
       /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
@@ -38,13 +69,18 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('❌ Blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      console.log("❌ Blocked origin:", origin);
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept"
+  ]
 }));
 
 // Static uploads
