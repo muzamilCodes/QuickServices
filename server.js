@@ -19,7 +19,8 @@ app.use(cookieParser());
 
 // ✅ CORS with FRONTEND_URL from env
 const allowedOrigins = [
-  'http://localhost:3000',
+  // 'http://localhost:3000',
+  // 'https://quick-services-two.vercel.app',
  process.env.FRONTEND_URL
 ].filter(Boolean);
 
