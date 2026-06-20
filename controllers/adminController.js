@@ -143,11 +143,23 @@ exports.updateBookingStatus = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Booking not found' });
         }
 
+        const previousStatus = booking.status;
         booking.status = status;
         if (providerId) booking.provider = providerId;
         await booking.save();
 
-        res.json({ success: true, message: 'Booking status updated', booking });
+        let loyaltyCoupon = null;
+        // Trigger loyalty coupon generation only when status transitions to `completed`
+        if (previousStatus !== 'completed' && status === 'completed') {
+            loyaltyCoupon = await loyaltyService.generateLoyaltyCouponIfEligible(booking.user);
+        }
+
+        res.json({
+            success: true,
+            message: 'Booking status updated',
+            booking,
+            loyaltyCoupon: loyaltyCoupon ? { user: loyaltyCoupon.user, code: loyaltyCoupon.code, discountPercent: loyaltyCoupon.discountPercent, status: loyaltyCoupon.status } : null
+        });
 
     } catch (error) {
         console.error(error);

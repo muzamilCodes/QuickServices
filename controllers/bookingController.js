@@ -3,10 +3,20 @@ const Provider = require('../models/Provider');
 const { User } = require('../models/userModel');
 const sendEmail = require('../utilities/emailService');
 const WhatsAppService = require('../services/whatsappService');
+const loyaltyService = require('../utilities/loyaltyService');
 
 const bookingOTPs = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const shouldExposeOtpFallback = () => process.env.NODE_ENV !== 'production';
+
+const validateCouponCode = async (userId, couponCode) => {
+  if (!couponCode) return null;
+  const coupon = await loyaltyService.validateCouponForUser(userId, couponCode);
+  if (!coupon) {
+    throw new Error('Invalid or expired coupon code');
+  }
+  return coupon;
+};
 
 const createBooking = async (req, res) => {
   try {
@@ -51,6 +61,7 @@ const createBooking = async (req, res) => {
         preferredDate,
         preferredTime,
         isEmergency,
+        couponCode: req.body.couponCode || null,
       },
     });
 
@@ -74,13 +85,22 @@ const createBooking = async (req, res) => {
       if (process.env.ALLOW_BOOKING_WITHOUT_EMAIL === 'true') {
         try {
           const bookingData = bookingOTPs.get(userId).bookingData;
-          
-          // Check loyalty discount eligibility
-          const completedBookingsCount = await Booking.countDocuments({
-            user: userId,
-            status: 'completed'
-          });
-          const isLoyalCustomer = completedBookingsCount >= 5;
+          const couponCode = bookingData.couponCode || null;
+
+          let coupon = null;
+          if (couponCode) {
+            try {
+              coupon = await loyaltyService.validateCouponForUser(userId, couponCode);
+            } catch (err) {
+              coupon = null;
+            }
+          }
+
+          if (coupon) {
+            await loyaltyService.applyCouponToBookingData(bookingData, coupon);
+            coupon.status = 'used';
+            coupon.usedAt = new Date();
+          }
 
           const newBooking = new Booking({
             user: userId,
@@ -95,21 +115,21 @@ const createBooking = async (req, res) => {
             bookingMode: 'system',
             otpVerified: false,
             status: 'pending',
-            appliedCoupon: isLoyalCustomer ? 'LOYAL50' : null,
-            isLoyaltyDiscount: isLoyalCustomer,
-            discountAmount: isLoyalCustomer ? 50 : 0,
-            originalAmount: 0,
+            appliedCoupon: coupon ? coupon.code : null,
+            isLoyaltyDiscount: !!coupon,
+            discountAmount: coupon ? coupon.discountPercent : 0,
+            originalAmount: bookingData.amount || 0,
           });
 
           await newBooking.save();
+          if (coupon) await coupon.save();
           bookingOTPs.delete(userId);
 
-          const message = isLoyalCustomer 
-            ? 'Booking created with 50% loyalty discount (email failed). Please contact support if you did not receive confirmation.'
+          const message = coupon
+            ? `Booking created with 50% coupon ${coupon.code} applied (email failed). Please contact support if you did not receive confirmation.`
             : 'Booking created (email failed). Please contact support if you did not receive confirmation.';
-          
-          console.log('Booking created without email OTP (fallback) for user:', user.email, isLoyalCustomer ? '- Loyalty discount applied' : '');
-          return res.json({ success: true, message, booking: newBooking, loyaltyDiscount: isLoyalCustomer });
+
+          return res.json({ success: true, message, booking: newBooking, loyaltyDiscount: !!coupon });
         } catch (createErr) {
           console.error('Fallback booking creation failed:', createErr);
           return res.status(500).json({ success: false, message: 'Unable to send booking OTP email right now. Please try again.' });
@@ -157,14 +177,22 @@ const verifyBookingOTP = async (req, res) => {
     }
 
     const bookingData = otpData.bookingData;
+    const couponCode = bookingData.couponCode || null;
 
-    // Check if user is eligible for loyalty discount (5+ completed bookings)
-    const completedBookingsCount = await Booking.countDocuments({
-      user: userId,
-      status: 'completed'
-    });
+    let coupon = null;
+    if (couponCode) {
+      try {
+        coupon = await loyaltyService.validateCouponForUser(userId, couponCode);
+      } catch (err) {
+        coupon = null;
+      }
+    }
 
-    const isLoyalCustomer = completedBookingsCount >= 5;
+    if (coupon) {
+      await loyaltyService.applyCouponToBookingData(bookingData, coupon);
+      coupon.status = 'used';
+      coupon.usedAt = new Date();
+    }
 
     const newBooking = new Booking({
       user: userId,
@@ -179,17 +207,18 @@ const verifyBookingOTP = async (req, res) => {
       bookingMode,
       otpVerified: true,
       status: 'pending',
-      appliedCoupon: isLoyalCustomer ? 'LOYAL50' : null,
-      isLoyaltyDiscount: isLoyalCustomer,
-      discountAmount: isLoyalCustomer ? 50 : 0,
-      originalAmount: 0,
+      appliedCoupon: coupon ? coupon.code : null,
+      isLoyaltyDiscount: !!coupon,
+      discountAmount: coupon ? coupon.discountPercent : 0,
+      originalAmount: bookingData.amount || 0,
     });
 
     await newBooking.save();
+    if (coupon) await coupon.save();
     bookingOTPs.delete(userId);
 
-    if (isLoyalCustomer) {
-      console.log(`Loyalty discount (LOYAL50 - 50%) automatically applied for user: ${userId}`);
+    if (coupon) {
+      console.log(`Loyalty coupon ${coupon.code} applied for user: ${userId}`);
     }
 
     if (bookingMode === 'whatsapp') {
@@ -204,21 +233,22 @@ const verifyBookingOTP = async (req, res) => {
         const whatsappLink = WhatsAppService.generateWhatsAppLink(providers[0].whatsappNumber, message);
         return res.json({
           success: true,
-          message: isLoyalCustomer ? 'Booking confirmed with 50% loyalty discount applied!' : 'Booking confirmed!',
+          message: coupon ? `Booking confirmed with 50% coupon ${coupon.code} applied!` : 'Booking confirmed!',
           booking: newBooking,
           whatsappLink,
           redirectToWhatsApp: true,
-          loyaltyDiscount: isLoyalCustomer,
+          loyaltyDiscount: !!coupon,
+          appliedCoupon: coupon ? coupon.code : null,
         });
       }
     }
 
     return res.json({ 
       success: true, 
-      message: isLoyalCustomer ? 'Booking confirmed with 50% loyalty discount applied!' : 'Booking confirmed!', 
+      message: coupon ? `Booking confirmed with 50% coupon ${coupon.code} applied!` : 'Booking confirmed!', 
       booking: newBooking,
-      loyaltyDiscount: isLoyalCustomer,
-      appliedCoupon: isLoyalCustomer ? 'LOYAL50' : null,
+      loyaltyDiscount: !!coupon,
+      appliedCoupon: coupon ? coupon.code : null,
     });
   } catch (error) {
     console.error(error);
