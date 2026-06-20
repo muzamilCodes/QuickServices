@@ -49,7 +49,51 @@ const createBooking = async (req, res) => {
     }
 
     const otp = generateOTP();
+    const amountByServiceType = {
+      plumber: 499,
+      electrician: 499,
+      driver: 399,
+      cleaner: 399,
+      carpenter: 599,
+      painter: 699,
+      mechanic: 499,
+      gardener: 399,
+      ac: 599,
+      tv: 499,
+      laundry: 299,
+      cook: 499,
+      pet: 399,
+      locksmith: 349,
+      computer: 499,
+      wifi: 299,
+      delivery: 199,
+      glass: 449,
+      bathroom: 399,
+      sofa: 499,
+      kitchen: 599,
+      inspection: 399,
+      inverter: 499,
+      tank: 599,
+      polish: 499,
+      appliance: 499,
+      door: 399,
+      moving: 999,
+      pest: 799,
+      cctv: 699,
+      salon: 399,
+      babysitter: 249,
+      eldercare: 299,
+      nurse: 599,
+      tutor: 299,
+      carwash: 349,
+      chimney: 499,
+      waterpurifier: 449,
+    };
+
+    const originalAmount = amountByServiceType[serviceType] ?? 0;
+
     bookingOTPs.set(userId, {
+
       otp,
       expiry: Date.now() + 10 * 60 * 1000,
       bookingData: {
@@ -62,8 +106,11 @@ const createBooking = async (req, res) => {
         preferredTime,
         isEmergency,
         couponCode: req.body.couponCode || null,
+        originalAmount,
+        amount: originalAmount,
       },
     });
+
 
     let emailSent = true;
     try {
@@ -118,8 +165,9 @@ const createBooking = async (req, res) => {
             appliedCoupon: coupon ? coupon.code : null,
             isLoyaltyDiscount: !!coupon,
             discountAmount: coupon ? coupon.discountPercent : 0,
-            originalAmount: bookingData.amount || 0,
+            originalAmount: bookingData.originalAmount || 0,
           });
+
 
           await newBooking.save();
           if (coupon) await coupon.save();
@@ -210,8 +258,12 @@ const verifyBookingOTP = async (req, res) => {
       appliedCoupon: coupon ? coupon.code : null,
       isLoyaltyDiscount: !!coupon,
       discountAmount: coupon ? coupon.discountPercent : 0,
-      originalAmount: bookingData.amount || 0,
+      originalAmount: bookingData.originalAmount || 0,
+
     });
+
+
+
 
     await newBooking.save();
     if (coupon) await coupon.save();

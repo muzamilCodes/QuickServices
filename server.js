@@ -20,11 +20,7 @@ app.use(cookieParser());
 // ✅ CORS with FRONTEND_URL from env
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:5000',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
-  process.env.FRONTEND_URL
+ process.env.FRONTEND_URL
 ].filter(Boolean);
 
 console.log("Allowed origins:", allowedOrigins);
