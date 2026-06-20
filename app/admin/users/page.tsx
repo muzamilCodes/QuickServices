@@ -84,8 +84,8 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ isAdmin: !isAdmin }),
       });
       const data = await res.json();
-      if (data.success) {
-        setUsers(users.map(u => u._id === userId ? {...u, isAdmin: !isAdmin} : u));
+        if (data.success) {
+        setUsers((prev) => (prev || []).map(u => u._id === userId ? {...u, isAdmin: !isAdmin} : u));
         setMessage(`Admin ${isAdmin ? "removed" : "granted"}!`);
       }
     } catch (error) {
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setUsers(users.map(u => u._id === userId ? {...u, isActive: !isActive} : u));
+setUsers((prev) => (prev || []).map(u => u._id === userId ? {...u, isActive: !isActive} : u));
         setMessage(`Account ${isActive ? "deactivated" : "activated"}!`);
       }
     } catch (error) {
@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
       const res = await fetch(`${API_URL}/admin/users/${userId}`, { method: "DELETE", headers: getHeaders() });
       const data = await res.json();
       if (data.success) {
-        setUsers(users.filter(u => u._id !== userId));
+        setUsers((prev) => (prev || []).filter(u => u._id !== userId));
         setMessage("User deleted!");
       }
     } catch (error) {
@@ -153,7 +153,7 @@ export default function AdminUsersPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setUsers(users.map(u => u._id === editModal._id ? {...u, mobile: editForm.mobile, address: { street: editForm.street, city: editForm.city, state: editForm.state, pincode: editForm.pincode }} : u));
+        setUsers((prev) => (prev || []).map(u => u._id === editModal._id ? {...u, mobile: editForm.mobile, address: { street: editForm.street, city: editForm.city, state: editForm.state, pincode: editForm.pincode }} : u));
         setEditModal(null);
         setMessage("User details updated!");
       } else {

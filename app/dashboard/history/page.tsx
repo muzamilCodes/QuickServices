@@ -33,7 +33,7 @@ export default function HistoryPage() {
       const res = await fetch(`${API_URL}/bookings/my-bookings`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      const data = (await res.json()) as { success?: boolean; bookings?: Booking[] };
+      const data = (await res.json()) as { success?: boolean; bookings?: Booking[]; message?: string };
       if (data.success && data.bookings) {
         setBookings(data.bookings);
       } else {

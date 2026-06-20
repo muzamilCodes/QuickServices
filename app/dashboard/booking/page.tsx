@@ -32,6 +32,8 @@ function BookingPageContent() {
   const [backendServices, setBackendServices] = useState<Service[]>([]);
   const [isLoyalCustomer, setIsLoyalCustomer] = useState(false);
   const [bookingCount, setBookingCount] = useState(0);
+  const [loyaltyCouponCode, setLoyaltyCouponCode] = useState<string | null>(null);
+
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -67,21 +69,40 @@ function BookingPageContent() {
     const checkLoyaltyStatus = async () => {
       if (!isAuthenticated) {
         setIsLoyalCustomer(false);
+        setLoyaltyCouponCode(null);
         return;
       }
 
       try {
+        // Get completion count (used for UI messaging)
         const res = await fetch(`${apiUrl}/bookings/my-bookings`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         const data = await res.json();
+
         if (data.success && data.bookings) {
           const completedCount = data.bookings.filter((b: any) => b.status === 'completed').length;
           setBookingCount(completedCount);
           setIsLoyalCustomer(completedCount >= 5);
         }
+
+        // Fetch unused coupon code so we can send it during booking checkout
+        const couponRes = await fetch(`${apiUrl}/loyalty/coupons/me`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        const couponData = await couponRes.json();
+
+        if (couponData.success) {
+          const available = Array.isArray(couponData.availableCoupons)
+            ? couponData.availableCoupons
+            : [];
+          const firstUnused = available[0]?.code ?? null;
+          setLoyaltyCouponCode(firstUnused);
+          setIsLoyalCustomer(Boolean(firstUnused));
+        }
       } catch {
         setIsLoyalCustomer(false);
+        setLoyaltyCouponCode(null);
       }
     };
 
@@ -128,6 +149,8 @@ function BookingPageContent() {
           customerName: form.customerName || user?.username || '',
           customerPhone: form.customerPhone || user?.mobile || '',
           serviceType: serviceId,
+          // Backend uses this to validate + mark coupon as used during OTP verify
+          couponCode: loyaltyCouponCode || null,
           address: {
             fullAddress: form.address,
             city: form.city,
@@ -259,10 +282,15 @@ function BookingPageContent() {
 
           {isLoyalCustomer && (
             <div className="mt-6 rounded-[28px] border border-amber-200 bg-amber-50 p-6">
-              <h3 className="text-lg font-semibold text-amber-900">✨ 50% Loyalty Discount Applied</h3>
+              <h3 className="text-lg font-semibold text-amber-900">✨ 50% Loyalty Discount</h3>
               <p className="mt-2 text-sm text-amber-800">
-                You have completed {bookingCount} bookings! Your 50% loyalty discount (LOYAL50) will be automatically applied to this booking.
+                You have completed {bookingCount} bookings! Your 50% loyalty discount is available for checkout.
               </p>
+
+              <div className="mt-3 text-sm font-medium text-amber-900">
+                Coupon code: {loyaltyCouponCode ?? 'Not available'}
+              </div>
+
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-xl border border-amber-200 bg-white p-3">
                   <p className="text-xs text-slate-600">Original price</p>
@@ -270,11 +298,19 @@ function BookingPageContent() {
                 </div>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                   <p className="text-xs text-emerald-700">After 50% discount</p>
-                  <p className="text-lg font-semibold text-emerald-700">50% off</p>
+                  <p className="text-lg font-semibold text-emerald-700">
+                    {(() => {
+                      const match = service.price.match(/\d+(?:\.\d+)?/);
+                      const original = match ? Number(match[0]) : 0;
+                      const final = Math.round(original * 0.5);
+                      return `₹${final}`;
+                    })()}
+                  </p>
                 </div>
               </div>
             </div>
           )}
+
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <input
