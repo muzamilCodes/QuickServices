@@ -16,7 +16,12 @@ const sendOtpEmail = async (to, subject, html) => {
     await sendEmail(to, subject, html);
     return true;
   } catch (emailError) {
-    console.log("EMAIL ERROR (ignored):", emailError.message);
+    console.log("EMAIL ERROR (ignored):", {
+      message: emailError?.message,
+      code: emailError?.code,
+      response: emailError?.response,
+      stack: emailError?.stack,
+    });
     return false;
   }
 };

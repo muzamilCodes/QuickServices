@@ -21,11 +21,24 @@ const transporter = nodemailer.createTransport({
 });
 
 // Verify transporter connectivity early and log helpful info
+// Note: in Vercel, SMTP can be blocked; verify() can time out. Don't crash app.
 transporter.verify().then(() => {
   console.log('SMTP transporter verified (can send emails).');
 }).catch((err) => {
   console.error('SMTP transporter verification failed:', err && err.message ? err.message : err);
 });
+
+// Optional: shorten SMTP timeouts so failures don't hang request.
+// (Brevo API path will still be attempted when BREVO_API_KEY is set.)
+transporter.options = {
+  ...(transporter.options || {}),
+  connectionTimeout: 8000,
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
+  // Nodemailer uses these internally depending on adapter
+  debug: false,
+};
+
 
 const sendEmail = async (to, subject, html) => {
   // Prefer Brevo HTTP API when API key is provided (more reliable than SMTP).
