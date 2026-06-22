@@ -1,10 +1,16 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Brevo SMTP settings are already in your .env:
-// BREVO_SMTP_HOST / PORT / USER / PASS
+const emailFrom = process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER;
+const emailFromName = process.env.EMAIL_FROM_NAME || 'QuickServices';
 const smtpPort = Number(process.env.BREVO_SMTP_PORT || 587);
 const useSecure = smtpPort === 465 || process.env.BREVO_SMTP_SECURE === 'true';
+const hasSmtpConfig = Boolean(
+  process.env.BREVO_SMTP_HOST &&
+  process.env.BREVO_SMTP_USER &&
+  process.env.BREVO_SMTP_PASS
+);
+const hasBrevoApi = Boolean(process.env.BREVO_API_KEY);
 
 const transporter = nodemailer.createTransport({
   host: process.env.BREVO_SMTP_HOST,
@@ -20,13 +26,17 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify transporter connectivity early and log helpful info
-// Note: in Vercel, SMTP can be blocked; verify() can time out. Don't crash app.
-transporter.verify().then(() => {
-  console.log('SMTP transporter verified (can send emails).');
-}).catch((err) => {
-  console.error('SMTP transporter verification failed:', err && err.message ? err.message : err);
-});
+// Verify transporter connectivity early and log helpful info.
+// In serverless environments, SMTP may be blocked or time out, so this is best-effort only.
+if (hasSmtpConfig) {
+  transporter.verify().then(() => {
+    console.log('SMTP transporter verified (can send emails).');
+  }).catch((err) => {
+    console.error('SMTP transporter verification failed:', err && err.message ? err.message : err);
+  });
+} else {
+  console.warn('SMTP config is incomplete; SMTP fallback will be skipped.');
+}
 
 // Optional: shorten SMTP timeouts so failures don't hang request.
 // (Brevo API path will still be attempted when BREVO_API_KEY is set.)
@@ -41,10 +51,17 @@ transporter.options = {
 
 
 const sendEmail = async (to, subject, html) => {
-  // Prefer Brevo HTTP API when API key is provided (more reliable than SMTP).
-  // Some Node environments (older Node versions) don't provide a global `fetch`.
-  // Avoid attempting the API call if `fetch` is unavailable to prevent crashes.
-  if (process.env.BREVO_API_KEY && typeof fetch === 'function') {
+  if (!to) {
+    throw new Error('Missing recipient email address');
+  }
+
+  if (!emailFrom) {
+    throw new Error('Missing EMAIL_FROM or BREVO_SMTP_USER sender address');
+  }
+
+  // Prefer Brevo HTTP API when API key is provided.
+  // This is more reliable than SMTP on Vercel/serverless deployments.
+  if (hasBrevoApi && typeof fetch === 'function') {
     try {
       const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
@@ -54,7 +71,7 @@ const sendEmail = async (to, subject, html) => {
           'api-key': process.env.BREVO_API_KEY,
         },
         body: JSON.stringify({
-          sender: { email: process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER, name: process.env.EMAIL_FROM_NAME || 'QuickServices' },
+          sender: { email: emailFrom, name: emailFromName },
           to: [{ email: to }],
           subject,
           htmlContent: html,
@@ -73,12 +90,16 @@ const sendEmail = async (to, subject, html) => {
       console.error('Brevo API error:', err && err.message ? err.message : err);
       // fall through to SMTP fallback
     }
-  } else if (process.env.BREVO_API_KEY && typeof fetch !== 'function') {
+  } else if (hasBrevoApi && typeof fetch !== 'function') {
     console.warn('BREVO_API_KEY set but global fetch is unavailable; skipping Brevo HTTP API and falling back to SMTP.');
   }
 
+  if (!hasSmtpConfig) {
+    throw new Error('SMTP config missing and Brevo API unavailable');
+  }
+
   const msg = {
-    from: process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER,
+    from: `${emailFromName} <${emailFrom}>`,
     to,
     subject,
     html,
@@ -100,4 +121,3 @@ const sendEmail = async (to, subject, html) => {
 };
 
 module.exports = sendEmail;
-
