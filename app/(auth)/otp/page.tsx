@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Mail, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 export default function OTPPage() {
   const router = useRouter();
@@ -34,20 +35,20 @@ export default function OTPPage() {
     }
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/user/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), otp: cleanOtp }),
       });
-      let data: any = null;
+      let data: { success?: boolean; message?: string; token?: string; user?: unknown } | null = null;
       try {
         data = await res.json();
       } catch {
         // ignore
       }
 
-      if (data?.success) {
+      if (data?.success && data.token && data.user) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("verifyEmail");
@@ -56,7 +57,7 @@ export default function OTPPage() {
         toast.success("Verified successfully!");
         router.push("/");
       } else {
-        toast.error(data.message || "Invalid OTP");
+        toast.error(data?.message || "Invalid OTP");
       }
     } catch {
       toast.error("Network error");
@@ -67,7 +68,7 @@ export default function OTPPage() {
 
   const handleResend = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/user/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

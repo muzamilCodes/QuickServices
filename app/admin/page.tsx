@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { BadgeCheck, BriefcaseBusiness, CalendarDays, CircleAlert, ClipboardList, RefreshCw, ShieldCheck, UsersRound } from 'lucide-react';
 import { servicesById } from '@/lib/services';
 import { useAuthStore } from '@/store/authStore';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 interface AdminStats {
   totalUsers: number;
@@ -53,7 +54,7 @@ interface UserRow {
   createdAt?: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = getApiBaseUrl();
 
 const statCards = [
   { key: 'totalUsers', label: 'Users', icon: UsersRound },

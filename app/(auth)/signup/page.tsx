@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, Lock, Mail, User, Phone, Upload, Camera, X, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -62,7 +63,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const apiUrl = getApiBaseUrl();
       const formDataToSend = new FormData();
       formDataToSend.append("username", formData.username);
       formDataToSend.append("email", formData.email);

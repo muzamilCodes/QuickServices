@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Edit3, Trash2, Loader2, Save, Shield, Phone, MapPin, X } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 interface Address {
   street?: string;
@@ -34,7 +35,7 @@ export default function AdminUsersPage() {
   const [editModal, setEditModal] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ mobile: "", street: "", city: "", state: "", pincode: "" });
 
-  const API_URL = "http://localhost:4000";
+  const API_URL = getApiBaseUrl();
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,

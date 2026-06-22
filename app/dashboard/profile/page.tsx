@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CircleCheckBig, Mail, PencilLine, Phone, UserRound } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function ProfilePage() {
     e.preventDefault();
 
     try {
-      const res = await fetch('http://localhost:4000/user/update-profile', {
+      const res = await fetch(`${getApiBaseUrl()}/user/update-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

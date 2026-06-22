@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 export default function AdminContactsPage() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function AdminContactsPage() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [message, setMessage] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = getApiBaseUrl();
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem('token')}`,

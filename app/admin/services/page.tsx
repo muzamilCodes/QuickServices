@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Edit3, Trash2, Loader2, Save } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 interface Service {
   _id?: string;
@@ -36,7 +37,7 @@ export default function AdminServicesPage() {
   });
   const [message, setMessage] = useState("");
 
-  const API_URL = "http://localhost:4000";
+  const API_URL = getApiBaseUrl();
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,

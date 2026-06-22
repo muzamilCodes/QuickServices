@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, XCircle, Edit3, Trash2, Loader2, Save, Phone, MapPin, Star } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 interface Provider {
   _id: string;
@@ -27,7 +28,7 @@ export default function AdminProvidersPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterApproved, setFilterApproved] = useState("all");
 
-  const API_URL = "http://localhost:4000";
+  const API_URL = getApiBaseUrl();
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, MapPin, Search, Filter, User, Phone, Loader2, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { servicesById } from "@/lib/services";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 interface Booking {
   _id: string;
@@ -46,7 +47,7 @@ export default function AdminBookingsPage() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
 
-  const API_URL = "http://localhost:4000";
+  const API_URL = getApiBaseUrl();
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,

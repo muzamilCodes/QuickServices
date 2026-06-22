@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, CalendarDays, MapPin, Star, Trash2, XCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { servicesById } from '@/lib/services';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 interface Booking {
   _id: string;
@@ -20,7 +21,7 @@ interface Booking {
 }
 
 export default function HistoryPage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = getApiBaseUrl();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);

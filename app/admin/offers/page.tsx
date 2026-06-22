@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Edit3, Trash2, Loader2, Save, BadgePercent } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 interface Offer {
   _id?: string;
@@ -38,7 +39,7 @@ export default function AdminOffersPage() {
   const [offerForm, setOfferForm] = useState<Offer>(defaultOffer);
   const [message, setMessage] = useState("");
 
-  const API_URL = "http://localhost:4000";
+  const API_URL = getApiBaseUrl();
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,

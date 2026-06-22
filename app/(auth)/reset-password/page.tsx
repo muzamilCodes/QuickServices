@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function ResetPasswordPage() {
     }
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const apiUrl = getApiBaseUrl();
       // ✅ Use separate endpoint for reset OTP (doesn't check isVerified)
       const verifyRes = await fetch(`${apiUrl}/user/verify-reset-otp`, {
         method: "POST",

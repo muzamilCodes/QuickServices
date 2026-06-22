@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock3, IndianRupee, MapPin, ShieldCheck, Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { servicesById } from '@/lib/services';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 interface Service {
   _id?: string;
@@ -35,7 +36,7 @@ function BookingPageContent() {
   const [loyaltyCouponCode, setLoyaltyCouponCode] = useState<string | null>(null);
 
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const apiUrl = getApiBaseUrl();
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -137,7 +138,7 @@ function BookingPageContent() {
     setMessage('');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/bookings/create`, {
         method: 'POST',
         headers: {
@@ -195,7 +196,7 @@ function BookingPageContent() {
     setMessage('');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/bookings/verify-otp`, {
         method: 'POST',
         headers: {

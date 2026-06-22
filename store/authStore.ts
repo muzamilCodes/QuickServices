@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 interface User {
   _id: string;
@@ -34,7 +35,7 @@ interface AuthState {
   checkAuth: () => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = getApiBaseUrl();
 
 const parseStoredUser = (): User | null => {
   if (typeof window === 'undefined') {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, ArrowLeft, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiBaseUrl } from "@/lib/apiBase";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function ForgotPasswordPage() {
     }
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/user/forgot-pass`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

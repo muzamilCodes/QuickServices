@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Mail, MapPin, MessageSquareText, Phone, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 import { Suspense } from 'react';
 
@@ -37,7 +38,7 @@ function ContactPageInner() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/public/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,4 +127,3 @@ export default function ContactPage() {
     </Suspense>
   );
 }
-

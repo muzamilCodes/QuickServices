@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowRight, BadgePercent, Clock3, Sparkles, Star, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 interface Offer {
   _id: string;
@@ -28,7 +29,7 @@ const defaultOffers: Offer[] = [
 ];
 
 export default function OffersPage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = getApiBaseUrl();
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const [offers, setOffers] = useState<Offer[]>([]);
