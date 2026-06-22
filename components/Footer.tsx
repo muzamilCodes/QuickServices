@@ -9,7 +9,8 @@ const footerGroups = [
     links: [
       { name: 'Home', href: '/' },
       { name: 'Services', href: '/services' },
-      { name: 'Offers', href: '/offers' },
+      { name: 'Highlights', href: '/offers' },
+      { name: 'Benefits', href: '/benefits' },
       { name: 'About', href: '/about' },
       { name: 'Contact', href: '/contact' },
       { name: 'Bookings', href: '/history' },
@@ -22,7 +23,8 @@ const footerGroups = [
       { name: 'Become a Provider', href: '/providers' },
       { name: 'Contact', href: '/contact' },
       { name: 'Support', href: '/contact' },
-      { name: 'Service Offers', href: '/offers' },
+      { name: 'Service Highlights', href: '/offers' },
+      { name: 'Benefits', href: '/benefits' },
     ],
   },
   {

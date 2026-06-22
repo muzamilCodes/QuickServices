@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { BadgePercent, BriefcaseBusiness, CircleUserRound, House, Info, Menu, MessageSquareText, ReceiptText, Wrench, X } from 'lucide-react';
+import { BadgePercent, BriefcaseBusiness, CircleUserRound, House, Info, Menu, MessageSquareText, ReceiptText, ShieldCheck, Sparkles, Wrench, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 const navLinks = [
   { name: 'Home', href: '/', icon: House },
   { name: 'Services', href: '/services', icon: Wrench },
-  { name: 'Offers', href: '/offers', icon: BadgePercent },
+  { name: 'Highlights', href: '/offers', icon: Sparkles },
+  { name: 'Benefits', href: '/benefits', icon: ShieldCheck },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: MessageSquareText },
   { name: 'Bookings', href: '/history', icon: ReceiptText },

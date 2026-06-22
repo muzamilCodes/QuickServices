@@ -10,7 +10,6 @@ import { useAuthStore } from '@/store/authStore';
 const authRoutes = new Set([
   '/login',
   '/register',
-  '/signup',
   '/otp',
   '/forgot-password',
   '/reset-password',
