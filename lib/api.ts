@@ -64,7 +64,7 @@ export const authAPI = {
     
     // Verify OTP after registration
     verifyOTP: (data: { email: string; otp: string }) =>
-        api.post<LoginResponse>('/auth/verify-otp', data),
+        api.post<LoginResponse>('/user/verify-otp', data),
     
     // Login with password
     login: (data: { email: string; password: string }) =>
