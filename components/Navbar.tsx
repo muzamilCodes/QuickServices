@@ -3,18 +3,31 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { BadgePercent, BriefcaseBusiness, CircleUserRound, House, Info, Menu, MessageSquareText, ReceiptText, ShieldCheck, Sparkles, Wrench, X } from 'lucide-react';
+import { 
+  BriefcaseBusiness, 
+  CircleUserRound, 
+  House, 
+  Info, 
+  Menu, 
+  MessageSquareText, 
+  ReceiptText, 
+  ShieldCheck, 
+  Sparkles, 
+  Wrench, 
+  X,
+  LogOut,
+  LayoutDashboard,
+  ShieldAlert
+} from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
-const navLinks = [
+const mainNavLinks = [
   { name: 'Home', href: '/', icon: House },
   { name: 'Services', href: '/services', icon: Wrench },
   { name: 'Highlights', href: '/offers', icon: Sparkles },
   { name: 'Benefits', href: '/benefits', icon: ShieldCheck },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: MessageSquareText },
-  { name: 'Bookings', href: '/history', icon: ReceiptText },
-  { name: 'Profile', href: '/profile', icon: CircleUserRound },
 ];
 
 export default function Navbar() {
@@ -25,7 +38,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => setScrolled(window.scrollY > 15);
     onScroll();
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
@@ -43,83 +56,114 @@ export default function Navbar() {
   };
 
   return (
-    <nav
+    <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'border-b border-black/5 bg-white/90 shadow-sm backdrop-blur-xl' : 'bg-transparent'
+        scrolled
+          ? 'bg-white/95 shadow-md shadow-slate-200/50 backdrop-blur-xl border-b border-slate-200/80 py-2.5'
+          : 'bg-white/90 shadow-sm backdrop-blur-lg border-b border-slate-200/60 py-3.5'
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] text-white shadow-lg shadow-blue-200/60">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] text-white shadow-md shadow-blue-500/20 transition group-hover:scale-105">
             <BriefcaseBusiness className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-lg font-semibold text-slate-900">QuickServices</p>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Home support, faster</p>
+          <div className="flex flex-col">
+            <span className="text-lg font-extrabold tracking-tight text-slate-950 leading-none">
+              Quick<span className="text-blue-600">Services</span>
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-slate-400 mt-0.5">
+              Home Support, Faster
+            </span>
           </div>
         </Link>
 
-        <div className="hidden items-center gap-2 rounded-full border border-black/5 bg-white/70 p-1.5 shadow-sm backdrop-blur md:flex">
-          {navLinks.map(({ name, href, icon: Icon }) => {
+        {/* Center Pill Navigation (Desktop) */}
+        <nav className="hidden xl:flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-50/80 p-1.5 shadow-inner backdrop-blur">
+          {mainNavLinks.map(({ name, href, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
                 key={name}
                 href={href}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
+                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
                   active
-                    ? 'border border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:bg-orange-50 hover:text-orange-700'
+                    ? 'border border-blue-200 bg-white text-blue-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-white/60'
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
                 <span>{name}</span>
               </Link>
             );
           })}
-        </div>
+          {isAuthenticated && (
+            <Link
+              href="/dashboard/history"
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
+                pathname === '/dashboard/history'
+                  ? 'border border-blue-200 bg-white text-blue-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-950 hover:bg-white/60'
+              }`}
+            >
+              <ReceiptText className="h-3.5 w-3.5" />
+              <span>Bookings</span>
+            </Link>
+          )}
+        </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        {/* Right Action Buttons (Desktop & Tablet) */}
+        <div className="hidden lg:flex items-center gap-2.5 shrink-0">
           {isAuthenticated ? (
             <>
-              <div className="rounded-full border border-black/5 bg-white/75 px-4 py-2 text-sm text-slate-700 shadow-sm">
-                {user?.username || 'User'}
+              {/* User Greeting Pill */}
+              <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/80 px-3.5 py-1.5 text-xs font-bold text-slate-800">
+                <CircleUserRound className="h-3.5 w-3.5 text-blue-600" />
+                <span className="max-w-[120px] truncate">{user?.username || 'Account'}</span>
               </div>
-              <button
-                onClick={goToDashboard}
-                className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Dashboard
-              </button>
+
+              {/* Admin Panel Button */}
               {user?.isAdmin && (
                 <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    router.push('/admin');
-                  }}
-                  className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-95 shadow-sm"
+                  onClick={() => router.push('/admin')}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-95"
                 >
-                  Admin Panel
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                  Admin
                 </button>
               )}
+
+              {/* Dashboard Button */}
+              <button
+                onClick={goToDashboard}
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Dashboard
+              </button>
+
+              {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition"
+                title="Logout"
               >
-                Logout
+                <LogOut className="h-3.5 w-3.5" />
               </button>
             </>
           ) : (
             <>
               <button
                 onClick={() => router.push('/login')}
-                className="rounded-full px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white/80"
+                className="rounded-full px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
               >
                 Login
               </button>
               <button
                 onClick={() => router.push('/register')}
-                className="rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-200/70 transition hover:translate-y-[-1px]"
+                className="rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:opacity-95 hover:shadow-lg active:scale-95"
               >
                 Get Started
               </button>
@@ -127,29 +171,32 @@ export default function Navbar() {
           )}
         </div>
 
+        {/* Mobile / Tablet Hamburger Button */}
         <button
-          onClick={() => setMobileMenuOpen((current) => !current)}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-black/5 bg-white/80 text-slate-700 shadow-sm backdrop-blur md:hidden"
-          aria-label="Toggle menu"
+          onClick={() => setMobileMenuOpen((curr) => !curr)}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 lg:hidden"
+          aria-label="Toggle navigation menu"
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
+
       </div>
 
+      {/* Mobile Slide-Down Drawer */}
       {mobileMenuOpen && (
-        <div className="border-t border-black/5 bg-white/95 px-4 pb-5 pt-3 shadow-lg backdrop-blur md:hidden">
-          <div className="space-y-2">
-            {navLinks.map(({ name, href, icon: Icon }) => {
+        <div className="border-t border-slate-100 bg-white/95 px-4 pb-6 pt-3 shadow-xl backdrop-blur-xl lg:hidden max-h-[85vh] overflow-y-auto">
+          <div className="space-y-1.5">
+            {mainNavLinks.map(({ name, href, icon: Icon }) => {
               const active = pathname === href;
               return (
                 <Link
                   key={name}
                   href={href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm ${
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                     active
                       ? 'border border-blue-200 bg-blue-50 text-blue-700'
-                      : 'bg-slate-50 text-slate-700'
+                      : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -157,32 +204,53 @@ export default function Navbar() {
                 </Link>
               );
             })}
+
+            {isAuthenticated && (
+              <Link
+                href="/dashboard/history"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                  pathname === '/dashboard/history'
+                    ? 'border border-blue-200 bg-blue-50 text-blue-700'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <ReceiptText className="h-4 w-4" />
+                <span>My Bookings</span>
+              </Link>
+            )}
           </div>
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 border-t border-slate-100 pt-4 space-y-2">
             {isAuthenticated ? (
               <>
-                <button
-                  onClick={goToDashboard}
-                  className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white"
-                >
-                  Open Dashboard
-                </button>
+                <div className="mb-2 px-2 text-xs font-medium text-slate-500">
+                  Signed in as <span className="font-bold text-slate-900">{user?.username}</span>
+                </div>
                 {user?.isAdmin && (
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
                       router.push('/admin');
                     }}
-                    className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 px-4 py-3 text-sm font-medium text-white shadow-sm"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 py-3 text-xs font-bold text-white shadow-sm"
                   >
-                    Admin Panel
+                    <ShieldAlert className="h-4 w-4" />
+                    Admin Dashboard
                   </button>
                 )}
                 <button
-                  onClick={handleLogout}
-                  className="w-full rounded-2xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600"
+                  onClick={goToDashboard}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3 text-xs font-bold text-white shadow-sm hover:bg-slate-800"
                 >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Open User Dashboard
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                >
+                  <LogOut className="h-4 w-4" />
                   Logout
                 </button>
               </>
@@ -193,7 +261,7 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                     router.push('/login');
                   }}
-                  className="w-full rounded-2xl border border-black/5 px-4 py-3 text-sm font-medium text-slate-700"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 text-xs font-bold text-slate-700 hover:bg-slate-100"
                 >
                   Login
                 </button>
@@ -202,7 +270,7 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                     router.push('/register');
                   }}
-                  className="w-full rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-4 py-3 text-sm font-medium text-white"
+                  className="w-full rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] py-3 text-xs font-bold text-white shadow-md shadow-blue-500/20"
                 >
                   Get Started
                 </button>
@@ -211,6 +279,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 }
