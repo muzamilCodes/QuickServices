@@ -13,6 +13,13 @@ interface Booking {
   status: string;
   createdAt: string;
   description?: string;
+  customerPhone?: string;
+  customerName?: string;
+  provider?: {
+    name: string;
+    phone: string;
+    whatsappNumber?: string;
+  };
   address?: {
     fullAddress?: string;
     city?: string;
@@ -225,15 +232,33 @@ export default function HistoryPage() {
                             </p>
                           )}
                         </div>
+
+                        {booking.provider && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-blue-50/80 px-3.5 py-2 text-xs text-blue-900 border border-blue-100">
+                            <span className="font-semibold text-slate-700">Specialist:</span>
+                            <span className="font-bold text-slate-900">{booking.provider.name}</span>
+                            <span className="text-slate-300">•</span>
+                            <a
+                              href={`tel:${booking.provider.phone}`}
+                              className="inline-flex items-center gap-1 font-mono font-bold text-blue-700 hover:text-blue-900 hover:underline"
+                            >
+                              📞 {booking.provider.phone}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-<div className="flex flex-wrap gap-3 lg:justify-end">
+                    <div className="flex flex-wrap gap-3 lg:justify-end">
                       <button
                         onClick={() => router.push(`/dashboard/booking/${booking._id}`)}
-                        className="inline-flex items-center gap-2 self-start rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-600"
+                        className="inline-flex items-center gap-2 self-start rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                       >
-                        View Details
+                        <span className="relative flex h-2 w-2">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                        </span>
+                        Track Live Status
                       </button>
                       {booking.status === 'pending' && (
                         <button

@@ -180,6 +180,24 @@ export default function AdminPage() {
     return <div className="flex min-h-screen items-center justify-center text-slate-500">Loading admin dashboard...</div>;
   }
 
+  const claimAdminAccess = async () => {
+    try {
+      const res = await fetch(`${API_URL}/user/init-first-admin`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success && data.payload) {
+        localStorage.setItem('user', JSON.stringify(data.payload));
+        void loadAdminData();
+      } else {
+        setMessage(data.message || 'Could not initialize admin.');
+      }
+    } catch {
+      setMessage('Error connecting to backend.');
+    }
+  };
+
   if (!authorized) {
     return (
       <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
@@ -191,12 +209,20 @@ export default function AdminPage() {
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
             {message || 'Your account is logged in, but it is not marked as admin yet.'}
           </p>
-          <button
-            onClick={() => router.push('/')}
-            className="mt-6 rounded-full bg-blue-700 px-5 py-3 text-sm font-medium text-white"
-          >
-            Go home
-          </button>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <button
+              onClick={claimAdminAccess}
+              className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-3 text-sm font-medium text-white shadow-md hover:opacity-95"
+            >
+              Activate Admin Access
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="rounded-full border border-slate-300 px-6 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Go home
+            </button>
+          </div>
         </div>
       </div>
     );

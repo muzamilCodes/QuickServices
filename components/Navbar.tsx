@@ -91,6 +91,17 @@ export default function Navbar() {
               >
                 Dashboard
               </button>
+              {user?.isAdmin && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    router.push('/admin');
+                  }}
+                  className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-95 shadow-sm"
+                >
+                  Admin Panel
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
@@ -157,6 +168,17 @@ export default function Navbar() {
                 >
                   Open Dashboard
                 </button>
+                {user?.isAdmin && (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      router.push('/admin');
+                    }}
+                    className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 px-4 py-3 text-sm font-medium text-white shadow-sm"
+                  >
+                    Admin Panel
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="w-full rounded-2xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600"
