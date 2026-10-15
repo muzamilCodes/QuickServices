@@ -14,9 +14,7 @@ const connectDb = async () => {
         console.log(`✅ MongoDB Connected: ${conn.connection.host} / ${conn.connection.name}`);
     } catch (error) {
         console.error(`❌ MongoDB Error: ${error.message}`);
-        if (process.env.NODE_ENV !== 'production') {
-            process.exit(1);
-        }
+        console.warn('⚠️ Server will stay running. Please verify MONGO_URI credentials.');
     }
 };
 
