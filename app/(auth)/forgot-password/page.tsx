@@ -21,16 +21,22 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       const apiUrl = getApiBaseUrl();
+      const cleanEmail = email.trim().toLowerCase();
       const res = await fetch(`${apiUrl}/user/forgot-pass`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: cleanEmail }),
       });
       const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem("resetEmail", email);
-        toast.success("OTP sent to your email!");
-        // ✅ FIX: redirect to /reset-password (not /auth/reset-password)
+      if (res.ok && data.success) {
+        localStorage.setItem("resetEmail", cleanEmail);
+        if (data.devOtp) {
+          localStorage.setItem("devResetOtp", data.devOtp);
+          toast.error("Email delivery failed. OTP is shown on the next page.");
+        } else {
+          localStorage.removeItem("devResetOtp");
+          toast.success("OTP sent to your email!");
+        }
         router.push("/reset-password");
       } else {
         toast.error(data.message || "User not found");

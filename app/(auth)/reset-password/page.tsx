@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Lock, Eye, EyeOff, Loader2, AlertCircle, KeyRound } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiBaseUrl } from "@/lib/apiBase";
 
@@ -16,6 +16,9 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [email] = useState(() =>
     typeof window !== "undefined" ? localStorage.getItem("resetEmail") || "" : ""
+  );
+  const [devOtp] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("devResetOtp") || "" : ""
   );
 
   useEffect(() => {
@@ -42,11 +45,12 @@ export default function ResetPasswordPage() {
     setLoading(true);
     try {
       const apiUrl = getApiBaseUrl();
-      // ✅ Use separate endpoint for reset OTP (doesn't check isVerified)
+      const cleanEmail = email.trim().toLowerCase();
+      // Verify reset OTP
       const verifyRes = await fetch(`${apiUrl}/user/verify-reset-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
+        body: JSON.stringify({ email: cleanEmail, otp }),
       });
       const verifyData = await verifyRes.json();
       if (!verifyData.success) {
@@ -58,11 +62,12 @@ export default function ResetPasswordPage() {
       const resetRes = await fetch(`${apiUrl}/user/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, newPassword }),
+        body: JSON.stringify({ email: cleanEmail, newPassword }),
       });
       const resetData = await resetRes.json();
       if (resetData.success) {
         localStorage.removeItem("resetEmail");
+        localStorage.removeItem("devResetOtp");
         toast.success("Password reset successfully! Please login.");
         router.push("/login");
       } else {
@@ -87,14 +92,32 @@ export default function ResetPasswordPage() {
               We&apos;ve sent a 6-digit OTP to <strong>{email}</strong>
             </p>
 
-            {/* ✅ Spam folder warning */}
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-yellow-800">
-                <p className="font-semibold">Email not received?</p>
-                <p>Please check your <strong>Spam / Junk folder</strong>. Sometimes emails land there.</p>
+            {/* Dev OTP fallback */}
+            {devOtp && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <KeyRound className="w-4 h-4 text-amber-600" />
+                  <span className="font-semibold">Reset OTP:</span>
+                </div>
+                <p className="text-xl font-mono font-bold tracking-widest text-center my-1 bg-white p-2 rounded border border-amber-200">
+                  {devOtp}
+                </p>
+                <p className="text-xs text-amber-700 text-center">
+                  Email service unavailable; use the code above to reset.
+                </p>
               </div>
-            </div>
+            )}
+
+            {/* Spam folder warning */}
+            {!devOtp && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-800">
+                  <p className="font-semibold">Email not received?</p>
+                  <p>Please check your <strong>Spam / Junk folder</strong>. Sometimes emails land there.</p>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
