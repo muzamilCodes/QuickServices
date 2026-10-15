@@ -107,8 +107,8 @@ exports.getAllBookings = async (req, res) => {
         if (status) query.status = status;
 
         const bookings = await Booking.find(query)
-            .populate('user', 'username email')
-            .populate('provider', 'name phone')
+            .populate('user', 'username email mobile')
+            .populate('provider', 'name phone whatsappNumber')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
@@ -373,7 +373,8 @@ exports.getDashboardStats = async (req, res) => {
 
         // Recent bookings
         const recentBookings = await Booking.find()
-            .populate('user', 'username')
+            .populate('user', 'username email mobile')
+            .populate('provider', 'name phone whatsappNumber')
             .sort({ createdAt: -1 })
             .limit(5);
         // recent contacts count (for quick overview)
