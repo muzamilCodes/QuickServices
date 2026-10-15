@@ -67,20 +67,24 @@ router.post('/contact', async (req, res) => {
             // continue to attempt to send email even if DB save fails
         }
 
-        // Send notification email
-        await sendEmail(
-            process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER,
-            `QuickServices Contact: ${topic || 'General support'}`,
-            `
-                <h2>New contact message</h2>
-                <p><strong>Name:</strong> ${name}</p>
-                <p><strong>Phone:</strong> ${phone}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Topic:</strong> ${topic || 'General support'}</p>
-                <p><strong>Message:</strong></p>
-                <p>${message}</p>
-            `
-        );
+        // Send notification email (best effort)
+        try {
+            await sendEmail(
+                process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER,
+                `QuickServices Contact: ${topic || 'General support'}`,
+                `
+                    <h2>New contact message</h2>
+                    <p><strong>Name:</strong> ${name}</p>
+                    <p><strong>Phone:</strong> ${phone}</p>
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Topic:</strong> ${topic || 'General support'}</p>
+                    <p><strong>Message:</strong></p>
+                    <p>${message}</p>
+                `
+            );
+        } catch (mailErr) {
+            console.warn('Contact email notification skipped or failed:', mailErr?.message || mailErr);
+        }
 
         res.json({ success: true, message: 'Message sent successfully' });
     } catch (error) {

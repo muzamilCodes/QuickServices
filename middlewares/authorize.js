@@ -5,19 +5,22 @@ require("dotenv").config();
 
 const authorize = (req, res, next) => {
   try {
+    if (req.userId) {
+      return next();
+    }
+
     let token;
     
-    // Get token from Authorization header
+    // Get token from Authorization header or cookies
     const authHeader = req.headers.authorization;
-    console.log("Auth header:", authHeader);
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
-      console.log("Token extracted");
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
     
     if (!token) {
-      console.log("No token found");
       return res.status(401).json({ 
         success: false, 
         message: "Unauthorized - No token provided" 

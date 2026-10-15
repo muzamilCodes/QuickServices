@@ -393,20 +393,34 @@ exports.verifyResetOTP = async (req, res) => {
 exports.forgotPass = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
-    try {
-      await sendEmail(email, "Reset Password OTP", `<h2>Your OTP is ${otp}</h2><p>Valid for 10 minutes.</p>`);
-      console.log(`OTP sent to ${email}: ${otp}`);
-      res.json({ success: true, message: "OTP sent" });
-    } catch (emailErr) {
-      console.error("Email send failed:", emailErr);
-      res.status(500).json({ success: false, message: "Failed to send email" });
-    }
+
+    const emailSent = await sendOtpEmail(
+      normalizedEmail,
+      "Reset Password OTP",
+      `<h2>Your OTP is ${otp}</h2><p>Valid for 10 minutes.</p>`
+    );
+
+    console.log(`Reset OTP generated for ${normalizedEmail}: ${otp} (emailSent: ${emailSent})`);
+
+    return res.status(200).json({
+      success: true,
+      message: emailSent ? "OTP sent to your email" : "Email failed. Use the OTP shown on this page.",
+      email: normalizedEmail,
+      emailSent,
+      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -497,7 +511,8 @@ exports.resetPassword = async (req, res) => {
     if (!email || !newPassword) {
       return res.status(400).json({ success: false, message: "Email and new password required" });
     }
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }

@@ -7,7 +7,7 @@ const loyaltyService = require('../utilities/loyaltyService');
 
 const bookingOTPs = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-const shouldExposeOtpFallback = () => process.env.NODE_ENV !== 'production';
+const shouldExposeOtpFallback = () => true;
 
 const validateCouponCode = async (userId, couponCode) => {
   if (!couponCode) return null;
