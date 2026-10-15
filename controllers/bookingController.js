@@ -1,7 +1,7 @@
 const Booking = require('../models/Booking');
 const Provider = require('../models/Provider');
 const { User } = require('../models/userModel');
-const sendEmail = require('../utilities/emailService');
+const { sendEmail, generateBookingTemplate } = require('../utilities/emailService');
 const WhatsAppService = require('../services/whatsappService');
 const loyaltyService = require('../utilities/loyaltyService');
 
@@ -242,8 +242,15 @@ const verifyBookingOTP = async (req, res) => {
       coupon.usedAt = new Date();
     }
 
+    // Check for an approved provider for this service
+    const matchedProvider = await Provider.findOne({
+      services: bookingData.serviceType,
+      isApproved: true,
+    });
+
     const newBooking = new Booking({
       user: userId,
+      provider: matchedProvider ? matchedProvider._id : undefined,
       serviceType: bookingData.serviceType,
       customerName: bookingData.customerName,
       customerPhone: bookingData.customerPhone,
@@ -254,20 +261,46 @@ const verifyBookingOTP = async (req, res) => {
       isEmergency: bookingData.isEmergency,
       bookingMode,
       otpVerified: true,
-      status: 'pending',
+      status: matchedProvider ? 'accepted' : 'pending',
       appliedCoupon: coupon ? coupon.code : null,
       isLoyaltyDiscount: !!coupon,
       discountAmount: coupon ? coupon.discountPercent : 0,
       originalAmount: bookingData.originalAmount || 0,
-
+      amount: bookingData.amount || bookingData.originalAmount || 0,
     });
-
-
-
 
     await newBooking.save();
     if (coupon) await coupon.save();
     bookingOTPs.delete(userId);
+
+    if (newBooking.provider) {
+      await newBooking.populate('provider', 'name phone whatsappNumber');
+    }
+
+    // Send Confirmation Emails to Customer & Admin
+    try {
+      const user = await User.findById(userId).select('email username');
+      if (user && user.email) {
+        const { html: custHtml, text: custText } = generateBookingTemplate(newBooking, false);
+        await sendEmail(
+          user.email,
+          `QuickServices: Booking Confirmed (#${newBooking._id.toString().slice(-6)})`,
+          custHtml,
+          custText
+        );
+      }
+
+      const adminEmail = process.env.EMAIL_FROM || 'warmuzamil113@gmail.com';
+      const { html: adminHtml, text: adminText } = generateBookingTemplate(newBooking, true);
+      await sendEmail(
+        adminEmail,
+        `🔔 New Booking: ${newBooking.customerName} - ${newBooking.serviceType.toUpperCase()}`,
+        adminHtml,
+        adminText
+      );
+    } catch (mailErr) {
+      console.warn('Booking email dispatch skipped/failed:', mailErr?.message || mailErr);
+    }
 
     if (coupon) {
       console.log(`Loyalty coupon ${coupon.code} applied for user: ${userId}`);
@@ -311,7 +344,9 @@ const verifyBookingOTP = async (req, res) => {
 const getMyBookings = async (req, res) => {
   try {
     const userId = req.userId;
-    const bookings = await Booking.find({ user: userId }).sort({ createdAt: -1 });
+    const bookings = await Booking.find({ user: userId })
+      .populate('provider', 'name phone whatsappNumber')
+      .sort({ createdAt: -1 });
     return res.json({ success: true, bookings });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -358,8 +393,8 @@ const getBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const booking = await Booking.findOne({ _id: bookingId, user: req.userId })
-      .populate('user', 'username email')
-      .populate('provider', 'name phone');
+      .populate('user', 'username email mobile')
+      .populate('provider', 'name phone whatsappNumber');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });

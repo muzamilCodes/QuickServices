@@ -1,27 +1,20 @@
 const { User } = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const sendEmail = require("../utilities/emailService");
-require("dotenv").config();
-
-// all exports.register, login, updateProfile, etc...
+const { sendEmail, generateOtpTemplate } = require("../utilities/emailService");
 
 // Production me bhi OTP show karna hai (jab email fail ho jaye)
 // So expose flag ko production == true me bhi allow kar rahe hain.
 const shouldExposeOtpFallback = () => true;
 
-// Email send success/failure return kare; OTP response me fallback ho jayega.
-const sendOtpEmail = async (to, subject, html) => {
+// Email send success/failure return kare
+const sendOtpEmail = async (to, subject, otp, title) => {
   try {
-    await sendEmail(to, subject, html);
+    const { html, text } = generateOtpTemplate(otp, title);
+    await sendEmail(to, subject, html, text);
     return true;
   } catch (emailError) {
-    console.log("EMAIL ERROR (ignored):", {
-      message: emailError?.message,
-      code: emailError?.code,
-      response: emailError?.response,
-      stack: emailError?.stack,
-    });
+    console.error("EMAIL ERROR:", emailError?.message || emailError);
     return false;
   }
 };
@@ -80,10 +73,9 @@ exports.register = async (req, res) => {
 
       const emailSent = await sendOtpEmail(
         normalizedEmail,
-        "Your OTP Verification Code",
-        `<h2>Your OTP is ${otp}</h2>
-   <p>Valid for 10 minutes.</p>
-   <p><strong>⚠️ If you don't see the email in your inbox, please check your Spam/Junk folder in your email client.</strong></p>`
+        `QuickServices: ${otp} is your verification code`,
+        otp,
+        "Account Verification"
       );
 
       if (!emailSent) {
@@ -118,10 +110,9 @@ exports.register = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       normalizedEmail,
-      "Your OTP Verification Code",
-      `<h2>Your OTP is ${otp}</h2>
-   <p>Valid for 10 minutes.</p>
-   <p><strong>⚠️ If you don't see the email in your inbox, please check your Spam/Junk folder in your email client.</strong></p>`
+      `QuickServices: ${otp} is your verification code`,
+      otp,
+      "Account Verification"
     );
 
     if (!emailSent) {
@@ -367,8 +358,9 @@ exports.resendOTP = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       email,
-      "Resend OTP",
-      `<h2>Your new OTP is ${otp}</h2><p>Valid for 5 minutes.</p>`
+      `QuickServices: ${otp} is your new verification code`,
+      otp,
+      "New Verification Code"
     );
 
     if (!emailSent) {
@@ -426,8 +418,9 @@ exports.forgotPass = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       normalizedEmail,
-      "Reset Password OTP",
-      `<h2>Your OTP is ${otp}</h2><p>Valid for 10 minutes.</p>`
+      `QuickServices: ${otp} is your password reset code`,
+      otp,
+      "Password Reset Code"
     );
 
     console.log(`Reset OTP generated for ${normalizedEmail}: ${otp} (emailSent: ${emailSent})`);
