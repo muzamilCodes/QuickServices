@@ -3,19 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { BadgePercent, BriefcaseBusiness, CircleUserRound, House, Info, Menu, MessageSquareText, ReceiptText, ShieldCheck, Sparkles, Wrench, X } from 'lucide-react';
+import { 
+  BriefcaseBusiness, 
+  Menu, 
+  X, 
+  Sparkles,
+  ShieldCheck,
+  UserCheck
+} from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-
-const navLinks = [
-  { name: 'Home', href: '/', icon: House },
-  { name: 'Services', href: '/services', icon: Wrench },
-  { name: 'Highlights', href: '/offers', icon: Sparkles },
-  { name: 'Benefits', href: '/benefits', icon: ShieldCheck },
-  { name: 'About', href: '/about', icon: Info },
-  { name: 'Contact', href: '/contact', icon: MessageSquareText },
-  { name: 'Bookings', href: '/history', icon: ReceiptText },
-  { name: 'Profile', href: '/profile', icon: CircleUserRound },
-];
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -24,8 +20,10 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isHome = pathname === '/';
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     onScroll();
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
@@ -37,74 +35,96 @@ export default function Navbar() {
     router.push('/');
   };
 
-  const goToDashboard = () => {
-    setMobileMenuOpen(false);
-    router.push('/dashboard/home');
-  };
-
   return (
     <nav
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'border-b border-black/5 bg-white/90 shadow-sm backdrop-blur-xl' : 'bg-transparent'
+        isHome
+          ? scrolled
+            ? 'bg-[#0A33A8]/95 shadow-lg shadow-blue-950/20 backdrop-blur-md border-b border-white/10'
+            : 'bg-[#0B39BB]'
+          : scrolled
+          ? 'bg-white/95 shadow-md backdrop-blur-md border-b border-slate-200'
+          : 'bg-[#0B39BB] text-white'
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] text-white shadow-lg shadow-blue-200/60">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0B39BB] shadow-md transition group-hover:scale-105">
             <BriefcaseBusiness className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-lg font-semibold text-slate-900">QuickServices</p>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Home support, faster</p>
+          <div className="flex flex-col">
+            <span className={`text-xl font-extrabold tracking-tight ${isHome || !scrolled ? 'text-white' : 'text-slate-900'}`}>
+              Quick<span className="text-amber-300">Services</span>
+            </span>
           </div>
         </Link>
 
-        <div className="hidden items-center gap-2 rounded-full border border-black/5 bg-white/70 p-1.5 shadow-sm backdrop-blur md:flex">
-          {navLinks.map(({ name, href, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={name}
-                href={href}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
-                  active
-                    ? 'border border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:bg-orange-50 hover:text-orange-700'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{name}</span>
-              </Link>
-            );
-          })}
+        {/* Center Navigation Links (Matching Screenshot) */}
+        <div className="hidden items-center gap-6 lg:flex">
+          <Link
+            href="/services"
+            className={`text-xs font-bold tracking-wider uppercase transition ${
+              isHome || !scrolled ? 'text-white/90 hover:text-white' : 'text-slate-700 hover:text-[#0B39BB]'
+            }`}
+          >
+            POST A JOB
+          </Link>
+          <Link
+            href="/services"
+            className={`text-xs font-bold tracking-wider uppercase transition ${
+              isHome || !scrolled ? 'text-white/90 hover:text-white' : 'text-slate-700 hover:text-[#0B39BB]'
+            }`}
+          >
+            FIND A SERVICE
+          </Link>
+          <Link
+            href="/benefits"
+            className={`text-xs font-bold tracking-wider uppercase transition ${
+              isHome || !scrolled ? 'text-white/90 hover:text-white' : 'text-slate-700 hover:text-[#0B39BB]'
+            }`}
+          >
+            FIND A WORK
+          </Link>
+          <Link
+            href="/dashboard/history"
+            className={`text-xs font-bold tracking-wider uppercase transition ${
+              isHome || !scrolled ? 'text-white/90 hover:text-white' : 'text-slate-700 hover:text-[#0B39BB]'
+            }`}
+          >
+            MY BOOKINGS
+          </Link>
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        {/* Action Buttons (Matching Screenshot) */}
+        <div className="hidden items-center gap-3 sm:flex">
           {isAuthenticated ? (
             <>
-              <div className="rounded-full border border-black/5 bg-white/75 px-4 py-2 text-sm text-slate-700 shadow-sm">
-                {user?.username || 'User'}
-              </div>
-              <button
-                onClick={goToDashboard}
-                className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Dashboard
-              </button>
               {user?.isAdmin && (
                 <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    router.push('/admin');
-                  }}
-                  className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-95 shadow-sm"
+                  onClick={() => router.push('/admin')}
+                  className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md transition hover:brightness-105"
                 >
-                  Admin Panel
+                  ADMIN PANEL
                 </button>
               )}
               <button
+                onClick={() => router.push('/dashboard/home')}
+                className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition ${
+                  isHome || !scrolled
+                    ? 'bg-white text-[#0B39BB] hover:bg-slate-100 shadow-sm'
+                    : 'bg-[#0B39BB] text-white hover:bg-blue-800'
+                }`}
+              >
+                DASHBOARD
+              </button>
+              <button
                 onClick={handleLogout}
-                className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+                  isHome || !scrolled
+                    ? 'border-white/30 text-white/90 hover:bg-white/10'
+                    : 'border-slate-300 text-slate-700 hover:bg-slate-100'
+                }`}
               >
                 Logout
               </button>
@@ -113,100 +133,121 @@ export default function Navbar() {
             <>
               <button
                 onClick={() => router.push('/login')}
-                className="rounded-full px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white/80"
+                className={`rounded-full px-5 py-2 text-xs font-bold uppercase tracking-wider transition ${
+                  isHome || !scrolled
+                    ? 'bg-white text-[#0B39BB] hover:bg-slate-100 shadow-sm'
+                    : 'bg-[#0B39BB] text-white hover:bg-blue-800'
+                }`}
               >
-                Login
+                SIGNUP / LOGIN
               </button>
               <button
-                onClick={() => router.push('/register')}
-                className="rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-200/70 transition hover:translate-y-[-1px]"
+                onClick={() => router.push('/contact')}
+                className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wider transition ${
+                  isHome || !scrolled
+                    ? 'border-white/40 text-white hover:bg-white/10'
+                    : 'border-[#0B39BB] text-[#0B39BB] hover:bg-blue-50'
+                }`}
               >
-                Get Started
+                BECOME SERVICE AGENT
               </button>
             </>
           )}
         </div>
 
+        {/* Mobile Hamburger */}
         <button
-          onClick={() => setMobileMenuOpen((current) => !current)}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-black/5 bg-white/80 text-slate-700 shadow-sm backdrop-blur md:hidden"
-          aria-label="Toggle menu"
+          onClick={() => setMobileMenuOpen((curr) => !curr)}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl md:hidden ${
+            isHome || !scrolled ? 'text-white hover:bg-white/10' : 'text-slate-800 hover:bg-slate-100'
+          }`}
+          aria-label="Toggle navigation"
         >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="border-t border-black/5 bg-white/95 px-4 pb-5 pt-3 shadow-lg backdrop-blur md:hidden">
-          <div className="space-y-2">
-            {navLinks.map(({ name, href, icon: Icon }) => {
-              const active = pathname === href;
-              return (
-                <Link
-                  key={name}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm ${
-                    active
-                      ? 'border border-blue-200 bg-blue-50 text-blue-700'
-                      : 'bg-slate-50 text-slate-700'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{name}</span>
-                </Link>
-              );
-            })}
+        <div className="border-t border-white/10 bg-[#0B39BB] px-5 pb-6 pt-4 text-white shadow-2xl md:hidden">
+          <div className="flex flex-col gap-3 font-semibold text-sm">
+            <Link
+              href="/services"
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-xl px-3 py-2.5 hover:bg-white/10"
+            >
+              POST A JOB
+            </Link>
+            <Link
+              href="/services"
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-xl px-3 py-2.5 hover:bg-white/10"
+            >
+              FIND A SERVICE
+            </Link>
+            <Link
+              href="/benefits"
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-xl px-3 py-2.5 hover:bg-white/10"
+            >
+              FIND A WORK
+            </Link>
+            <Link
+              href="/dashboard/history"
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-xl px-3 py-2.5 hover:bg-white/10"
+            >
+              MY BOOKINGS
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-xl px-3 py-2.5 hover:bg-white/10"
+            >
+              BECOME SERVICE AGENT
+            </Link>
           </div>
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-5 border-t border-white/15 pt-4 space-y-2">
             {isAuthenticated ? (
               <>
-                <button
-                  onClick={goToDashboard}
-                  className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white"
-                >
-                  Open Dashboard
-                </button>
                 {user?.isAdmin && (
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
                       router.push('/admin');
                     }}
-                    className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 px-4 py-3 text-sm font-medium text-white shadow-sm"
+                    className="w-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 py-2.5 text-xs font-bold text-slate-950"
                   >
-                    Admin Panel
+                    ADMIN PANEL
                   </button>
                 )}
                 <button
-                  onClick={handleLogout}
-                  className="w-full rounded-2xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    router.push('/dashboard/home');
+                  }}
+                  className="w-full rounded-full bg-white py-2.5 text-xs font-bold text-[#0B39BB]"
                 >
-                  Logout
+                  DASHBOARD
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="w-full rounded-full border border-white/30 py-2.5 text-xs font-semibold text-white hover:bg-white/10"
+                >
+                  LOGOUT
                 </button>
               </>
             ) : (
-              <>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    router.push('/login');
-                  }}
-                  className="w-full rounded-2xl border border-black/5 px-4 py-3 text-sm font-medium text-slate-700"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    router.push('/register');
-                  }}
-                  className="w-full rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-4 py-3 text-sm font-medium text-white"
-                >
-                  Get Started
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  router.push('/login');
+                }}
+                className="w-full rounded-full bg-white py-2.5 text-xs font-bold text-[#0B39BB]"
+              >
+                SIGNUP / LOGIN
+              </button>
             )}
           </div>
         </div>

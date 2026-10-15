@@ -27,7 +27,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!hideChrome && <Navbar />}
-      <main className={hideChrome ? '' : 'pt-20'}>{children}</main>
+      <main className={hideChrome || pathname === '/' ? '' : 'pt-20'}>{children}</main>
       {!hideChrome && <Footer />}
       <Toaster position="top-right" />
     </>
