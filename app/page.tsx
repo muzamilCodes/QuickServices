@@ -8,11 +8,7 @@ import {
   Clock3, 
   ShieldCheck, 
   Sparkles, 
-  Star, 
-  Wrench,
-  CheckCircle2,
-  Users,
-  PhoneCall
+  Star 
 } from 'lucide-react';
 import ServicesCatalog from '@/components/ServicesCatalog';
 

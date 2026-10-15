@@ -1,4 +1,5 @@
 const LOCAL_API_URL = 'http://localhost:4000';
+const PRODUCTION_API_URL = 'https://quickservices.onrender.com';
 
 export const getApiBaseUrl = () => {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -11,9 +12,8 @@ export const getApiBaseUrl = () => {
       return LOCAL_API_URL;
     }
 
-    return window.location.origin.replace(/\/$/, '');
+    return PRODUCTION_API_URL;
   }
 
-  return LOCAL_API_URL;
+  return process.env.NODE_ENV === 'production' ? PRODUCTION_API_URL : LOCAL_API_URL;
 };
-

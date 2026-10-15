@@ -10,12 +10,9 @@ import {
   Check, 
   X, 
   ChevronDown, 
-  SlidersHorizontal,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles
+  SlidersHorizontal 
 } from 'lucide-react';
-import { allServices, Service } from '@/lib/services';
+import { allServices } from '@/lib/services';
 
 const categories = [
   'All Categories',
