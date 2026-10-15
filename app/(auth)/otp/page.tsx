@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -11,21 +11,20 @@ export default function OTPPage() {
   const router = useRouter();
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const checkAuth = useAuthStore((state) => state.checkAuth);
-  const [email] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem("verifyEmail") || "" : ""
-  );
-  const [devOtp, setDevOtp] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem("devRegisterOtp") || "" : ""
-  );
-  const hasEmail = useMemo(() => email.trim().length > 0, [email]);
+  const [email, setEmail] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!hasEmail) {
+    setMounted(true);
+    const storedEmail = localStorage.getItem("verifyEmail") || "";
+    setEmail(storedEmail);
+    if (!storedEmail) {
       toast.error("Session expired. Please register again.");
       router.push("/register");
     }
-  }, [hasEmail, router]);
+  }, [router]);
 
   const handleVerify = async () => {
     const cleanOtp = otp.trim();
@@ -67,27 +66,25 @@ export default function OTPPage() {
   };
 
   const handleResend = async () => {
+    if (resending || !email) return;
+    setResending(true);
     try {
       const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/user/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (data.success) {
-        if (data.devOtp) {
-          localStorage.setItem("devRegisterOtp", data.devOtp);
-          setDevOtp(data.devOtp);
-          toast.error("Email failed. OTP is shown on this page.");
-        } else {
-          localStorage.removeItem("devRegisterOtp");
-          setDevOtp("");
-          toast.success("OTP resent!");
-        }
-      } else toast.error(data.message);
+      if (res.ok && data.success) {
+        toast.success("New OTP sent to your email! Please check your inbox.");
+      } else {
+        toast.error(data?.message || "Failed to resend OTP");
+      }
     } catch {
-      toast.error("Failed to resend");
+      toast.error("Failed to resend OTP");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -111,8 +108,10 @@ export default function OTPPage() {
           <div className="p-8">
             {/* Email display */}
             <div className="text-center mb-6">
-              <p className="text-gray-600">We&apos;ve sent a code to</p>
-              <p className="font-semibold text-gray-800 text-lg mt-1">{email}</p>
+              <p className="text-gray-600">We&apos;ve sent a verification code to</p>
+              <p className="font-semibold text-gray-800 text-lg mt-1 min-h-[1.75rem]">
+                {mounted ? email : ""}
+              </p>
             </div>
 
             {/* Spam Warning */}
@@ -121,17 +120,10 @@ export default function OTPPage() {
               <div className="text-sm text-yellow-800">
                 <p className="font-semibold">Email not received?</p>
                 <p className="mt-1">
-                  Check your <strong> Email Spam / Junk folder</strong>. Sometimes emails land there.
+                  Please check your <strong>Email Spam / Junk folder</strong>. Sometimes emails land there.
                 </p>
               </div>
             </div>
-
-            {devOtp && (
-              <div className="mb-6 rounded-xl border border-orange-300 bg-orange-50 p-4 text-center">
-                <p className="text-sm font-semibold text-orange-900">Email is not working right now. Use this OTP:</p>
-                <p className="mt-2 text-3xl font-bold tracking-[0.35em] text-orange-700">{devOtp}</p>
-              </div>
-            )}
 
             {/* OTP Input */}
             <div className="mb-8">
@@ -171,9 +163,10 @@ export default function OTPPage() {
             <div className="text-center mt-6">
               <button
                 onClick={handleResend}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition"
+                disabled={resending}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition disabled:opacity-50"
               >
-                Didn&apos;t receive OTP? Click here to resend
+                {resending ? "Sending new OTP..." : "Didn't receive OTP? Click here to resend"}
               </button>
             </div>
           </div>

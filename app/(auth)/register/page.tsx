@@ -76,13 +76,8 @@ export default function RegisterPage() {
 
       if (response.ok && result?.success) {
         localStorage.setItem("verifyEmail", payload.email);
-        if (result.devOtp) {
-          localStorage.setItem("devRegisterOtp", result.devOtp);
-          toast.error("Email failed. OTP is shown on the next page.");
-        } else {
-          localStorage.removeItem("devRegisterOtp");
-          toast.success("OTP sent successfully! Please verify your email.");
-        }
+        localStorage.removeItem("devRegisterOtp");
+        toast.success("OTP sent to your email! Please check your inbox.");
         setTimeout(() => {
           router.push("/otp");
         }, 500);

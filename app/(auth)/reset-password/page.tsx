@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Eye, EyeOff, Loader2, AlertCircle, KeyRound } from "lucide-react";
+import { Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiBaseUrl } from "@/lib/apiBase";
 
@@ -14,19 +14,18 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [email] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem("resetEmail") || "" : ""
-  );
-  const [devOtp] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem("devResetOtp") || "" : ""
-  );
+  const [email, setEmail] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!email) {
+    setMounted(true);
+    const storedEmail = localStorage.getItem("resetEmail") || "";
+    setEmail(storedEmail);
+    if (!storedEmail) {
       toast.error("Session expired. Please request OTP again.");
       router.push("/forgot-password");
     }
-  }, [email, router]);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,36 +87,21 @@ export default function ResetPasswordPage() {
             <h1 className="text-2xl font-bold text-white text-center">Set New Password</h1>
           </div>
           <div className="p-6">
-            <p className="text-gray-600 text-center mb-4">
-              We&apos;ve sent a 6-digit OTP to <strong>{email}</strong>
+            <p className="text-gray-600 text-center mb-1">
+              We&apos;ve sent a 6-digit verification code to
+            </p>
+            <p className="text-center font-semibold text-gray-800 text-lg mb-4 min-h-[1.75rem]">
+              {mounted ? email : ""}
             </p>
 
-            {/* Dev OTP fallback */}
-            {devOtp && (
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <KeyRound className="w-4 h-4 text-amber-600" />
-                  <span className="font-semibold">Reset OTP:</span>
-                </div>
-                <p className="text-xl font-mono font-bold tracking-widest text-center my-1 bg-white p-2 rounded border border-amber-200">
-                  {devOtp}
-                </p>
-                <p className="text-xs text-amber-700 text-center">
-                  Email service unavailable; use the code above to reset.
-                </p>
-              </div>
-            )}
-
             {/* Spam folder warning */}
-            {!devOtp && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-yellow-800">
-                  <p className="font-semibold">Email not received?</p>
-                  <p>Please check your <strong>Spam / Junk folder</strong>. Sometimes emails land there.</p>
-                </div>
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-yellow-800">
+                <p className="font-semibold">Email not received?</p>
+                <p>Please check your <strong>Spam / Junk folder</strong>. Sometimes emails land there.</p>
               </div>
-            )}
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
