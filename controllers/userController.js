@@ -86,12 +86,18 @@ exports.register = async (req, res) => {
    <p><strong>⚠️ If you don't see the email in your inbox, please check your Spam/Junk folder in your email client.</strong></p>`
       );
 
+      if (!emailSent) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send verification email. Please try again.",
+        });
+      }
+
       return res.status(200).json({
         success: true,
-        message: emailSent ? "OTP sent successfully" : "Email failed. Use the OTP shown on this page.",
+        message: "OTP sent successfully to your email inbox.",
         email: existingUser.email,
-        emailSent,
-        devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
+        emailSent: true,
       });
     }
 
@@ -118,12 +124,18 @@ exports.register = async (req, res) => {
    <p><strong>⚠️ If you don't see the email in your inbox, please check your Spam/Junk folder in your email client.</strong></p>`
     );
 
+    if (!emailSent) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send verification email. Please try again.",
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: emailSent ? "OTP sent successfully" : "Email failed. Use the OTP shown on this page.",
+      message: "OTP sent successfully to your email inbox.",
       email: newUser.email,
-      emailSent,
-      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
+      emailSent: true,
     });
 
   } catch (error) {
@@ -359,11 +371,17 @@ exports.resendOTP = async (req, res) => {
       `<h2>Your new OTP is ${otp}</h2><p>Valid for 5 minutes.</p>`
     );
 
+    if (!emailSent) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send email. Please try again.",
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: emailSent ? "OTP resent successfully" : "Email failed. Use the OTP shown on this page.",
-      emailSent,
-      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
+      message: "OTP resent successfully to your email inbox.",
+      emailSent: true,
     });
 
   } catch (error) {
@@ -414,12 +432,18 @@ exports.forgotPass = async (req, res) => {
 
     console.log(`Reset OTP generated for ${normalizedEmail}: ${otp} (emailSent: ${emailSent})`);
 
+    if (!emailSent) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send reset password email. Please try again.",
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: emailSent ? "OTP sent to your email" : "Email failed. Use the OTP shown on this page.",
+      message: "OTP sent to your email inbox.",
       email: normalizedEmail,
-      emailSent,
-      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
+      emailSent: true,
     });
   } catch (error) {
     console.error(error);

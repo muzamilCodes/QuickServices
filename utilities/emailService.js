@@ -1,67 +1,82 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const emailFrom = process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER;
-const emailFromName = process.env.EMAIL_FROM_NAME || 'QuickServices';
-const smtpPort = Number(process.env.BREVO_SMTP_PORT || 587);
-const useSecure = smtpPort === 465 || process.env.BREVO_SMTP_SECURE === 'true';
-const hasSmtpConfig = Boolean(
-  process.env.BREVO_SMTP_HOST &&
-  process.env.BREVO_SMTP_USER &&
-  process.env.BREVO_SMTP_PASS
-);
-const hasBrevoApi = Boolean(process.env.BREVO_API_KEY);
+const emailFrom = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'warmuzamil113@gmail.com';
+const emailFromName = process.env.EMAIL_FROM_NAME || process.env.EMAIL_SENDER_NAME || 'QuickServices';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.BREVO_SMTP_HOST,
-  port: smtpPort,
-  secure: useSecure,
-  auth: process.env.BREVO_SMTP_USER && process.env.BREVO_SMTP_PASS ? {
-    user: process.env.BREVO_SMTP_USER,
-    pass: process.env.BREVO_SMTP_PASS,
-  } : undefined,
-  tls: {
-    // allow self-signed / internal certs when running locally
-    rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false,
-  },
-});
+// 1. Gmail SMTP Transporter
+const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
+const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
+const gmailTransporter = (gmailUser && gmailPass)
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 10000,
+    })
+  : null;
 
-// Verify transporter connectivity early and log helpful info.
-// In serverless environments, SMTP may be blocked or time out, so this is best-effort only.
-if (hasSmtpConfig) {
-  transporter.verify().then(() => {
-    console.log('SMTP transporter verified (can send emails).');
+if (gmailTransporter) {
+  gmailTransporter.verify().then(() => {
+    console.log('✅ Gmail SMTP verified and ready to send emails.');
   }).catch((err) => {
-    console.error('SMTP transporter verification failed:', err && err.message ? err.message : err);
+    console.warn('⚠️ Gmail SMTP verify failed:', err?.message || err);
   });
-} else {
-  console.warn('SMTP config is incomplete; SMTP fallback will be skipped.');
 }
 
-// Optional: shorten SMTP timeouts so failures don't hang request.
-// (Brevo API path will still be attempted when BREVO_API_KEY is set.)
-transporter.options = {
-  ...(transporter.options || {}),
-  connectionTimeout: 8000,
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-  // Nodemailer uses these internally depending on adapter
-  debug: false,
-};
-
+// 2. Brevo SMTP Transporter (Fallback)
+const brevoHost = process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com';
+const brevoPort = Number(process.env.BREVO_SMTP_PORT || 587);
+const brevoUser = process.env.BREVO_SMTP_USER || process.env.EMAIL_FROM;
+const brevoPass = process.env.BREVO_SMTP_PASS || process.env.BREVO_SMTP_KEY;
+const brevoTransporter = (brevoHost && brevoUser && brevoPass)
+  ? nodemailer.createTransport({
+      host: brevoHost,
+      port: brevoPort,
+      secure: brevoPort === 465,
+      auth: {
+        user: brevoUser,
+        pass: brevoPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 10000,
+    })
+  : null;
 
 const sendEmail = async (to, subject, html) => {
   if (!to) {
     throw new Error('Missing recipient email address');
   }
 
-  if (!emailFrom) {
-    throw new Error('Missing EMAIL_FROM or BREVO_SMTP_USER sender address');
+  const senderAddress = `"${emailFromName}" <${emailFrom}>`;
+
+  // Attempt 1: Gmail SMTP
+  if (gmailTransporter) {
+    try {
+      await gmailTransporter.sendMail({
+        from: senderAddress,
+        to,
+        subject,
+        html,
+      });
+      console.log(`✅ Email sent via Gmail to ${to}`);
+      return true;
+    } catch (gmailErr) {
+      console.error('⚠️ Gmail SMTP failed, trying Brevo fallback:', gmailErr?.message || gmailErr);
+    }
   }
 
-  // Prefer Brevo HTTP API when API key is provided.
-  // This is more reliable than SMTP on Vercel/serverless deployments.
-  if (hasBrevoApi && typeof fetch === 'function') {
+  // Attempt 2: Brevo HTTP API
+  if (process.env.BREVO_API_KEY && typeof fetch === 'function') {
     try {
       const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
@@ -78,46 +93,34 @@ const sendEmail = async (to, subject, html) => {
         }),
       });
 
-      if (!resp.ok) {
-        const txt = await resp.text();
-        console.error('Brevo API send failed', resp.status, resp.statusText, txt);
-        throw new Error(`Brevo API send failed: ${resp.status}`);
+      if (resp.ok) {
+        console.log(`✅ Email sent via Brevo API to ${to}`);
+        return true;
       }
-
-      console.log(`✅ Email sent via Brevo API to ${to}`);
-      return true;
-    } catch (err) {
-      console.error('Brevo API error:', err && err.message ? err.message : err);
-      // fall through to SMTP fallback
+      const errText = await resp.text();
+      console.error('⚠️ Brevo API failed:', resp.status, errText);
+    } catch (brevoApiErr) {
+      console.error('⚠️ Brevo API call failed:', brevoApiErr?.message || brevoApiErr);
     }
-  } else if (hasBrevoApi && typeof fetch !== 'function') {
-    console.warn('BREVO_API_KEY set but global fetch is unavailable; skipping Brevo HTTP API and falling back to SMTP.');
   }
 
-  if (!hasSmtpConfig) {
-    throw new Error('SMTP config missing and Brevo API unavailable');
+  // Attempt 3: Brevo SMTP
+  if (brevoTransporter) {
+    try {
+      await brevoTransporter.sendMail({
+        from: senderAddress,
+        to,
+        subject,
+        html,
+      });
+      console.log(`✅ Email sent via Brevo SMTP to ${to}`);
+      return true;
+    } catch (brevoSmtpErr) {
+      console.error('❌ Brevo SMTP failed:', brevoSmtpErr?.message || brevoSmtpErr);
+    }
   }
 
-  const msg = {
-    from: `${emailFromName} <${emailFrom}>`,
-    to,
-    subject,
-    html,
-  };
-
-  try {
-    await transporter.sendMail(msg);
-    console.log(`✅ Email sent to ${to}`);
-    return true;
-  } catch (error) {
-    console.error('SMTP Email error:', {
-      message: error && error.message,
-      code: error && error.code,
-      response: error && error.response,
-    });
-    // Re-throw with original error so caller can inspect
-    throw error;
-  }
+  throw new Error('All email transports (Gmail, Brevo API, Brevo SMTP) failed to send email.');
 };
 
 module.exports = sendEmail;
