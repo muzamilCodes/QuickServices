@@ -23,6 +23,10 @@ interface Booking {
   customerName?: string;
   customerPhone?: string;
   createdAt: string;
+  provider?: {
+    name: string;
+    phone: string;
+  };
   address?: {
     fullAddress?: string;
     city?: string;
@@ -32,6 +36,7 @@ interface Booking {
   user?: {
     username?: string;
     email?: string;
+    mobile?: string;
   };
 }
 
@@ -311,8 +316,30 @@ export default function AdminPage() {
                         <p className="mt-1 text-sm text-slate-600">
                           {booking.customerName || booking.user?.username || 'Customer'} · {booking.user?.email || 'No email'}
                         </p>
-                        {booking.customerPhone && (
-                          <p className="mt-1 text-sm text-slate-600">{booking.customerPhone}</p>
+                        
+                        {/* Customer Phone */}
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-500">Customer Phone:</span>
+                          <a
+                            href={`tel:${booking.customerPhone || booking.user?.mobile}`}
+                            className="rounded-lg bg-blue-50 px-2 py-0.5 font-mono text-xs font-bold text-blue-700 hover:underline"
+                          >
+                            📞 {booking.customerPhone || booking.user?.mobile || 'Not provided'}
+                          </a>
+                        </div>
+
+                        {/* Assigned Provider */}
+                        {booking.provider && (
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-500">Assigned Specialist:</span>
+                            <span className="text-xs font-bold text-slate-800">{booking.provider.name}</span>
+                            <a
+                              href={`tel:${booking.provider.phone}`}
+                              className="font-mono text-xs font-bold text-emerald-700 hover:underline"
+                            >
+                              ({booking.provider.phone})
+                            </a>
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-col gap-2 sm:items-end">
@@ -330,15 +357,32 @@ export default function AdminPage() {
                         </select>
                       </div>
                     </div>
+
+                    {/* Exact Location & Google Maps Link */}
                     <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm leading-6 text-slate-600">
-                      <p className="font-medium text-slate-900">Full address</p>
-                      <p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-slate-900">📍 Exact Service Location</p>
+                        {booking.address?.fullAddress && (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              `${booking.address.fullAddress}, ${booking.address.city || ''} ${booking.address.pincode || ''}`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+                          >
+                            🗺️ Open in Google Maps
+                          </a>
+                        )}
+                      </div>
+                      <p className="mt-1 text-slate-700">
                         {booking.address?.fullAddress || 'Address not available'}
-                        {booking.address?.landmark ? `, ${booking.address.landmark}` : ''}
+                        {booking.address?.landmark ? `, Near ${booking.address.landmark}` : ''}
                         {booking.address?.city ? `, ${booking.address.city}` : ''}
-                        {booking.address?.pincode ? ` ${booking.address.pincode}` : ''}
+                        {booking.address?.pincode ? ` - ${booking.address.pincode}` : ''}
                       </p>
                     </div>
+
                     <p className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500">
                       <CalendarDays className="h-3.5 w-3.5" />
                       {new Date(booking.createdAt).toLocaleDateString()}
