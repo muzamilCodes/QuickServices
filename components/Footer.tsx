@@ -23,8 +23,8 @@ const footerGroups = [
       { name: 'Become a Provider', href: '/providers' },
       { name: 'Contact', href: '/contact' },
       { name: 'Support', href: '/contact' },
-      { name: 'Service Highlights', href: '/offers' },
-      { name: 'Benefits', href: '/benefits' },
+      { name: 'Privacy Policy', href: '/privacy' },
+      { name: 'Terms of Service', href: '/terms' },
     ],
   },
   {
@@ -95,7 +95,13 @@ export default function Footer() {
             <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> Quickservices@gmail.com</span>
             <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> Handwara Qalamabad</span>
           </div>
-          <p>© 2026 QuickServices. Built for easier local bookings.</p>
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
+            <span>•</span>
+            <Link href="/terms" className="hover:text-white transition">Terms</Link>
+            <span>•</span>
+            <p>© 2026 QuickServices. Founded by Muzamil War.</p>
+          </div>
         </div>
       </div>
     </footer>

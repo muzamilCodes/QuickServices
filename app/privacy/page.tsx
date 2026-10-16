@@ -1,4 +1,14 @@
 import React from 'react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | QuickServices Kashmir',
+  description:
+    'Learn how QuickServices protects your personal information, booking details, and phone number when ordering doorstep home services.',
+  alternates: {
+    canonical: '/privacy',
+  },
+};
 
 export default function PrivacyPage() {
   return (

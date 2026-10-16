@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Mail, MapPin, MessageSquareText, Phone, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 import { Suspense } from 'react';
 
@@ -60,8 +61,11 @@ function ContactPageInner() {
   };
 
   return (
-    <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <Breadcrumbs items={[{ name: 'Contact Us', href: '/contact' }]} />
+      </div>
+      <div className="mx-auto mt-4 grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <section className="rounded-[32px] bg-slate-950 p-8 text-white shadow-2xl shadow-slate-200 md:p-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80">
             <MessageSquareText className="h-4 w-4 text-orange-300" />

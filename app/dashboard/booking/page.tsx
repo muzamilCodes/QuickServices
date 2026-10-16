@@ -6,6 +6,7 @@ import { Clock3, IndianRupee, MapPin, ShieldCheck, Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { servicesById } from '@/lib/services';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 interface Service {
   _id?: string;
@@ -226,6 +227,9 @@ function BookingPageContent() {
 
   return (
     <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl mb-4">
+        <Breadcrumbs items={[{ name: 'Services', href: '/services' }, { name: service.name }]} />
+      </div>
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <section className="rounded-[30px] bg-slate-950 p-8 text-white shadow-xl shadow-slate-200">
           <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-3xl">

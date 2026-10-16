@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { ArrowRight, BadgeCheck, Clock3, Headphones, ShieldCheck, Sparkles } from 'lucide-react';
 
 const stats = [
@@ -21,9 +22,10 @@ export default function AboutPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <section className="grid gap-10 rounded-[32px] bg-slate-950 p-8 text-white shadow-2xl shadow-slate-200 md:p-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <Breadcrumbs items={[{ name: 'About Us', href: '/about' }]} />
+        <section className="mt-4 grid gap-10 rounded-[32px] bg-slate-950 p-8 text-white shadow-2xl shadow-slate-200 md:p-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80">
               <Sparkles className="h-4 w-4 text-orange-300" />

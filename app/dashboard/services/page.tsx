@@ -1,6 +1,7 @@
 'use client';
 
 import ServicesCatalog from '@/components/ServicesCatalog';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { Sparkles, ShieldCheck, Clock3 } from 'lucide-react';
 
 export default function ServicesPage() {
@@ -9,12 +10,9 @@ export default function ServicesPage() {
       {/* Catalog Header Banner */}
       <section className="bg-gradient-to-b from-blue-50/50 via-white to-slate-50 py-10 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80">
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <Breadcrumbs items={[{ name: 'All Services', href: '/services' }]} />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 pt-2">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 text-orange-500" />
-                <span>Home &gt; All Services</span>
-              </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
                 All Home & Maintenance Services
               </h1>

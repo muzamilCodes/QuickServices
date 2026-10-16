@@ -383,7 +383,7 @@ export default function ServicesCatalog({ title = "Reliable home repair and main
                     <div className="relative h-44 w-full overflow-hidden bg-slate-100">
                       <Image
                         src={service.image}
-                        alt={service.name}
+                        alt={`${service.name} - QuickServices Verified Home Service Kashmir`}
                         fill
                         className="object-cover transition duration-500 group-hover:scale-105"
                       />
