@@ -336,6 +336,36 @@ export default function ProviderDashboardPage() {
       {/* Main Content Area */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-8">
         
+        {/* Verification Status Notice */}
+        {provider && !provider.isApproved && (
+          <div className="mb-8 rounded-3xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-md shrink-0">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-extrabold text-amber-950">
+                    Application Under Admin Review / Verification Pending
+                  </h3>
+                  <span className="rounded-full bg-amber-200 text-amber-900 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                    Verification In Progress
+                  </span>
+                </div>
+                <p className="mt-1 text-xs sm:text-sm text-amber-800 leading-relaxed">
+                  Aapka Service Provider profile submit ho chuka hai aur humari Admin team ke paas verification ke liye queued hai. Jaise hi Admin aapke credentials aur services verify karega, aapka account activate ho jayega aur aap customer requests accept kar sakenge.
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className="rounded-xl border border-amber-400 bg-white px-4 py-2 text-xs font-bold text-amber-900 shadow-sm hover:bg-amber-100/50 transition shrink-0"
+              >
+                Review Profile
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ==================== TAB 1: BOOKINGS ==================== */}
         {activeTab === 'bookings' && (
           <div className="space-y-8">

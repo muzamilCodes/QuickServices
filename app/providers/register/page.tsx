@@ -160,7 +160,7 @@ export default function ProviderRegisterPage() {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         checkAuth();
-        toast.success('Registration successful! Welcome to QuickServices Pro.');
+        toast.success('Registration submitted! Profile sent to Admin for verification.');
         router.push('/dashboard/provider');
       } else {
         setErrorMsg(data.message || 'Registration failed. Please try again.');
@@ -191,6 +191,33 @@ export default function ProviderRegisterPage() {
           <p className="text-sm text-slate-600 max-w-xl mx-auto">
             Join Kashmir&apos;s fastest growing on-demand home service platform. Get direct local customer bookings, guaranteed upfront pricing, and live GPS job tracking.
           </p>
+        </div>
+
+        {/* Process Banner */}
+        <div className="mb-8 rounded-3xl bg-white border border-slate-200 p-5 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500 text-xs font-black text-white shrink-0">1</span>
+              <div>
+                <p className="text-xs font-extrabold text-slate-900">1. Fill Profile Form</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Category, services, phone, location & pricing</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-xs font-black text-white shrink-0">2</span>
+              <div>
+                <p className="text-xs font-extrabold text-slate-900">2. Admin Verification</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Admin verifies your documents & approves profile</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-xs font-black text-white shrink-0">3</span>
+              <div>
+                <p className="text-xs font-extrabold text-slate-900">3. Pro Dashboard</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Manage jobs, accept requests & live GPS tracking</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {errorMsg && (

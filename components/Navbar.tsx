@@ -17,14 +17,15 @@ import {
   X,
   LogOut,
   LayoutDashboard,
-  ShieldAlert
+  ShieldAlert,
+  ChevronDown,
+  UserPlus
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 const mainNavLinks = [
   { name: 'Home', href: '/', icon: House },
   { name: 'Services', href: '/services', icon: Wrench },
-  { name: 'Join as Pro', href: '/providers', icon: BriefcaseBusiness },
   { name: 'Highlights', href: '/offers', icon: Sparkles },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: MessageSquareText },
@@ -36,6 +37,7 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [registerDropdownOpen, setRegisterDropdownOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 15);
@@ -85,7 +87,7 @@ export default function Navbar() {
         </Link>
 
         {/* Center Pill Navigation (Desktop) */}
-        <nav className="hidden xl:flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-50/80 p-1.5 shadow-inner backdrop-blur">
+        <nav className="hidden lg:flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-50/80 p-1.5 shadow-inner backdrop-blur">
           {mainNavLinks.map(({ name, href, icon: Icon }) => {
             const active = pathname === href;
             return (
@@ -103,6 +105,17 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* Dedicated Pro CTA inside nav */}
+          <Link
+            href="/providers/register"
+            className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3.5 py-1.5 text-xs font-extrabold text-white shadow-sm hover:opacity-95 transition"
+            title="Register to offer your services"
+          >
+            <BriefcaseBusiness className="h-3.5 w-3.5" />
+            <span>Join as Pro</span>
+          </Link>
+
           {isAuthenticated && (
             <Link
               href="/dashboard/history"
@@ -118,14 +131,19 @@ export default function Navbar() {
           )}
         </nav>
 
-        {/* Right Action Buttons (Desktop & Tablet) */}
+        {/* Right Action Buttons */}
         <div className="hidden lg:flex items-center gap-2.5 shrink-0">
           {isAuthenticated ? (
             <>
-              {/* User Greeting Pill */}
-              <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/80 px-3.5 py-1.5 text-xs font-bold text-slate-800">
+              {/* User Greeting Pill with Role Tag */}
+              <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs font-bold text-slate-800">
                 <CircleUserRound className="h-3.5 w-3.5 text-blue-600" />
-                <span className="max-w-[120px] truncate">{user?.username || 'Account'}</span>
+                <span className="max-w-[100px] truncate">{user?.username || 'User'}</span>
+                {user?.role === 'provider' ? (
+                  <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-extrabold">PRO</span>
+                ) : user?.isAdmin ? (
+                  <span className="rounded-full bg-orange-100 text-orange-800 px-2 py-0.5 text-[10px] font-extrabold">ADMIN</span>
+                ) : null}
               </div>
 
               {/* Admin Panel Button */}
@@ -140,24 +158,23 @@ export default function Navbar() {
               )}
 
               {/* Provider Workspace Button */}
-              {user?.role === 'provider' && (
+              {user?.role === 'provider' ? (
                 <button
                   onClick={() => router.push('/dashboard/provider')}
                   className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"
                 >
                   <BriefcaseBusiness className="h-3.5 w-3.5" />
-                  Pro Workspace
+                  Pro Dashboard
+                </button>
+              ) : (
+                <button
+                  onClick={goToDashboard}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800"
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  Dashboard
                 </button>
               )}
-
-              {/* Dashboard Button */}
-              <button
-                onClick={goToDashboard}
-                className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800"
-              >
-                <LayoutDashboard className="h-3.5 w-3.5" />
-                Dashboard
-              </button>
 
               {/* Logout Button */}
               <button
@@ -176,12 +193,41 @@ export default function Navbar() {
               >
                 Login
               </button>
-              <button
-                onClick={() => router.push('/register')}
-                className="rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:opacity-95 hover:shadow-lg active:scale-95"
-              >
-                Get Started
-              </button>
+
+              {/* Register Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setRegisterDropdownOpen(!registerDropdownOpen)}
+                  onBlur={() => setTimeout(() => setRegisterDropdownOpen(false), 200)}
+                  className="flex items-center gap-1 rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:opacity-95 hover:shadow-lg active:scale-95"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  <span>Register</span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+
+                {registerDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white p-2 shadow-xl border border-slate-200 z-50">
+                    <Link
+                      href="/register"
+                      className="flex flex-col gap-0.5 rounded-xl p-2.5 hover:bg-slate-50 transition text-left"
+                    >
+                      <span className="text-xs font-bold text-slate-900">Customer Account</span>
+                      <span className="text-[11px] text-slate-500">Book and hire home repair specialists</span>
+                    </Link>
+                    <div className="my-1 border-t border-slate-100" />
+                    <Link
+                      href="/providers/register"
+                      className="flex flex-col gap-0.5 rounded-xl p-2.5 bg-orange-50/50 hover:bg-orange-50 transition text-left"
+                    >
+                      <span className="text-xs font-bold text-orange-600 flex items-center gap-1">
+                        <BriefcaseBusiness className="h-3 w-3" /> Service Provider (Pro)
+                      </span>
+                      <span className="text-[11px] text-slate-600">Apni service offer karein & kamaiye</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -200,6 +246,24 @@ export default function Navbar() {
       {/* Mobile Slide-Down Drawer */}
       {mobileMenuOpen && (
         <div className="border-t border-slate-100 bg-white/95 px-4 pb-6 pt-3 shadow-xl backdrop-blur-xl lg:hidden max-h-[85vh] overflow-y-auto">
+          
+          {/* Pro Registration Banner for Mobile */}
+          <div className="mb-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 p-3.5 text-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-wider text-orange-100">Offer Your Services</p>
+                <p className="text-sm font-bold mt-0.5">Become a Service Provider</p>
+              </div>
+              <Link
+                href="/providers/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl bg-white px-3 py-1.5 text-xs font-extrabold text-orange-600 shadow-sm hover:bg-orange-50"
+              >
+                Join Now →
+              </Link>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             {mainNavLinks.map(({ name, href, icon: Icon }) => {
               const active = pathname === href;
@@ -239,44 +303,63 @@ export default function Navbar() {
           <div className="mt-4 border-t border-slate-100 pt-4 space-y-2">
             {isAuthenticated ? (
               <>
-                <div className="mb-2 px-2 text-xs font-medium text-slate-500">
-                  Signed in as <span className="font-bold text-slate-900">{user?.username}</span>
+                <div className="mb-2 px-2 flex items-center justify-between text-xs font-medium text-slate-500">
+                  <span>Signed in as <span className="font-bold text-slate-900">{user?.username}</span></span>
+                  {user?.role === 'provider' && (
+                    <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-extrabold">PRO</span>
+                  )}
                 </div>
+
                 {user?.isAdmin && (
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
                       router.push('/admin');
                     }}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 py-3 text-xs font-bold text-white shadow-sm"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 py-3 text-sm font-bold text-white shadow-sm"
                   >
                     <ShieldAlert className="h-4 w-4" />
-                    Admin Dashboard
+                    Admin Control Panel
                   </button>
                 )}
-                <button
-                  onClick={goToDashboard}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3 text-xs font-bold text-white shadow-sm hover:bg-slate-800"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Open User Dashboard
-                </button>
+
+                {user?.role === 'provider' ? (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      router.push('/dashboard/provider');
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-sm"
+                  >
+                    <BriefcaseBusiness className="h-4 w-4" />
+                    Provider Workspace & Jobs
+                  </button>
+                ) : (
+                  <button
+                    onClick={goToDashboard}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3 text-sm font-bold text-white shadow-sm"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    My Customer Dashboard
+                  </button>
+                )}
+
                 <button
                   onClick={handleLogout}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 py-2.5 text-sm font-bold text-rose-600"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
                 </button>
               </>
             ) : (
-              <>
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     router.push('/login');
                   }}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                  className="flex items-center justify-center rounded-2xl border border-slate-200 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50"
                 >
                   Login
                 </button>
@@ -285,11 +368,11 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                     router.push('/register');
                   }}
-                  className="w-full rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] py-3 text-xs font-bold text-white shadow-md shadow-blue-500/20"
+                  className="flex items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] py-3 text-sm font-bold text-white shadow-md shadow-blue-500/20"
                 >
-                  Get Started
+                  Register
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
