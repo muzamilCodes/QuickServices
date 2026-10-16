@@ -78,15 +78,15 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* ================= 2. Center Pill Navigation (Clean & Uncluttered) ================= */}
-        <nav className="hidden lg:flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-50/90 px-2 py-1.5 shadow-inner backdrop-blur">
+        {/* ================= 2. Center Navigation Links (Clean & Spacious) ================= */}
+        <nav className="hidden lg:flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-50/90 px-3 py-1.5 shadow-inner backdrop-blur">
           {mainNavLinks.map(({ name, href, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
                 key={name}
                 href={href}
-                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                   active
                     ? 'border border-blue-200 bg-white text-blue-700 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-white/60'
@@ -100,32 +100,23 @@ export default function Navbar() {
         </nav>
 
         {/* ================= 3. Right Action Buttons ================= */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0">
+        <div className="hidden lg:flex items-center gap-2.5 shrink-0">
           
           {/* If NOT logged in */}
           {!isAuthenticated ? (
             <>
-              {/* Join as Pro (Clean badge button with proper padding) */}
-              <Link
-                href="/providers/register"
-                className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-orange-700 transition hover:bg-orange-100 hover:border-orange-300 whitespace-nowrap"
-              >
-                <BriefcaseBusiness className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                <span>Join as Pro</span>
-              </Link>
-
-              {/* Login */}
+              {/* Login Button */}
               <button
                 onClick={() => router.push('/login')}
-                className="rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 whitespace-nowrap"
+                className="rounded-full px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 whitespace-nowrap"
               >
                 Login
               </button>
 
-              {/* Register */}
+              {/* Register Button */}
               <button
                 onClick={() => router.push('/register')}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:opacity-95 active:scale-95 whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:opacity-95 active:scale-95 whitespace-nowrap"
               >
                 <UserPlus className="h-3.5 w-3.5 shrink-0" />
                 <span>Register</span>
@@ -134,21 +125,10 @@ export default function Navbar() {
           ) : (
             /* If Logged In */
             <>
-              {/* If customer (not pro, not admin), offer Join as Pro */}
-              {!isPro && !isAdmin && (
-                <Link
-                  href="/providers/register"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700 hover:bg-orange-100 transition whitespace-nowrap"
-                >
-                  <BriefcaseBusiness className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                  <span>Join as Pro</span>
-                </Link>
-              )}
-
               {/* User Identity Pill */}
-              <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800 whitespace-nowrap">
+              <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-xs font-bold text-slate-800 whitespace-nowrap">
                 <CircleUserRound className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                <span className="max-w-[110px] truncate">{user?.username || 'Account'}</span>
+                <span className="max-w-[120px] truncate">{user?.username || 'Account'}</span>
                 {isAdmin ? (
                   <span className="rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-[10px] font-black tracking-wide">
                     ADMIN
@@ -175,7 +155,7 @@ export default function Navbar() {
               {isPro ? (
                 <button
                   onClick={() => router.push('/dashboard/provider')}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition whitespace-nowrap"
                 >
                   <BriefcaseBusiness className="h-3.5 w-3.5 shrink-0" />
                   <span>Pro Workspace</span>
@@ -183,7 +163,7 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition whitespace-nowrap"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5 shrink-0" />
                   <span>Dashboard</span>
@@ -218,25 +198,6 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="border-t border-slate-100 bg-white/95 px-4 pb-6 pt-3 shadow-xl backdrop-blur-xl lg:hidden max-h-[85vh] overflow-y-auto">
           
-          {/* Pro Banner for Mobile */}
-          {!isPro && (
-            <div className="mb-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 p-3.5 text-white shadow-md">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-orange-100">Offer Your Services</p>
-                  <p className="text-sm font-bold mt-0.5">Become a Service Provider</p>
-                </div>
-                <Link
-                  href="/providers/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-xl bg-white px-3 py-1.5 text-xs font-extrabold text-orange-600 shadow-sm hover:bg-orange-50 whitespace-nowrap"
-                >
-                  Join Pro →
-                </Link>
-              </div>
-            </div>
-          )}
-
           <div className="space-y-1.5">
             {mainNavLinks.map(({ name, href, icon: Icon }) => {
               const active = pathname === href;

@@ -19,12 +19,27 @@ import {
   LocateFixed,
   Save,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Trash2,
+  Layers,
+  IndianRupee,
+  Images
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { servicesById } from '@/lib/services';
+
+interface CustomService {
+  name: string;
+  category?: string;
+  image?: string;
+  price: number;
+  priceUnit?: string;
+  description?: string;
+  details?: string[];
+}
 
 interface ProviderProfile {
   _id: string;
@@ -33,6 +48,7 @@ interface ProviderProfile {
   email: string;
   category: string;
   services: string[];
+  customServices?: CustomService[];
   experience: number;
   skills: string[];
   qualifications: string;
@@ -64,17 +80,43 @@ interface BookingItem {
   createdAt: string;
 }
 
+const CATEGORY_OPTIONS = [
+  'Plumbing',
+  'Electrical works',
+  'House section',
+  'Appliances',
+  'Carpentry',
+  'Painting',
+  'General Maintenance',
+  'Landscaping',
+  'Personal Care',
+  'Water Purifier & RO',
+  'Pest Control'
+];
+
 export default function ProviderDashboardPage() {
   const router = useRouter();
   const API_URL = getApiBaseUrl();
   const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
 
-  const [activeTab, setActiveTab] = useState<'bookings' | 'profile'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'services' | 'profile'>('bookings');
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [assignedBookings, setAssignedBookings] = useState<BookingItem[]>([]);
   const [availableBookings, setAvailableBookings] = useState<BookingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // New Service Form State
+  const [newService, setNewService] = useState({
+    name: '',
+    category: 'Plumbing',
+    image: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
+    price: 499,
+    priceUnit: 'visit',
+    description: '',
+    details: ''
+  });
+  const [addingService, setAddingService] = useState(false);
 
   // Edit profile state
   const [editForm, setEditForm] = useState({
@@ -207,6 +249,94 @@ export default function ProviderDashboardPage() {
     }
   };
 
+  // Handle Adding a New Custom Service
+  const handleAddCustomService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newService.name.trim() || !newService.price) {
+      toast.error('Please enter service name and price');
+      return;
+    }
+
+    setAddingService(true);
+    try {
+      const token = localStorage.getItem('token');
+      const existing = provider?.customServices || [];
+      const detailsList = newService.details
+        ? newService.details.split(',').map(s => s.trim()).filter(Boolean)
+        : [newService.description || newService.name];
+
+      const updated = [
+        ...existing,
+        {
+          name: newService.name.trim(),
+          category: newService.category,
+          image: newService.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
+          price: Number(newService.price) || 499,
+          priceUnit: newService.priceUnit || 'visit',
+          description: newService.description,
+          details: detailsList
+        }
+      ];
+
+      const res = await fetch(`${API_URL}/providers/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ customServices: updated })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success('New service added successfully!');
+        setNewService({
+          name: '',
+          category: 'Plumbing',
+          image: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
+          price: 499,
+          priceUnit: 'visit',
+          description: '',
+          details: ''
+        });
+        void fetchProviderData();
+      } else {
+        toast.error(data.message || 'Failed to add service');
+      }
+    } catch {
+      toast.error('Network error adding service');
+    } finally {
+      setAddingService(false);
+    }
+  };
+
+  // Handle Deleting a Custom Service
+  const handleDeleteCustomService = async (index: number) => {
+    if (!confirm('Remove this service from your offerings?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const existing = provider?.customServices || [];
+      const updated = existing.filter((_, i) => i !== index);
+
+      const res = await fetch(`${API_URL}/providers/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ customServices: updated })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Service removed');
+        void fetchProviderData();
+      }
+    } catch {
+      toast.error('Network error');
+    }
+  };
+
   // Save profile edits
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,46 +356,69 @@ export default function ProviderDashboardPage() {
           experience: Number(editForm.experience),
           qualifications: editForm.qualifications,
           serviceArea: editForm.serviceArea,
+          location: {
+            city: editForm.city,
+            address: editForm.address
+          },
           pricePerHour: Number(editForm.pricePerHour),
           pricingDetails: editForm.pricingDetails,
-          availability: { hours: editForm.workingHours },
+          availability: {
+            hours: editForm.workingHours
+          },
           description: editForm.description,
           profilePicture: editForm.profilePicture,
-          isAvailable: editForm.isAvailable,
-          location: { city: editForm.city, address: editForm.address }
+          isAvailable: editForm.isAvailable
         })
       });
+
       const data = await res.json();
       if (data.success) {
-        toast.success('Professional profile updated successfully!');
-        setProvider(data.provider);
+        toast.success('Profile updated successfully!');
+        void fetchProviderData();
       } else {
-        toast.error(data.message || 'Failed to update profile');
+        toast.error(data.message || 'Update failed');
       }
     } catch {
-      toast.error('Error saving profile');
+      toast.error('Network error saving profile');
     } finally {
       setSavingProfile(false);
     }
   };
 
-  if (authLoading || loading) {
-    return <div className="min-h-screen flex items-center justify-center text-slate-500 font-semibold">Loading Provider Dashboard...</div>;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+          <p className="text-xs font-bold text-slate-500">Loading Provider Workspace...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-16">
-      {/* Provider Hero Bar */}
-      <section className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white py-10 px-4 sm:px-6 lg:px-8 border-b border-white/10">
+    <div className="min-h-screen bg-slate-50/70 pb-20">
+      
+      {/* Top Banner / Pro Profile Summary */}
+      <section className="bg-gradient-to-r from-slate-900 via-slate-850 to-blue-950 text-white pt-10 pb-6 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            
+            {/* Identity Info */}
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 text-2xl font-black text-white shadow-lg">
-                {provider?.name ? provider.name.charAt(0) : 'P'}
+              <div className="relative h-20 w-20 rounded-3xl overflow-hidden border-2 border-white/20 bg-slate-800 shadow-xl shrink-0">
+                <img
+                  src={provider?.profilePicture || '/hero-user.jpg'}
+                  alt={provider?.name || 'Provider'}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/hero-user.jpg';
+                  }}
+                />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-2xl font-extrabold tracking-tight">
                     {provider?.name || user?.username}
                   </h1>
                   {provider?.isApproved ? (
@@ -296,19 +449,21 @@ export default function ProviderDashboardPage() {
               </div>
               <div className="h-8 w-px bg-white/20" />
               <div className="px-3">
-                <p className="text-slate-400 font-semibold">Rating</p>
-                <p className="text-xl font-black text-amber-300">★ {provider?.rating || '4.8'}</p>
+                <p className="text-slate-400 font-semibold">Services</p>
+                <p className="text-xl font-black text-emerald-300">
+                  {(provider?.services?.length || 0) + (provider?.customServices?.length || 0)}
+                </p>
               </div>
               <div className="h-8 w-px bg-white/20" />
               <div className="px-3">
-                <p className="text-slate-400 font-semibold">Experience</p>
-                <p className="text-xl font-black text-emerald-300">{provider?.experience || 2} yrs</p>
+                <p className="text-slate-400 font-semibold">Rating</p>
+                <p className="text-xl font-black text-amber-300">★ {provider?.rating || '4.8'}</p>
               </div>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-4">
+          <div className="mt-8 flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/10 pt-4">
             <button
               onClick={() => setActiveTab('bookings')}
               className={`rounded-full px-5 py-2 text-xs font-bold transition ${
@@ -317,7 +472,18 @@ export default function ProviderDashboardPage() {
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
-              My Bookings & Incoming Jobs ({assignedBookings.length + availableBookings.length})
+              My Bookings & Jobs ({assignedBookings.length + availableBookings.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('services')}
+              className={`rounded-full px-5 py-2 text-xs font-bold transition flex items-center gap-1.5 ${
+                activeTab === 'services'
+                  ? 'bg-orange-500 text-white shadow-md'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>My Services & Add Service</span>
             </button>
             <button
               onClick={() => setActiveTab('profile')}
@@ -327,7 +493,7 @@ export default function ProviderDashboardPage() {
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
-              Edit Professional Profile
+              Edit Profile
             </button>
           </div>
         </div>
@@ -353,15 +519,9 @@ export default function ProviderDashboardPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-xs sm:text-sm text-amber-800 leading-relaxed">
-                  Aapka Service Provider profile submit ho chuka hai aur humari Admin team ke paas verification ke liye queued hai. Jaise hi Admin aapke credentials aur services verify karega, aapka account activate ho jayega aur aap customer requests accept kar sakenge.
+                  Aapka Service Provider profile submit ho chuka hai aur Admin verification ke liye queued hai. Jaise hi Admin approve karega, aap direct bookings accept kar sakenge.
                 </p>
               </div>
-              <button
-                onClick={() => setActiveTab('profile')}
-                className="rounded-xl border border-amber-400 bg-white px-4 py-2 text-xs font-bold text-amber-900 shadow-sm hover:bg-amber-100/50 transition shrink-0"
-              >
-                Review Profile
-              </button>
             </div>
           </div>
         )}
@@ -399,87 +559,118 @@ export default function ProviderDashboardPage() {
                             <h3 className="font-extrabold text-base text-slate-950">
                               {servicesById[b.serviceType]?.name || b.serviceType}
                             </h3>
-                            <p className="text-xs font-mono text-slate-500">
-                              ID: #{b._id.slice(-6).toUpperCase()}
-                            </p>
+                            <p className="text-xs text-slate-500">Booking #{b._id.slice(-6).toUpperCase()}</p>
                           </div>
                         </div>
 
-                        <span className={`rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${
-                          b.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-                          b.status === 'on-the-way' ? 'bg-blue-50 text-blue-700 animate-pulse' :
-                          b.status === 'in-progress' ? 'bg-purple-50 text-purple-700' :
-                          'bg-amber-50 text-amber-700'
+                        <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                          b.status === 'completed'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : b.status === 'on-the-way'
+                            ? 'bg-indigo-100 text-indigo-800 animate-pulse'
+                            : b.status === 'in-progress'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-amber-100 text-amber-800'
                         }`}>
                           {b.status}
                         </span>
                       </div>
 
-                      {/* Customer contact & address */}
-                      <div className="rounded-2xl bg-slate-50 p-4 space-y-2 text-xs text-slate-700">
+                      {/* Customer Details & Address */}
+                      <div className="rounded-2xl bg-slate-50 p-3.5 space-y-2 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-900">Customer: {b.customerName}</span>
-                          <a
-                            href={`tel:${b.customerPhone}`}
-                            className="inline-flex items-center gap-1 font-bold text-blue-700 hover:underline"
-                          >
-                            <Phone className="h-3.5 w-3.5" /> {b.customerPhone}
-                          </a>
+                          <span className="text-slate-500">Customer:</span>
+                          <span className="font-bold text-slate-900">{b.customerName || 'Customer'}</span>
                         </div>
-                        <div className="flex items-start gap-1.5 text-slate-600">
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
-                          <span>{b.address?.fullAddress}, {b.address?.city}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Address:</span>
+                          <span className="font-medium text-slate-800 text-right max-w-[220px]">
+                            {b.address?.fullAddress || 'Address on file'}, {b.address?.city || ''}
+                          </span>
                         </div>
-                        {b.description && (
-                          <p className="text-slate-500 italic pt-1 border-t border-slate-200/60">
-                            &quot;{b.description}&quot;
-                          </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Preferred Slot:</span>
+                          <span className="font-medium text-slate-800">
+                            {b.preferredDate || 'Express'} • {b.preferredTime || 'ASAP'}
+                          </span>
+                        </div>
+                        {b.amount && (
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                            <span className="font-bold text-slate-600">Earnings / Price:</span>
+                            <span className="font-extrabold text-emerald-600 font-mono">₹{b.amount}</span>
+                          </div>
                         )}
                       </div>
 
-                      {/* Provider Action Buttons */}
-                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-                        <button
-                          onClick={() => router.push(`/dashboard/booking/${b._id}`)}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                      {/* Contact Buttons */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <a
+                          href={`tel:${b.customerPhone}`}
+                          className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition"
                         >
-                          <Navigation className="h-3.5 w-3.5 text-orange-400" />
-                          Open Live GPS Radar
-                        </button>
-
-                        {b.status === 'accepted' && (
-                          <button
-                            onClick={() => void updateStatus(b._id, 'on-the-way')}
-                            disabled={actionLoadingId === b._id}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
-                          >
-                            <LocateFixed className="h-3.5 w-3.5" />
-                            I am On The Way
-                          </button>
-                        )}
-
-                        {b.status === 'on-the-way' && (
-                          <button
-                            onClick={() => void updateStatus(b._id, 'in-progress')}
-                            disabled={actionLoadingId === b._id}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700"
-                          >
-                            <Wrench className="h-3.5 w-3.5" />
-                            Start Job Now
-                          </button>
-                        )}
-
-                        {b.status === 'in-progress' && (
-                          <button
-                            onClick={() => void updateStatus(b._id, 'completed')}
-                            disabled={actionLoadingId === b._id}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
-                          >
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Mark Completed
-                          </button>
-                        )}
+                          <Phone className="h-3.5 w-3.5" /> Call Customer
+                        </a>
+                        <a
+                          href={`https://wa.me/91${b.customerPhone?.replace(/\D/g, '').slice(-10)}?text=Hello%20${encodeURIComponent(b.customerName || 'Customer')},%20I%20am%20your%20QuickServices%20Technician%20for%20booking%20#${b._id.slice(-6)}.`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+                        </a>
                       </div>
+
+                      {/* Status Stepper Actions */}
+                      <div className="pt-2 border-t border-slate-100">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                          Update Job Progress:
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => updateStatus(b._id, 'on-the-way')}
+                            disabled={actionLoadingId === b._id || b.status === 'completed'}
+                            className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
+                              b.status === 'on-the-way'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            }`}
+                          >
+                            <Navigation className="h-3 w-3" /> On Way
+                          </button>
+
+                          <button
+                            onClick={() => updateStatus(b._id, 'in-progress')}
+                            disabled={actionLoadingId === b._id || b.status === 'completed'}
+                            className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
+                              b.status === 'in-progress'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            }`}
+                          >
+                            <Wrench className="h-3 w-3" /> In Progress
+                          </button>
+
+                          <button
+                            onClick={() => updateStatus(b._id, 'completed')}
+                            disabled={actionLoadingId === b._id || b.status === 'completed'}
+                            className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
+                              b.status === 'completed'
+                                ? 'bg-emerald-600 text-white shadow-md'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            }`}
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Done
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Live GPS Tracking Link */}
+                      <button
+                        onClick={() => router.push(`/dashboard/booking/${b._id}`)}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95"
+                      >
+                        <LocateFixed className="h-3.5 w-3.5" /> Open Live GPS Tracking Map
+                      </button>
 
                     </div>
                   ))}
@@ -487,16 +678,11 @@ export default function ProviderDashboardPage() {
               )}
             </div>
 
-            {/* 2. Incoming Available Jobs (Unassigned) */}
-            <div className="pt-6 border-t border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-extrabold text-slate-950 flex items-center gap-2">
-                  <Radio className="h-5 w-5 text-orange-600 animate-pulse" /> Available Service Jobs Nearby
-                </h2>
-                <span className="text-xs font-semibold text-slate-500">
-                  {availableBookings.length} requests
-                </span>
-              </div>
+            {/* 2. Available Incoming Requests */}
+            <div className="pt-8 border-t border-slate-200">
+              <h2 className="text-xl font-extrabold text-slate-950 mb-4 flex items-center gap-2">
+                <Radio className="h-5 w-5 text-amber-500" /> Unassigned Incoming Requests
+              </h2>
 
               {availableBookings.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 text-xs">
@@ -517,11 +703,6 @@ export default function ProviderDashboardPage() {
                       <p className="text-xs text-slate-600">
                         📍 {req.address?.fullAddress}, {req.address?.city}
                       </p>
-                      {req.description && (
-                        <p className="text-xs text-slate-500 italic bg-white p-2.5 rounded-xl border border-amber-100">
-                          &quot;{req.description}&quot;
-                        </p>
-                      )}
                       <div className="flex items-center gap-2 pt-2">
                         <button
                           onClick={() => void handleBookingAction(req._id, 'accept')}
@@ -547,22 +728,216 @@ export default function ProviderDashboardPage() {
           </div>
         )}
 
-        {/* ==================== TAB 2: PROFILE MANAGEMENT ==================== */}
+        {/* ==================== TAB 2: MY SERVICES & ADD SERVICE ==================== */}
+        {activeTab === 'services' && (
+          <div className="space-y-8">
+            
+            {/* Add Service Card */}
+            <div className="rounded-3xl border border-orange-200 bg-white p-6 sm:p-8 shadow-lg">
+              <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-md">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-slate-950">Add a New Service Offering</h2>
+                  <p className="text-xs text-slate-500">Apni nayi service add karein with image, description, and upfront pricing.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleAddCustomService} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Service Name / Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Bathroom Leak Repair & Tap Fixing"
+                      value={newService.name}
+                      onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Service Category</label>
+                    <select
+                      value={newService.category}
+                      onChange={(e) => setNewService({ ...newService, category: e.target.value })}
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-orange-500 focus:outline-none"
+                    >
+                      {CATEGORY_OPTIONS.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Service Price (₹) *</label>
+                    <div className="relative">
+                      <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                      <input
+                        type="number"
+                        required
+                        min={100}
+                        placeholder="499"
+                        value={newService.price}
+                        onChange={(e) => setNewService({ ...newService, price: Number(e.target.value) })}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-300 text-sm focus:border-orange-500 focus:outline-none font-bold text-emerald-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Price Unit</label>
+                    <select
+                      value={newService.priceUnit}
+                      onChange={(e) => setNewService({ ...newService, priceUnit: e.target.value })}
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-orange-500 focus:outline-none"
+                    >
+                      <option value="visit">per visit</option>
+                      <option value="hour">per hour</option>
+                      <option value="room">per room</option>
+                      <option value="device">per appliance / device</option>
+                      <option value="sqft">per sq. ft.</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Service Image URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/..."
+                      value={newService.image}
+                      onChange={(e) => setNewService({ ...newService, image: e.target.value })}
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Short Description</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Complete leak detection, washer replacement, and pressure valve check."
+                      value={newService.description}
+                      onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">What&apos;s Included (comma separated)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Leak fixing, Tap replacement, 30-day warranty"
+                      value={newService.details}
+                      onChange={(e) => setNewService({ ...newService, details: e.target.value })}
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={addingService}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:opacity-95 transition disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{addingService ? 'Adding Service...' : 'Add Service to Offerings'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* List of Active Services */}
+            <div>
+              <h3 className="text-xl font-extrabold text-slate-950 mb-4 flex items-center gap-2">
+                <Layers className="h-5 w-5 text-orange-500" /> Active Service Offerings
+              </h3>
+
+              {(!provider?.customServices || provider.customServices.length === 0) ? (
+                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 text-xs">
+                  Aapne abhi koi custom service add nahi ki hai. Upar wale form se apni service add karein!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {provider.customServices.map((svc, idx) => (
+                    <div key={idx} className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-md hover:shadow-xl transition space-y-3">
+                      <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+                        <img
+                          src={svc.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80'}
+                          alt={svc.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/hero-user.jpg';
+                          }}
+                        />
+                        <span className="absolute top-3 right-3 rounded-full bg-slate-950/80 backdrop-blur px-3 py-1 text-xs font-black text-white">
+                          ₹{svc.price} <span className="text-[10px] text-slate-300 font-normal">/ {svc.priceUnit || 'visit'}</span>
+                        </span>
+                      </div>
+
+                      <div className="p-5 pt-0 space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">
+                          {svc.category || 'General'}
+                        </span>
+                        <h4 className="font-extrabold text-slate-950 text-base leading-snug">
+                          {svc.name}
+                        </h4>
+                        {svc.description && (
+                          <p className="text-xs text-slate-600 line-clamp-2">
+                            {svc.description}
+                          </p>
+                        )}
+
+                        {svc.details && svc.details.length > 0 && (
+                          <div className="pt-2 flex flex-wrap gap-1">
+                            {svc.details.map((d, dIdx) => (
+                              <span key={dIdx} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                                ✓ {d}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="pt-3 border-t border-slate-100 flex justify-end">
+                          <button
+                            onClick={() => handleDeleteCustomService(idx)}
+                            className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-800 transition"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
+        {/* ==================== TAB 3: PROFILE MANAGEMENT ==================== */}
         {activeTab === 'profile' && (
-          <form onSubmit={handleProfileSave} className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-200/90 shadow-xl space-y-6">
+          <form onSubmit={handleProfileSave} className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-10 shadow-lg space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <h2 className="text-xl font-extrabold text-slate-950">Edit Professional Profile</h2>
-                <p className="text-xs text-slate-500">Update your trade skills, pricing, and operational coverage.</p>
+                <p className="text-xs text-slate-500">Update your contact details, service area, and working hours.</p>
               </div>
-              <button
-                type="submit"
-                disabled={savingProfile}
-                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 disabled:opacity-60"
-              >
-                <Save className="h-4 w-4" />
-                {savingProfile ? 'Saving...' : 'Save Profile'}
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-700">Availability:</span>
+                <button
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, isAvailable: !editForm.isAvailable })}
+                  className={`rounded-full px-4 py-1.5 text-xs font-extrabold transition ${
+                    editForm.isAvailable ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  }`}
+                >
+                  {editForm.isAvailable ? 'Available for Jobs' : 'Unavailable'}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -579,15 +954,15 @@ export default function ProviderDashboardPage() {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
                 <input
-                  type="tel"
+                  type="text"
                   value={editForm.phone}
                   onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none font-mono"
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Trade Category</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Primary Category</label>
                 <input
                   type="text"
                   value={editForm.category}
@@ -597,22 +972,12 @@ export default function ProviderDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Experience (Years)</label>
-                <input
-                  type="number"
-                  value={editForm.experience}
-                  onChange={(e) => setEditForm({ ...editForm, experience: Number(e.target.value) })}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Starting Visit Price (₹)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Base Price / Inspection Fee (₹)</label>
                 <input
                   type="number"
                   value={editForm.pricePerHour}
                   onChange={(e) => setEditForm({ ...editForm, pricePerHour: Number(e.target.value) })}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none font-mono"
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
@@ -622,17 +987,6 @@ export default function ProviderDashboardPage() {
                   type="text"
                   value={editForm.workingHours}
                   onChange={(e) => setEditForm({ ...editForm, workingHours: e.target.value })}
-                  placeholder="08:00 AM - 08:00 PM"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Base City</label>
-                <input
-                  type="text"
-                  value={editForm.city}
-                  onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
                   className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -643,16 +997,6 @@ export default function ProviderDashboardPage() {
                   type="text"
                   value={editForm.serviceArea}
                   onChange={(e) => setEditForm({ ...editForm, serviceArea: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">Qualifications & Certifications</label>
-                <input
-                  type="text"
-                  value={editForm.qualifications}
-                  onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
                   className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
                 />
               </div>

@@ -156,12 +156,9 @@ export default function ProviderRegisterPage() {
 
       const data = await res.json();
 
-      if (data.success && data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        checkAuth();
-        toast.success('Registration submitted! Profile sent to Admin for verification.');
-        router.push('/dashboard/provider');
+      if (data.success) {
+        toast.success('Registration submitted! Sent to Admin for verification.');
+        router.push('/login?pending=pro');
       } else {
         setErrorMsg(data.message || 'Registration failed. Please try again.');
         toast.error(data.message || 'Registration failed');
