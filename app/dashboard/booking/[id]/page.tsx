@@ -24,12 +24,15 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { getApiBaseUrl } from "@/lib/apiBase";
 import { servicesById } from "@/lib/services";
+import LiveTrackingMap from "@/components/LiveTrackingMap";
 
 interface BookingDetail {
   _id: string;
   user?: { username?: string; email?: string; mobile?: string };
   customerName?: string;
   customerPhone?: string;
+  providerLiveLocation?: { lat: number; lng: number; heading?: number; speed?: number };
+  customerLiveLocation?: { lat: number; lng: number };
   provider?: { 
     name: string; 
     phone: string; 
@@ -66,7 +69,7 @@ export default function BookingDetailPage() {
   const router = useRouter();
   const params = useParams();
   const bookingId = params?.id as string;
-  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -271,6 +274,23 @@ export default function BookingDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Live GPS Map & Real-time Location Tracking */}
+        <LiveTrackingMap
+          bookingId={booking._id}
+          status={booking.status}
+          userRole={user?.role || 'customer'}
+          providerName={booking.provider?.name || 'Verified Specialist'}
+          providerPhone={booking.provider?.phone}
+          customerName={booking.customerName || booking.user?.username || 'Customer'}
+          customerPhone={customerMobile}
+          customerAddress={booking.address?.fullAddress}
+          initialProviderLocation={booking.providerLiveLocation}
+          initialCustomerLocation={booking.customerLiveLocation || (booking.address && (booking.address as any).location?.lat ? { lat: (booking.address as any).location.lat, lng: (booking.address as any).location.lng } : null)}
+          onStatusChange={(newStatus) => {
+            setBooking((prev) => prev ? { ...prev, status: newStatus } : null);
+          }}
+        />
 
         {/* Assigned Specialist Card (Direct Contact / Number) */}
         <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xl">

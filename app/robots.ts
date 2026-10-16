@@ -14,6 +14,8 @@ export default function robots(): MetadataRoute.Robots {
           '/contact',
           '/benefits',
           '/offers',
+          '/providers',
+          '/providers/register',
           '/terms',
           '/privacy',
         ],

@@ -52,7 +52,7 @@ export default function AdminProvidersPage() {
 
   const approveProvider = async (id: string, approved: boolean) => {
     try {
-      const res = await fetch(`${API_URL}/admin/providers/${id}/approve`, {
+      const res = await fetch(`${API_URL}/admin/providers/${id}/${approved ? 'approve' : 'reject'}`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ isApproved: approved }),

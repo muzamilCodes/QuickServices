@@ -2,12 +2,15 @@ import { create } from 'zustand';
 import { getApiBaseUrl } from '@/lib/apiBase';
 
 interface User {
-  _id: string;
+  _id?: string;
+  id?: string;
   username: string;
   email: string;
   mobile: string;
+  profilePic?: string;
   isAdmin: boolean;
-  isVerified: boolean;
+  role?: 'customer' | 'provider' | 'admin';
+  isVerified?: boolean;
 }
 
 interface RegisterPayload {

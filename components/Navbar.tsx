@@ -24,8 +24,8 @@ import { useAuthStore } from '@/store/authStore';
 const mainNavLinks = [
   { name: 'Home', href: '/', icon: House },
   { name: 'Services', href: '/services', icon: Wrench },
+  { name: 'Join as Pro', href: '/providers', icon: BriefcaseBusiness },
   { name: 'Highlights', href: '/offers', icon: Sparkles },
-  { name: 'Benefits', href: '/benefits', icon: ShieldCheck },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: MessageSquareText },
 ];
@@ -52,7 +52,11 @@ export default function Navbar() {
 
   const goToDashboard = () => {
     setMobileMenuOpen(false);
-    router.push('/dashboard/home');
+    if (user?.role === 'provider') {
+      router.push('/dashboard/provider');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   return (
@@ -132,6 +136,17 @@ export default function Navbar() {
                 >
                   <ShieldAlert className="h-3.5 w-3.5" />
                   Admin
+                </button>
+              )}
+
+              {/* Provider Workspace Button */}
+              {user?.role === 'provider' && (
+                <button
+                  onClick={() => router.push('/dashboard/provider')}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"
+                >
+                  <BriefcaseBusiness className="h-3.5 w-3.5" />
+                  Pro Workspace
                 </button>
               )}
 

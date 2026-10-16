@@ -71,6 +71,7 @@ export default function HistoryPage() {
     const colors: Record<string, string> = {
       pending: 'bg-amber-50 text-amber-700',
       accepted: 'bg-blue-50 text-blue-700',
+      'on-the-way': 'bg-blue-600 text-white animate-pulse',
       'in-progress': 'bg-violet-50 text-violet-700',
       completed: 'bg-emerald-50 text-emerald-700',
       cancelled: 'bg-rose-50 text-rose-700',

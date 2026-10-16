@@ -37,10 +37,10 @@ export default function ProvidersPage() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
-                onClick={() => router.push('/register')}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-700 px-6 py-3 text-sm font-medium text-white"
+                onClick={() => router.push('/providers/register')}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
               >
-                Start provider signup
+                Register as Service Provider
                 <ArrowRight className="h-4 w-4" />
               </button>
               <button

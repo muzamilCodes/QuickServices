@@ -70,7 +70,7 @@ const statCards = [
   { key: 'pendingProviders', label: 'Provider approvals', icon: ShieldCheck },
 ] as const;
 
-const bookingStatuses = ['pending', 'accepted', 'in-progress', 'completed', 'cancelled'];
+const bookingStatuses = ['pending', 'accepted', 'on-the-way', 'in-progress', 'completed', 'cancelled'];
 
 export default function AdminPage() {
   const router = useRouter();
