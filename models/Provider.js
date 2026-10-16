@@ -26,6 +26,15 @@ const providerSchema = new mongoose.Schema({
     services: [{
         type: String
     }],
+    customServices: [{
+        name: String,
+        category: String,
+        image: String,
+        price: Number,
+        priceUnit: { type: String, default: 'visit' },
+        description: String,
+        details: [String]
+    }],
     whatsappNumber: {
         type: String
     },

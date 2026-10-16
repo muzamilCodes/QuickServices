@@ -159,6 +159,7 @@ exports.updateMyProfile = async (req, res) => {
             'whatsappNumber',
             'category',
             'services',
+            'customServices',
             'experience',
             'skills',
             'qualifications',

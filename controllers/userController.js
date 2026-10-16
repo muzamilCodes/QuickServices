@@ -160,6 +160,19 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Check if service provider is approved by Admin
+    if (user.role === 'provider') {
+      const Provider = require('../models/Provider');
+      const provider = await Provider.findOne({ userId: user._id });
+      if (provider && !provider.isApproved) {
+        return res.status(403).json({
+          success: false,
+          isPendingApproval: true,
+          message: "Aapka Service Provider profile Admin verification ke liye pending hai. Admin approval ke baad aap login kar sakenge."
+        });
+      }
+    }
+
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.SECRET_KEY,
