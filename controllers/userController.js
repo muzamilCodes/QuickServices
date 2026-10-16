@@ -183,7 +183,8 @@ exports.login = async (req, res) => {
         email: user.email,
         mobile: user.mobile,
         profilePic: user.profilePic,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
+        role: user.role || (user.isAdmin ? 'admin' : 'customer')
       }
     });
 
@@ -327,6 +328,10 @@ exports.verifyOTP = async (req, res) => {
         id: user._id,
         email: user.email,
         username: user.username,
+        mobile: user.mobile,
+        profilePic: user.profilePic,
+        isAdmin: user.isAdmin,
+        role: user.role || (user.isAdmin ? 'admin' : 'customer')
       },
     });
 

@@ -221,6 +221,26 @@ exports.approveProvider = async (req, res) => {
     }
 };
 
+// ===================== ADMIN: REJECT PROVIDER =====================
+exports.rejectProvider = async (req, res) => {
+    try {
+        const { providerId } = req.params;
+
+        const provider = await Provider.findById(providerId);
+        if (!provider) {
+            return res.status(404).json({ success: false, message: 'Provider not found' });
+        }
+
+        provider.isApproved = false;
+        await provider.save();
+
+        res.json({ success: true, message: 'Provider unapproved/rejected', provider });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // ===================== ADMIN: SERVICES CRUD =====================
 exports.getServices = async (req, res) => {
     try {

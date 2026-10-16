@@ -8,7 +8,23 @@ const sendEmail = require('../utilities/emailService');
 router.get('/services', async (req, res) => {
     try {
         const Service = require('../models/Service');
-        const services = await Service.find({}).sort({ createdAt: -1 });
+        let services = await Service.find({}).sort({ createdAt: -1 });
+        if (!services || services.length === 0) {
+            const defaultServices = [
+                { id: 'plumber', name: 'Plumbing & Leak Repair', icon: '🔧', description: 'Leak repair, tap fitting, blocked drains and bathroom plumbing solutions.', details: ['Leak repair', 'Tap fitting', 'Drain cleaning'], basePrice: 499, priceUnit: 'visit', rating: 4.9 },
+                { id: 'electrician', name: 'Certified Electrical Works', icon: '⚡', description: 'Switchboards, fans, lights, wiring faults and complete home electrical setup.', details: ['Fan fitting', 'Wiring faults', 'Switchboard repair'], basePrice: 499, priceUnit: 'visit', rating: 4.9 },
+                { id: 'cleaner', name: 'Home Complete Cleaning Solutions', icon: '🧹', description: 'Full home cleaning, sanitized floors, deep bathroom and kitchen scrub.', details: ['Home cleaning', 'Office cleaning', 'Deep cleaning'], basePrice: 399, priceUnit: 'room', rating: 4.8 },
+                { id: 'painter', name: 'House Painting & Wall Primer', icon: '🎨', description: 'Interior/exterior premium paint finishing, texture work and waterproofing.', details: ['Full room paint', 'Wall primer', 'Texture coating'], basePrice: 899, priceUnit: 'room', rating: 4.7 },
+                { id: 'carpenter', name: 'Expert Woodwork & Furniture Repair', icon: '🪚', description: 'Door fixes, latch fittings, custom wooden wardrobes and furniture assembly.', details: ['Door adjustments', 'Hinges & locks', 'Wood restoration'], basePrice: 599, priceUnit: 'visit', rating: 4.8 },
+                { id: 'appliance', name: 'Appliance Repair & Maintenance', icon: '❄️', description: 'AC gas refill, refrigerator, washing machine and microwave servicing.', details: ['AC servicing', 'Fridge coolant', 'Washing machine'], basePrice: 449, priceUnit: 'device', rating: 4.8 },
+                { id: 'landscaping', name: 'Lawn & Garden Landscaping', icon: '🌿', description: 'Lawn mowing, hedge trimming, garden soil preparation and planting.', details: ['Lawn mowing', 'Weed cleanup', 'Plant trimming'], basePrice: 699, priceUnit: 'hour', rating: 4.7 },
+                { id: 'salon', name: 'Professional Grooming & Salon at Home', icon: '✂️', description: 'Hair styling, beard grooming, facial massage and hygienic personal care.', details: ['Men haircut & beard', 'Women facial & wax', 'Head massage'], basePrice: 499, priceUnit: 'person', rating: 4.9 },
+                { id: 'pest', name: 'Pest Control & Fumigation', icon: '🛡️', description: 'Termite inspection, cockroach eradication and bed bug chemical fogging.', details: ['Bed bug removal', 'Termite spray', 'Cockroach gel'], basePrice: 799, priceUnit: 'visit', rating: 4.9 },
+                { id: 'ro', name: 'Water Purifier & RO Service', icon: '💧', description: 'Filter replacement, membrane service, TDS tuning and UV lamp check.', details: ['Filter change', 'Membrane swap', 'TDS calibration'], basePrice: 449, priceUnit: 'device', rating: 4.8 }
+            ];
+            await Service.insertMany(defaultServices);
+            services = await Service.find({}).sort({ createdAt: -1 });
+        }
         res.json({ success: true, services });
     } catch (error) {
         console.error(error);

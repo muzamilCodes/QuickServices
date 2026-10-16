@@ -15,52 +15,19 @@ const providerSchema = new mongoose.Schema({
         required: true
     },
     email: String,
-    services: [{
+    profilePicture: {
         type: String,
-        enum: [
-            'plumber',
-            'electrician',
-            'driver',
-            'cleaner',
-            'carpenter',
-            'painter',
-            'mechanic',
-            'gardener',
-            'ac',
-            'tv',
-            'laundry',
-            'cook',
-            'pet',
-            'locksmith',
-            'computer',
-            'wifi',
-            'delivery',
-            'glass',
-            'bathroom',
-            'sofa',
-            'kitchen',
-            'inspection',
-            'inverter',
-            'tank',
-            'polish',
-            'appliance',
-            'door',
-            'moving',
-            'pest',
-            'cctv',
-            'salon',
-            'babysitter',
-            'eldercare',
-            'nurse',
-            'tutor',
-            'carwash',
-            'chimney',
-            'waterpurifier'
-        ]
+        default: '/hero-user.jpg'
+    },
+    category: {
+        type: String,
+        default: 'General Maintenance'
+    },
+    services: [{
+        type: String
     }],
     whatsappNumber: {
-        type: String,
-        required: true
+        type: String
     },
     isAvailable: {
         type: Boolean,
@@ -72,24 +39,73 @@ const providerSchema = new mongoose.Schema({
     },
     rating: {
         type: Number,
-        default: 0
+        default: 4.8
     },
     totalRatings: {
         type: Number,
-        default: 0
+        default: 12
     },
     experience: {
         type: Number,
+        default: 2
+    },
+    skills: [{
+        type: String
+    }],
+    qualifications: {
+        type: String,
+        default: 'Certified Professional Technician'
+    },
+    serviceArea: {
+        type: String,
+        default: 'Srinagar & Handwara Kashmir'
+    },
+    availability: {
+        days: {
+            type: [String],
+            default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        },
+        hours: {
+            type: String,
+            default: '08:00 AM - 08:00 PM'
+        }
+    },
+    pricingDetails: {
+        type: String,
+        default: 'Starting at ₹499 per visit. Transparent upfront rates.'
+    },
+    description: {
+        type: String,
+        default: 'Experienced verified technician offering fast doorstep repair and maintenance.'
+    },
+    portfolio: [{
+        type: String
+    }],
+    documents: [{
+        name: String,
+        url: String
+    }],
+    completedBookings: {
+        type: Number,
         default: 0
     },
-    description: String,
     location: {
-        city: String,
-        address: String,
-        lat: Number,
-        lng: Number
+        city: { type: String, default: 'Srinagar' },
+        address: { type: String, default: 'Kashmir' },
+        lat: { type: Number, default: 34.0837 },
+        lng: { type: Number, default: 74.7973 }
     },
-    pricePerHour: Number
+    liveLocation: {
+        lat: Number,
+        lng: Number,
+        heading: Number,
+        speed: Number,
+        updatedAt: Date
+    },
+    pricePerHour: {
+        type: Number,
+        default: 499
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Provider', providerSchema);

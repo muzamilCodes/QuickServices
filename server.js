@@ -4,9 +4,12 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
+const http = require("http");
+const { Server } = require("socket.io");
 const connectDb = require("./config/connectDb");
 
 const app = express();
+const server = http.createServer(app);
 const port = process.env.PORT || 4000;
 
 // Connect DB
@@ -101,15 +104,109 @@ app.use(cors({
   ]
 }));
 
+// Initialize Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: function (origin, callback) {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+  }
+});
 
+// Attach io to req
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
+// Real-time socket events for live location & bookings
+io.on("connection", (socket) => {
+  console.log("🔌 Socket client connected:", socket.id);
+
+  // Join a specific booking tracking room
+  socket.on("join_booking", (bookingId) => {
+    if (bookingId) {
+      socket.join(`booking_${bookingId}`);
+      console.log(`📍 Socket ${socket.id} joined tracking room booking_${bookingId}`);
+    }
+  });
+
+  socket.on("leave_booking", (bookingId) => {
+    if (bookingId) {
+      socket.leave(`booking_${bookingId}`);
+      console.log(`Socket ${socket.id} left tracking room booking_${bookingId}`);
+    }
+  });
+
+  // Client or Provider broadcasts live GPS location
+  socket.on("update_location", async (data) => {
+    try {
+      const { bookingId, role, lat, lng, heading, speed } = data || {};
+      if (!bookingId || lat === undefined || lng === undefined) return;
+
+      const Booking = require("./models/Booking");
+      const booking = await Booking.findById(bookingId);
+      if (!booking) return;
+
+      // Only allow live location updates during active service periods
+      const activeStatuses = ["accepted", "on-the-way", "in-progress"];
+      if (!activeStatuses.includes(booking.status)) {
+        return;
+      }
+
+      const now = new Date();
+      if (role === "provider") {
+        booking.providerLiveLocation = {
+          lat: Number(lat),
+          lng: Number(lng),
+          heading: heading ? Number(heading) : 0,
+          speed: speed ? Number(speed) : 0,
+          updatedAt: now
+        };
+      } else {
+        booking.customerLiveLocation = {
+          lat: Number(lat),
+          lng: Number(lng),
+          updatedAt: now
+        };
+      }
+
+      await booking.save();
+
+      // Broadcast new coordinates to all parties listening to this booking
+      io.to(`booking_${bookingId}`).emit("location_updated", {
+        bookingId,
+        role,
+        lat: Number(lat),
+        lng: Number(lng),
+        heading: heading ? Number(heading) : 0,
+        speed: speed ? Number(speed) : 0,
+        updatedAt: now,
+        status: booking.status,
+        providerLiveLocation: booking.providerLiveLocation,
+        customerLiveLocation: booking.customerLiveLocation
+      });
+    } catch (err) {
+      console.error("Socket update_location error:", err);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    // console.log("Socket disconnected:", socket.id);
+  });
+});
 
 // Static uploads
 app.use("/uploads", express.static("uploads"));
 
 // Routes
 app.use("/user", require("./routes/userRoutes"));
-// Add this with other routes
 app.use("/bookings", require("./routes/bookingRoutes"));
 app.use("/providers", require("./routes/providerRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
@@ -118,10 +215,9 @@ app.use("/loyalty", require("./routes/loyaltyRoutes"));
 // Public routes (no auth required)
 app.use("/public", require("./routes/publicRoutes"));
 
-
 // Health check
 app.get("/", (req, res) => {
-  res.status(200).json({ success: true, message: "API is running!" });
+  res.status(200).json({ success: true, message: "API is running with Socket.IO live location support!" });
 });
 
 // 404 handler
@@ -139,8 +235,8 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+server.listen(port, () => {
+  console.log(`🚀 Server with Socket.IO running on port ${port}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`📍 Frontend URL: ${process.env.FRONTEND_URL || "Not set"}`);
 });

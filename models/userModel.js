@@ -33,6 +33,11 @@ const userSchema = new mongoose.Schema(
 
     isAdmin: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    role: {
+      type: String,
+      enum: ['customer', 'provider', 'admin'],
+      default: 'customer'
+    },
 
     address: {
       street: { type: String },

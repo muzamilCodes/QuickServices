@@ -10,7 +10,10 @@ const {
     cancelBooking,
     deleteBooking,
     getServices,
-    getBooking
+    getBooking,
+    updateLiveLocation,
+    getLiveLocation,
+    updateBookingStatus
 } = require('../controllers/bookingController');
 
 // All routes require authentication
@@ -24,5 +27,10 @@ router.get('/my-bookings', getMyBookings);
 router.get('/:bookingId', getBooking);
 router.put('/:bookingId/cancel', cancelBooking);
 router.delete('/:bookingId', deleteBooking);
+
+// Live location tracking & status updates
+router.post('/:bookingId/location', updateLiveLocation);
+router.get('/:bookingId/live-location', getLiveLocation);
+router.put('/:bookingId/status', updateBookingStatus);
 
 module.exports = router;

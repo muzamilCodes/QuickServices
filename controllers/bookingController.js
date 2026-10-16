@@ -451,6 +451,180 @@ const getServices = async (req, res) => {
   return res.json({ success: true, services });
 };
 
+// ===================== LIVE LOCATION TRACKING =====================
+const updateLiveLocation = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { role, lat, lng, heading, speed } = req.body;
+
+    if (lat === undefined || lng === undefined) {
+      return res.status(400).json({ success: false, message: 'Latitude and Longitude are required' });
+    }
+
+    const booking = await Booking.findById(bookingId).populate('provider', 'name phone profilePicture');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const activeStatuses = ['accepted', 'on-the-way', 'in-progress'];
+    if (!activeStatuses.includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Live location sharing is inactive for booking in '${booking.status}' status`
+      });
+    }
+
+    const now = new Date();
+    if (role === 'provider') {
+      booking.providerLiveLocation = {
+        lat: Number(lat),
+        lng: Number(lng),
+        heading: heading ? Number(heading) : 0,
+        speed: speed ? Number(speed) : 0,
+        updatedAt: now
+      };
+    } else {
+      booking.customerLiveLocation = {
+        lat: Number(lat),
+        lng: Number(lng),
+        updatedAt: now
+      };
+    }
+
+    await booking.save();
+
+    // Broadcast through Socket.IO if available
+    if (req.io) {
+      req.io.to(`booking_${bookingId}`).emit('location_updated', {
+        bookingId,
+        role,
+        lat: Number(lat),
+        lng: Number(lng),
+        heading: heading ? Number(heading) : 0,
+        speed: speed ? Number(speed) : 0,
+        updatedAt: now,
+        status: booking.status,
+        providerLiveLocation: booking.providerLiveLocation,
+        customerLiveLocation: booking.customerLiveLocation
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Location updated',
+      providerLiveLocation: booking.providerLiveLocation,
+      customerLiveLocation: booking.customerLiveLocation
+    });
+  } catch (error) {
+    console.error('updateLiveLocation error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getLiveLocation = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findById(bookingId)
+      .populate('user', 'username email mobile')
+      .populate('provider', 'name phone profilePicture location');
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const activeStatuses = ['accepted', 'on-the-way', 'in-progress'];
+    const isTrackingActive = activeStatuses.includes(booking.status);
+
+    // Coordinates resolution
+    const providerLat = booking.providerLiveLocation?.lat ?? booking.provider?.location?.lat;
+    const providerLng = booking.providerLiveLocation?.lng ?? booking.provider?.location?.lng;
+
+    const customerLat = booking.customerLiveLocation?.lat ?? booking.address?.location?.lat;
+    const customerLng = booking.customerLiveLocation?.lng ?? booking.address?.location?.lng;
+
+    let distanceKm = null;
+    let eta = null;
+
+    if (providerLat && providerLng && customerLat && customerLng) {
+      const R = 6371; // km
+      const dLat = (customerLat - providerLat) * Math.PI / 180;
+      const dLon = (customerLng - providerLng) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(providerLat * Math.PI / 180) * Math.cos(customerLat * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      distanceKm = Number((R * c).toFixed(2));
+
+      // Calculate ETA
+      const minutes = Math.max(2, Math.round((distanceKm / 25) * 60));
+      eta = minutes < 60 ? `${minutes} mins` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+    }
+
+    return res.json({
+      success: true,
+      isTrackingActive,
+      status: booking.status,
+      providerLiveLocation: booking.providerLiveLocation || (providerLat ? { lat: providerLat, lng: providerLng } : null),
+      customerLiveLocation: booking.customerLiveLocation || (customerLat ? { lat: customerLat, lng: customerLng } : null),
+      distanceKm,
+      eta,
+      provider: booking.provider ? {
+        _id: booking.provider._id,
+        name: booking.provider.name,
+        phone: booking.provider.phone,
+        profilePicture: booking.provider.profilePicture
+      } : null,
+      customer: {
+        name: booking.customerName || booking.user?.username,
+        phone: booking.customerPhone || booking.user?.mobile,
+        address: booking.address?.fullAddress
+      }
+    });
+  } catch (error) {
+    console.error('getLiveLocation error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateBookingStatus = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['pending', 'accepted', 'on-the-way', 'in-progress', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const booking = await Booking.findById(bookingId).populate('provider', 'name phone');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    booking.status = status;
+    const now = new Date();
+    if (status === 'accepted') booking.assignedAt = now;
+    if (status === 'on-the-way' || status === 'in-progress') booking.startedAt = booking.startedAt || now;
+    if (status === 'completed') booking.completedAt = now;
+
+    await booking.save();
+
+    if (req.io) {
+      req.io.to(`booking_${bookingId}`).emit('status_updated', {
+        bookingId,
+        status,
+        updatedAt: now
+      });
+    }
+
+    return res.json({ success: true, message: `Booking status updated to ${status}`, booking });
+  } catch (error) {
+    console.error('updateBookingStatus error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createBooking,
   verifyBookingOTP,
@@ -459,4 +633,8 @@ module.exports = {
   deleteBooking,
   getServices,
   getBooking,
+  updateLiveLocation,
+  getLiveLocation,
+  updateBookingStatus,
 };
+

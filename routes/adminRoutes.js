@@ -7,6 +7,7 @@ const {
     deleteBooking,
     getAllProviders,
     approveProvider,
+    rejectProvider,
     getDashboardStats,
     getServices,
     createService,
@@ -38,6 +39,7 @@ router.put('/bookings/:bookingId', updateBookingStatus);
 router.delete('/bookings/:bookingId', deleteBooking);
 router.get('/providers', getAllProviders);
 router.put('/providers/:providerId/approve', approveProvider);
+router.put('/providers/:providerId/reject', rejectProvider);
 
 router.get('/services', getServices);
 router.post('/services', createService);

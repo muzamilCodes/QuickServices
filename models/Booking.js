@@ -16,7 +16,7 @@ const bookingSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'accepted', 'in-progress', 'completed', 'cancelled'],
+        enum: ['pending', 'accepted', 'on-the-way', 'in-progress', 'completed', 'cancelled'],
         default: 'pending'
     },
     customerName: {
@@ -37,6 +37,21 @@ const bookingSchema = new mongoose.Schema({
             lng: Number
         }
     },
+    providerLiveLocation: {
+        lat: Number,
+        lng: Number,
+        heading: Number,
+        speed: Number,
+        updatedAt: Date
+    },
+    customerLiveLocation: {
+        lat: Number,
+        lng: Number,
+        updatedAt: Date
+    },
+    assignedAt: Date,
+    startedAt: Date,
+    completedAt: Date,
     description: {
         type: String,
         required: true
