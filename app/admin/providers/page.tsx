@@ -333,14 +333,10 @@ export default function AdminProvidersPage() {
                       <span>Verify & Approve Provider</span>
                     </button>
                   ) : (
-                    <button
-                      disabled={actionLoading === provider._id}
-                      onClick={() => approveProvider(provider._id, false)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition disabled:opacity-50"
-                    >
-                      <XCircle className="h-4 w-4" />
-                      <span>Revoke Approval</span>
-                    </button>
+                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-300 px-3.5 py-2 text-xs font-extrabold text-emerald-800">
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      <span>Verified & Approved</span>
+                    </div>
                   )}
                 </div>
 
