@@ -86,23 +86,30 @@ export default function HomePage() {
               QuickServices connects you directly with verified plumbers, electricians, drivers, cleaners, and appliance experts across Kashmir. Pick your service, confirm via secure OTP, and track your specialist live.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
-              <button
-                onClick={() => {
-                  const element = document.getElementById('catalog-section');
-                  element?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-7 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 active:scale-95"
-              >
-                Browse all services
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => router.push('/services')}
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/80 px-7 py-3.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400 active:scale-95"
-              >
-                Book a Specialist
-              </button>
+            {/* Single Clear Primary CTA */}
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
+                <button
+                  onClick={() => router.push('/services')}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-8 py-4 text-base font-extrabold text-white shadow-xl shadow-blue-500/25 transition hover:opacity-95 hover:scale-[1.02] active:scale-95"
+                >
+                  <span>Book a Verified Service Now</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    const element = document.getElementById('catalog-section');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white/90 px-6 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400 active:scale-95"
+                >
+                  <span>Explore 16+ Categories</span>
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 font-medium text-center lg:text-left">
+                ⚡ No advance payment required • Verified specialists • Same-day doorstep support
+              </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-xs sm:text-sm font-medium text-slate-600">

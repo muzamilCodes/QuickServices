@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import CookieConsent from '@/components/CookieConsent';
 import { useAuthStore } from '@/store/authStore';
 
 const authRoutes = new Set([
@@ -29,6 +30,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {!hideChrome && <Navbar />}
       <main className={hideChrome ? '' : 'pt-20'}>{children}</main>
       {!hideChrome && <Footer />}
+      <CookieConsent />
       <Toaster position="top-right" />
     </>
   );
