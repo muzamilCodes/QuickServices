@@ -36,6 +36,19 @@ exports.registerProvider = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Name, email, password, and phone are required.' });
         }
 
+        // 8-character multi-type strong password validator (A / a / 1 / @)
+        const hasMinLen = password.length >= 8;
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password);
+        if (!hasMinLen || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai (aik hi type ka nahi hona chahiye).'
+            });
+        }
+
         const normalizedEmail = email.trim().toLowerCase();
         const cleanMobile = phone.replace(/\D/g, "").slice(-10);
 

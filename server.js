@@ -234,6 +234,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: err.message || "Something went wrong!" });
 });
 
+// Handle port listen errors gracefully
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ ERROR: Port ${port} is already in use by another running process!`);
+    console.error(`💡 Tip: Close the terminal running the previous server or run: npx kill-port ${port}\n`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
+  }
+});
+
 // Start server
 server.listen(port, () => {
   console.log(`🚀 Server with Socket.IO running on port ${port}`);

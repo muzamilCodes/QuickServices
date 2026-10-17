@@ -19,8 +19,17 @@ const sendOtpEmail = async (to, subject, otp, title) => {
   }
 };
 
+// 8-character multi-type strong password validator (A / a / 1 / @)
+const validateStrongPassword = (pwd) => {
+  if (!pwd || typeof pwd !== 'string') return false;
+  const hasMinLen = pwd.length >= 8;
+  const hasUpper = /[A-Z]/.test(pwd);
+  const hasLower = /[a-z]/.test(pwd);
+  const hasNumber = /[0-9]/.test(pwd);
+  const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(pwd);
+  return hasMinLen && hasUpper && hasLower && hasNumber && hasSpecial;
+};
 
-// ===================== REGISTER =====================
 // ===================== REGISTER =====================
 exports.register = async (req, res) => {
   try {
@@ -36,6 +45,13 @@ exports.register = async (req, res) => {
     if (missing.length > 0) {
       console.warn('Register validation failed - missing fields:', missing);
       return res.status(400).json({ success: false, message: `Missing fields: ${missing.join(', ')}` });
+    }
+
+    if (!validateStrongPassword(password)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai (aik hi type ka nahi hona chahiye)."
+      });
     }
 
     const cleanMobile = rawMobile.replace(/\D/g, "").slice(-10);
@@ -513,6 +529,12 @@ exports.changePass = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
+    if (!validateStrongPassword(password)) {
+      return res.status(400).json({
+        message: "Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai."
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
     user.password = hashedPassword;
 
@@ -573,6 +595,14 @@ exports.resetPassword = async (req, res) => {
     if (!email || !newPassword) {
       return res.status(400).json({ success: false, message: "Email and new password required" });
     }
+
+    if (!validateStrongPassword(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai."
+      });
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
