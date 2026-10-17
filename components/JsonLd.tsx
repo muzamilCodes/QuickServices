@@ -147,6 +147,35 @@ export default function JsonLd() {
     ],
   };
 
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${BASE_URL}/#organization`,
+    name: 'QuickServices',
+    url: BASE_URL,
+    logo: `${BASE_URL}/hero-user.jpg`,
+    sameAs: [
+      'https://twitter.com/getsocialgrow',
+      'https://www.linkedin.com/in/muzamil-war',
+      'https://github.com/muzamilCodes/QuickServices'
+    ],
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        telephone: '+919682645127',
+        contactType: 'customer service',
+        areaServed: 'IN',
+        availableLanguage: ['English', 'Hindi', 'Urdu', 'Kashmiri']
+      }
+    ],
+    founder: {
+      '@type': 'Person',
+      name: 'Muzamil War',
+      jobTitle: 'Founder & CEO',
+      knowsAbout: ['Home Maintenance', 'Plumbing Diagnostics', 'Electrical Systems', 'Appliance Servicing']
+    }
+  };
+
   return (
     <>
       <script
@@ -156,6 +185,10 @@ export default function JsonLd() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
       />
       <script
         type="application/ld+json"

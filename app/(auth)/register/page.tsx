@@ -50,8 +50,15 @@ export default function RegisterPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    const isPasswordValid =
+      formData.password.length >= 8 &&
+      /[A-Z]/.test(formData.password) &&
+      /[a-z]/.test(formData.password) &&
+      /[0-9]/.test(formData.password) &&
+      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(formData.password);
+
+    if (!isPasswordValid) {
+      toast.error("Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) zaroori hai.");
       return;
     }
 
@@ -304,7 +311,7 @@ export default function RegisterPage() {
               {/* Password */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Create Password
+                  Create Password (A / a / 1 / @)
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
@@ -313,8 +320,8 @@ export default function RegisterPage() {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition"
-                    placeholder="Minimum 6 characters"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition font-medium"
+                    placeholder="Min 8 chars: A-Z, a-z, 0-9, symbol"
                     required
                   />
                   <button
@@ -325,6 +332,32 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+
+                {/* Live Password Rules Indicator */}
+                {formData.password && (
+                  <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs space-y-1">
+                    <p className="font-bold text-slate-700 text-[11px] mb-1">
+                      Password Requirements (Min 8 Digits & Mixed Types):
+                    </p>
+                    <div className="grid grid-cols-2 gap-1 text-[11px]">
+                      <span className={formData.password.length >= 8 ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {formData.password.length >= 8 ? "✓" : "○"} Min 8 characters
+                      </span>
+                      <span className={/[A-Z]/.test(formData.password) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[A-Z]/.test(formData.password) ? "✓" : "○"} Uppercase (A-Z)
+                      </span>
+                      <span className={/[a-z]/.test(formData.password) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[a-z]/.test(formData.password) ? "✓" : "○"} Lowercase (a-z)
+                      </span>
+                      <span className={/[0-9]/.test(formData.password) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[0-9]/.test(formData.password) ? "✓" : "○"} Number (0-9)
+                      </span>
+                      <span className={/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(formData.password) ? "text-emerald-600 font-semibold flex items-center gap-1 col-span-2" : "text-slate-400 flex items-center gap-1 col-span-2"}>
+                        {/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(formData.password) ? "✓" : "○"} Special Symbol (@, $, !, %, *, #, etc.)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}

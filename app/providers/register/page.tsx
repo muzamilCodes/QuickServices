@@ -133,6 +133,19 @@ export default function ProviderRegisterPage() {
       return;
     }
 
+    const isPasswordValid =
+      form.password.length >= 8 &&
+      /[A-Z]/.test(form.password) &&
+      /[a-z]/.test(form.password) &&
+      /[0-9]/.test(form.password) &&
+      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(form.password);
+
+    if (!isPasswordValid) {
+      setErrorMsg('Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai.');
+      toast.error('Password requirements not met (A / a / 1 / @)');
+      return;
+    }
+
     if (form.services.length === 0) {
       setErrorMsg('Please select at least one service that you offer.');
       return;
@@ -297,16 +310,43 @@ export default function ProviderRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Password *</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Create Password * (A / a / 1 / @)
+                </label>
                 <input
                   type="password"
                   required
-                  minLength={6}
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  placeholder="Minimum 6 characters"
+                  placeholder="Min 8 chars: A-Z, a-z, 0-9, symbol"
                   className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-600 focus:outline-none"
                 />
+
+                {/* Live Password Rules Indicator */}
+                {form.password && (
+                  <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs space-y-1">
+                    <p className="font-bold text-slate-700 text-[11px] mb-1">
+                      Password Requirements (Min 8 Digits & Mixed Types):
+                    </p>
+                    <div className="grid grid-cols-2 gap-1 text-[11px]">
+                      <span className={form.password.length >= 8 ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {form.password.length >= 8 ? "✓" : "○"} Min 8 characters
+                      </span>
+                      <span className={/[A-Z]/.test(form.password) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[A-Z]/.test(form.password) ? "✓" : "○"} Uppercase (A-Z)
+                      </span>
+                      <span className={/[a-z]/.test(form.password) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[a-z]/.test(form.password) ? "✓" : "○"} Lowercase (a-z)
+                      </span>
+                      <span className={/[0-9]/.test(form.password) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[0-9]/.test(form.password) ? "✓" : "○"} Number (0-9)
+                      </span>
+                      <span className={/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(form.password) ? "text-emerald-600 font-semibold flex items-center gap-1 col-span-2" : "text-slate-400 flex items-center gap-1 col-span-2"}>
+                        {/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(form.password) ? "✓" : "○"} Special Symbol (@, $, !, %, *, #, etc.)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

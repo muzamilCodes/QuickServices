@@ -33,8 +33,15 @@ export default function ResetPasswordPage() {
       toast.error("Enter 6-digit OTP");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    const isPasswordValid =
+      newPassword.length >= 8 &&
+      /[A-Z]/.test(newPassword) &&
+      /[a-z]/.test(newPassword) &&
+      /[0-9]/.test(newPassword) &&
+      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(newPassword);
+
+    if (!isPasswordValid) {
+      toast.error("Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -116,15 +123,17 @@ export default function ResetPasswordPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Password (A / a / 1 / @)
+                </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="•••••• (min 6 characters)"
-                    className="w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                    placeholder="Min 8 chars: A-Z, a-z, 0-9, symbol"
+                    className="w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 font-medium text-sm"
                     required
                   />
                   <button
@@ -135,6 +144,32 @@ export default function ResetPasswordPage() {
                     {showPassword ? <EyeOff className="w-5 h-5 text-gray-400" /> : <Eye className="w-5 h-5 text-gray-400" />}
                   </button>
                 </div>
+
+                {/* Live Password Rules Indicator */}
+                {newPassword && (
+                  <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs space-y-1">
+                    <p className="font-bold text-slate-700 text-[11px] mb-1">
+                      Password Requirements (Min 8 Digits & Mixed Types):
+                    </p>
+                    <div className="grid grid-cols-2 gap-1 text-[11px]">
+                      <span className={newPassword.length >= 8 ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {newPassword.length >= 8 ? "✓" : "○"} Min 8 characters
+                      </span>
+                      <span className={/[A-Z]/.test(newPassword) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[A-Z]/.test(newPassword) ? "✓" : "○"} Uppercase (A-Z)
+                      </span>
+                      <span className={/[a-z]/.test(newPassword) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[a-z]/.test(newPassword) ? "✓" : "○"} Lowercase (a-z)
+                      </span>
+                      <span className={/[0-9]/.test(newPassword) ? "text-emerald-600 font-semibold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[0-9]/.test(newPassword) ? "✓" : "○"} Number (0-9)
+                      </span>
+                      <span className={/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(newPassword) ? "text-emerald-600 font-semibold flex items-center gap-1 col-span-2" : "text-slate-400 flex items-center gap-1 col-span-2"}>
+                        {/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(newPassword) ? "✓" : "○"} Special Symbol (@, $, !, %, *, #, etc.)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
