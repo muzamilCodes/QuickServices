@@ -192,16 +192,17 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if service provider is approved by Admin (Admins are always exempt)
-    if (!user.isAdmin && user.role === 'provider') {
+    // Fetch provider approval status if user is a provider
+    let isProviderApproved = true;
+    if (user.role === 'provider') {
       const Provider = require('../models/Provider');
-      const provider = await Provider.findOne({ userId: user._id });
-      if (provider && !provider.isApproved) {
-        return res.status(403).json({
-          success: false,
-          isPendingApproval: true,
-          message: "Your Service Provider account is pending Admin approval. You will be able to log in once verified by the Admin."
-        });
+      const provider = await Provider.findOne({ $or: [{ userId: user._id }, { email: user.email }] });
+      if (provider) {
+        isProviderApproved = provider.isApproved !== false;
+        if (!provider.userId) {
+          provider.userId = user._id;
+          await provider.save();
+        }
       }
     }
 
@@ -229,7 +230,8 @@ exports.login = async (req, res) => {
         mobile: user.mobile,
         profilePic: user.profilePic,
         isAdmin: user.isAdmin,
-        role: user.role || (user.isAdmin ? 'admin' : 'customer')
+        role: user.role || (user.isAdmin ? 'admin' : 'customer'),
+        isApproved: isProviderApproved
       }
     });
 
