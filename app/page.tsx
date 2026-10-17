@@ -18,7 +18,7 @@ import {
   Star,
   UserCheck
 } from 'lucide-react';
-import ServicesCatalog from '@/components/ServicesCatalog';
+import { allServices } from '@/lib/services';
 
 const trustSignals = [
   { icon: Clock3, title: 'Quick dispatch', description: 'Fast confirmations with a booking flow built for same-day local help.' },
@@ -98,7 +98,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => {
-                    const element = document.getElementById('catalog-section');
+                    const element = document.getElementById('popular-services');
                     element?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white/90 px-6 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400 active:scale-95"
@@ -172,11 +172,120 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================================
-          SECTION 2: HANDYPAL SERVICE CATALOG & FILTERS (SCREENSHOT 2 LAYOUT)
+          SECTION 2: FEATURED POPULAR SERVICES (HOME PAGE CLEAN PREVIEW)
       ========================================================================= */}
-      <div id="catalog-section">
-        <ServicesCatalog title="Reliable home repair and maintenance services" />
-      </div>
+      <section id="popular-services" className="bg-slate-50/70 py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-200">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-100/70 px-3 py-1 text-xs font-bold text-[#0f62c9]">
+                <Sparkles className="h-3.5 w-3.5 text-orange-500" />
+                MOST REQUESTED IN KASHMIR
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
+                Popular Doorstep Services
+              </h2>
+              <p className="text-sm text-slate-600 max-w-xl">
+                Choose from verified plumbers, electricians, appliance technicians, and home cleaners across Kashmir with upfront pricing.
+              </p>
+            </div>
+
+            <button
+              onClick={() => router.push('/services')}
+              className="inline-flex items-center gap-2 rounded-2xl bg-white border border-slate-300 px-5 py-3 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-100 hover:border-slate-400 self-start sm:self-auto shrink-0"
+            >
+              <span>Explore All 16+ Categories with Live Filters</span>
+              <ArrowRight className="h-4 w-4 text-[#0f62c9]" />
+            </button>
+          </div>
+
+          {/* Clean 8-Card Featured Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {allServices.slice(0, 8).map((service) => (
+              <div
+                key={service.id}
+                className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition hover:shadow-xl hover:-translate-y-1 duration-300"
+              >
+                {/* Image Header */}
+                <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                  <Image
+                    src={service.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80'}
+                    alt={`${service.name} - QuickServices Verified Home Service Kashmir`}
+                    fill
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+                  
+                  {/* Category Badge */}
+                  <span className="absolute top-3 left-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-900 shadow-sm backdrop-blur-sm">
+                    {service.category}
+                  </span>
+
+                  {/* Icon Bubble */}
+                  <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-2xl bg-white/95 text-base shadow-md backdrop-blur-sm">
+                    {service.icon}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900 group-hover:text-[#0f62c9] transition leading-snug">
+                      {service.name}
+                    </h3>
+
+                    {/* Rating & Review */}
+                    <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      <span className="font-bold text-slate-900">{service.rating.toFixed(1)}</span>
+                      <span className="text-slate-400 font-medium">({service.reviewsCount} bookings)</span>
+                    </div>
+
+                    <p className="mt-2 text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                      {service.description}
+                    </p>
+                  </div>
+
+                  {/* Price & Action */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-xl font-black text-slate-950 font-mono">
+                        {service.price}
+                      </span>
+                      <span className="text-[11px] text-slate-400 ml-0.5">/{service.priceUnit}</span>
+                    </div>
+
+                    <button
+                      onClick={() => router.push(`/booking?service=${service.id}`)}
+                      className="rounded-xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/20 transition hover:opacity-95 active:scale-95"
+                    >
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom Banner to Full Catalog */}
+          <div className="mt-12 rounded-3xl bg-gradient-to-r from-blue-900 via-[#0f62c9] to-indigo-900 p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-1.5 text-center md:text-left">
+              <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+                Looking for Carpentry, Painting, Shifting or Tutoring?
+              </h3>
+              <p className="text-xs sm:text-sm text-blue-100 max-w-xl">
+                Browse all categories, search by budget, rating, and district coverage in our dedicated services catalog.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/services')}
+              className="rounded-full bg-white px-8 py-3.5 text-xs sm:text-sm font-extrabold text-[#0f62c9] shadow-lg transition hover:bg-blue-50 active:scale-95 shrink-0"
+            >
+              Open Full Services Catalog →
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* =========================================================================
           SECTION 3: THREE EASY STEPS WORKFLOW

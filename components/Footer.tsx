@@ -47,8 +47,8 @@ const trustPoints = [
 export default function Footer() {
   return (
     <footer className="border-t border-black/5 bg-slate-950 text-white">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)]">
@@ -65,10 +65,10 @@ export default function Footer() {
               verify the OTP, and track the request in one place.
             </p>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {trustPoints.map(({ icon: Icon, text }) => (
-                <div key={text} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                  <Icon className="mb-3 h-5 w-5 text-orange-300" />
+                <div key={text} className="rounded-2xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
+                  <Icon className="mb-2 h-4 w-4 text-orange-300" />
                   <p>{text}</p>
                 </div>
               ))}
