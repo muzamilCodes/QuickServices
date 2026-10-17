@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit3, Trash2, Loader2, Save } from "lucide-react";
+import { Plus, Edit3, Trash2, Loader2, Save, CheckCircle2, XCircle, Clock, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { getApiBaseUrl } from "@/lib/apiBase";
+import toast from "react-hot-toast";
 
 interface Service {
   _id?: string;
@@ -16,28 +17,47 @@ interface Service {
   basePrice: number;
   priceUnit: string;
   rating: number;
+  category?: string;
+  image?: string;
+  isProviderSubmitted?: boolean;
+  submittedBy?: string;
 }
+
+interface ProviderSubmission {
+  _id: string;
+  name: string;
+  icon: string;
+  category: string;
+  description: string;
+  details: string[];
+  price: number;
+  priceUnit: string;
+  image?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  adminNote?: string;
+  providerName: string;
+  providerEmail: string;
+  createdAt: string;
+}
+
+type TabType = 'catalog' | 'submissions';
 
 export default function AdminServicesPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const API_URL = getApiBaseUrl();
+
+  const [tab, setTab] = useState<TabType>('catalog');
   const [services, setServices] = useState<Service[]>([]);
+  const [submissions, setSubmissions] = useState<ProviderSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subLoading, setSubLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingServiceState, setEditingServiceState] = useState<Service | null>(null);
   const [newService, setNewService] = useState<Service>({
-    id: "",
-    name: "",
-    icon: "",
-    description: "",
-    details: [""],
-    basePrice: 0,
-    priceUnit: "visit",
-    rating: 4.5,
+    id: "", name: "", icon: "", description: "", details: [""],
+    basePrice: 0, priceUnit: "visit", rating: 4.5, category: "General Maintenance",
   });
-  const [message, setMessage] = useState("");
-
-  const API_URL = getApiBaseUrl();
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -48,62 +68,49 @@ export default function AdminServicesPage() {
     try {
       const res = await fetch(`${API_URL}/admin/services`, { headers: getHeaders() });
       const data = await res.json();
-      if (data.success) {
-        setServices(data.services);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+      if (data.success) setServices(data.services);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, []);
 
+  const fetchSubmissions = useCallback(async () => {
+    setSubLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/provider-services`, { headers: getHeaders() });
+      const data = await res.json();
+      if (data.success) setSubmissions(data.submissions);
+    } catch (e) { console.error(e); }
+    finally { setSubLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchServices();
+      fetchSubmissions();
+    }
+  }, [isAuthenticated, fetchServices, fetchSubmissions]);
+
+  // ===================== CATALOG CRUD =====================
   const createService = async (service: Service) => {
     try {
       const res = await fetch(`${API_URL}/admin/services`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(service),
+        method: "POST", headers: getHeaders(), body: JSON.stringify(service),
       });
       const data = await res.json();
-      if (data.success) {
-        setMessage("Service created!");
-        setNewService({
-          id: "",
-          name: "",
-          icon: "",
-          description: "",
-          details: [""],
-          basePrice: 0,
-          priceUnit: "visit",
-          rating: 4.5,
-        });
-        await fetchServices();
-      } else {
-        setMessage(data.message || "Failed to create");
-      }
-    } catch (error) {
-      setMessage("Failed to create service");
-    }
+      if (data.success) { toast.success("Service created!"); setNewService({ id: "", name: "", icon: "", description: "", details: [""], basePrice: 0, priceUnit: "visit", rating: 4.5, category: "General Maintenance" }); await fetchServices(); }
+      else toast.error(data.message || "Failed to create");
+    } catch { toast.error("Failed to create service"); }
   };
 
   const updateService = async (service: Service) => {
     if (!service._id) return;
     try {
       const res = await fetch(`${API_URL}/admin/services/${service._id}`, {
-        method: "PUT",
-        headers: getHeaders(),
-        body: JSON.stringify(service),
+        method: "PUT", headers: getHeaders(), body: JSON.stringify(service),
       });
       const data = await res.json();
-      if (data.success) {
-        setMessage("Service updated!");
-        setEditingId(null);
-        await fetchServices();
-      }
-    } catch (error) {
-      setMessage("Update failed");
-    }
+      if (data.success) { toast.success("Service updated!"); setEditingId(null); await fetchServices(); }
+    } catch { toast.error("Update failed"); }
   };
 
   const deleteService = async (id: string) => {
@@ -111,221 +118,272 @@ export default function AdminServicesPage() {
     try {
       const res = await fetch(`${API_URL}/admin/services/${id}`, { method: "DELETE", headers: getHeaders() });
       const data = await res.json();
+      if (data.success) { toast.success("Service deleted!"); await fetchServices(); }
+    } catch { toast.error("Delete failed"); }
+  };
+
+  // ===================== APPROVAL ACTIONS =====================
+  const approveSubmission = async (id: string) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/provider-services/${id}/approve`, {
+        method: "PUT", headers: getHeaders(), body: JSON.stringify({ adminNote: "Approved by admin" }),
+      });
+      const data = await res.json();
       if (data.success) {
-        setMessage("Service deleted!");
+        toast.success("✅ Service approved and added to catalog!");
+        await fetchSubmissions();
         await fetchServices();
-      }
-    } catch (error) {
-      setMessage("Delete failed");
-    }
+      } else toast.error(data.message || "Failed to approve");
+    } catch { toast.error("Approve failed"); }
   };
 
-  const addDetailField = () => {
-    setNewService({ ...newService, details: [...newService.details, ""] });
+  const rejectSubmission = async (id: string) => {
+    const note = prompt("Reason for rejection (optional):");
+    try {
+      const res = await fetch(`${API_URL}/admin/provider-services/${id}/reject`, {
+        method: "PUT", headers: getHeaders(), body: JSON.stringify({ adminNote: note || "Not suitable at this time" }),
+      });
+      const data = await res.json();
+      if (data.success) { toast.success("Service rejected."); await fetchSubmissions(); }
+      else toast.error(data.message || "Failed to reject");
+    } catch { toast.error("Reject failed"); }
   };
 
-  const startEdit = (service: Service) => {
-    setEditingId(service._id || null);
-    setEditingServiceState({ ...service });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const pendingCount = submissions.filter(s => s.status === 'pending').length;
 
-  useEffect(() => {
-    if (isAuthenticated) fetchServices();
-  }, [isAuthenticated, fetchServices]);
-
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-
-  const editingService = editingId ? services.find(s => s._id === editingId) : null;
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+
+        {/* Header */}
         <div className="mb-8 flex items-center gap-4">
-          <button 
-            onClick={() => router.push('/admin')} 
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
-          >
+          <button onClick={() => router.push('/admin')} className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm">
             ←
           </button>
           <div>
-            <h1 className="text-3xl font-semibold text-slate-950 mb-4">Services Management</h1>
-            <p className="text-slate-600 mb-8">Add, edit and manage service categories</p>
+            <h1 className="text-3xl font-extrabold text-slate-950">Services Management</h1>
+            <p className="text-sm text-slate-500 mt-0.5">Manage your service catalog and approve provider submissions</p>
           </div>
         </div>
 
-        {message && (
-          <div className="mb-6 rounded-2xl bg-emerald-50 p-4 text-emerald-800">
-            {message}
+        {/* Tabs */}
+        <div className="mb-6 flex gap-2 rounded-2xl bg-white border border-slate-200 p-1.5 w-fit shadow-sm">
+          <button
+            onClick={() => setTab('catalog')}
+            className={`rounded-xl px-5 py-2 text-sm font-bold transition ${tab === 'catalog' ? 'bg-[#0f62c9] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            📋 Service Catalog ({services.length})
+          </button>
+          <button
+            onClick={() => setTab('submissions')}
+            className={`rounded-xl px-5 py-2 text-sm font-bold transition flex items-center gap-2 ${tab === 'submissions' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            📨 Provider Submissions
+            {pendingCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white px-1">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* ====== TAB: CATALOG ====== */}
+        {tab === 'catalog' && (
+          <>
+            {/* Add / Edit Form */}
+            <div className="rounded-3xl bg-white p-8 mb-8 shadow border border-slate-100">
+              <h2 className="text-xl font-extrabold mb-6 flex items-center gap-2">
+                <Plus className="h-5 w-5 text-[#0f62c9]" />
+                {editingId ? "Edit Service" : "Add New Service"}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input placeholder="Service ID (plumber, electrician)" value={editingId ? editingServiceState?.id || "" : newService.id}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, id: e.target.value } : p) : setNewService({ ...newService, id: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" disabled={!!editingId} />
+                <input placeholder="Service Name" value={editingId ? editingServiceState?.name || "" : newService.name}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, name: e.target.value } : p) : setNewService({ ...newService, name: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" />
+                <input placeholder="Emoji Icon (🔧)" value={editingId ? editingServiceState?.icon || "" : newService.icon}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, icon: e.target.value } : p) : setNewService({ ...newService, icon: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" />
+                <input placeholder="Category (Plumbing, Electrical...)" value={editingId ? editingServiceState?.category || "" : newService.category}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, category: e.target.value } : p) : setNewService({ ...newService, category: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" />
+                <input placeholder="Base Price (₹)" type="number" value={editingId ? editingServiceState?.basePrice || 0 : newService.basePrice}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, basePrice: parseInt(e.target.value) || 0 } : p) : setNewService({ ...newService, basePrice: parseInt(e.target.value) || 0 })}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" />
+                <input placeholder="Price Unit (visit, hr, day, room)" value={editingId ? editingServiceState?.priceUnit || "" : newService.priceUnit}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, priceUnit: e.target.value } : p) : setNewService({ ...newService, priceUnit: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" />
+                <textarea placeholder="Description" value={editingId ? editingServiceState?.description || "" : newService.description}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, description: e.target.value } : p) : setNewService({ ...newService, description: e.target.value })}
+                  rows={2} className="md:col-span-2 w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" />
+                <input placeholder="Image URL (optional)" value={editingId ? editingServiceState?.image || "" : newService.image || ""}
+                  onChange={(e) => editingId ? setEditingServiceState(p => p ? { ...p, image: e.target.value } : p) : setNewService({ ...newService, image: e.target.value })}
+                  className="md:col-span-2 w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => { if (editingId && editingServiceState) updateService(editingServiceState); else createService(newService); }}
+                  className="flex items-center gap-2 rounded-xl bg-[#0f62c9] px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition"
+                >
+                  <Save className="h-4 w-4" />
+                  {editingId ? "Update Service" : "Create Service"}
+                </button>
+                {editingId && (
+                  <button onClick={() => { setEditingId(null); setEditingServiceState(null); }}
+                    className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Services Grid */}
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-800 mb-4">All Services ({services.length})</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {services.map((service) => (
+                  <div key={service._id || service.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow hover:shadow-lg transition">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{service.icon}</span>
+                        <div>
+                          <h3 className="font-extrabold text-sm text-slate-900">{service.name}</h3>
+                          <p className="text-[10px] text-slate-500 font-mono mt-0.5">ID: {service.id}</p>
+                          {service.isProviderSubmitted && (
+                            <span className="text-[10px] text-orange-600 font-bold">by {service.submittedBy}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => { setEditingId(service._id || null); setEditingServiceState({ ...service }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                          className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit">
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => deleteService(service._id!)}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Delete">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-3 line-clamp-2">{service.description}</p>
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-700 border-t border-slate-100 pt-3">
+                      <span className="text-[#0f62c9]">₹{service.basePrice}/{service.priceUnit}</span>
+                      <span>⭐ {service.rating?.toFixed(1)}</span>
+                      {service.category && <span className="text-slate-400">{service.category}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ====== TAB: PROVIDER SUBMISSIONS ====== */}
+        {tab === 'submissions' && (
+          <div>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-900">Provider Service Submissions</h2>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Review services submitted by providers. Approve to add to the main catalog.
+                </p>
+              </div>
+              {pendingCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-4 py-1.5 text-xs font-bold text-amber-800">
+                  <Clock className="h-3.5 w-3.5" />
+                  {pendingCount} pending review
+                </span>
+              )}
+            </div>
+
+            {subLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>
+            ) : submissions.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-16 text-center">
+                <div className="text-5xl mb-4">📨</div>
+                <h3 className="text-lg font-bold text-slate-700">No submissions yet</h3>
+                <p className="text-sm text-slate-400 mt-1">When providers submit services for approval, they will appear here.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {submissions.map((sub) => (
+                  <div key={sub._id} className={`rounded-3xl border bg-white p-6 shadow-sm flex flex-col sm:flex-row sm:items-start gap-5 ${
+                    sub.status === 'pending' ? 'border-amber-200' : sub.status === 'approved' ? 'border-emerald-200' : 'border-rose-200'
+                  }`}>
+                    {/* Service Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">{sub.icon || '🔧'}</span>
+                        <div>
+                          <h3 className="font-extrabold text-base text-slate-900">{sub.name}</h3>
+                          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                            <span>{sub.category}</span>
+                            <span>·</span>
+                            <span>₹{sub.price}/{sub.priceUnit}</span>
+                            <span>·</span>
+                            <span>by <strong>{sub.providerName}</strong></span>
+                          </div>
+                        </div>
+                        {/* Status badge */}
+                        <span className={`ml-auto text-[11px] font-extrabold px-3 py-1 rounded-full ${
+                          sub.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                          sub.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          {sub.status === 'pending' ? '⏳ Pending' : sub.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-2">{sub.description}</p>
+                      {sub.details && sub.details.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {sub.details.filter(Boolean).map((d, i) => (
+                            <span key={i} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">• {d}</span>
+                          ))}
+                        </div>
+                      )}
+                      {sub.adminNote && (
+                        <p className="text-[11px] italic text-slate-400">Admin note: {sub.adminNote}</p>
+                      )}
+                      <p className="text-[10px] text-slate-300 mt-1">{new Date(sub.createdAt).toLocaleString()}</p>
+                    </div>
+
+                    {/* Actions */}
+                    {sub.status === 'pending' && (
+                      <div className="flex sm:flex-col gap-2 shrink-0">
+                        <button
+                          onClick={() => approveSubmission(sub._id)}
+                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => rejectSubmission(sub._id)}
+                          className="flex items-center gap-1.5 rounded-xl bg-rose-100 px-5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-200 transition border border-rose-200"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    {sub.status === 'approved' && (
+                      <div className="shrink-0 flex items-center gap-1.5 text-emerald-600 text-xs font-bold">
+                        <ShieldCheck className="h-5 w-5" />
+                        Live on Catalog
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Add New Service Form */}
-        <div className="rounded-[28px] bg-white/90 p-8 mb-8 shadow-xl">
-          <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-            <Plus className="h-6 w-6" />
-            {editingId ? "Edit Service" : "Add New Service"}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <input
-              placeholder="Service ID (plumber, electrician)"
-              value={editingId ? editingServiceState?.id || "" : newService.id}
-              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, id: e.target.value } : prev) : setNewService({...newService, id: e.target.value})}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              disabled={!!editingId}
-            />
-            <input
-              placeholder="Service Name"
-              value={editingId ? editingServiceState?.name || "" : newService.name}
-              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, name: e.target.value } : prev) : setNewService({...newService, name: e.target.value})}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <input
-              placeholder="Emoji Icon (🔧)"
-              value={editingId ? editingServiceState?.icon || "" : newService.icon}
-              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, icon: e.target.value } : prev) : setNewService({...newService, icon: e.target.value})}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <input
-              placeholder="Base Price"
-              type="number"
-              value={editingId ? editingServiceState?.basePrice || 0 : newService.basePrice}
-              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, basePrice: parseInt(e.target.value) || 0 } : prev) : setNewService({...newService, basePrice: parseInt(e.target.value) || 0})}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <input
-              placeholder="Price Unit (visit, hr, day)"
-              value={editingId ? editingServiceState?.priceUnit || "" : newService.priceUnit}
-              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, priceUnit: e.target.value } : prev) : setNewService({...newService, priceUnit: e.target.value})}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <input
-              placeholder="Rating (4.5)"
-              type="number"
-              step="0.1"
-              value={editingId ? editingServiceState?.rating || 4.5 : newService.rating}
-              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, rating: parseFloat(e.target.value) || 4.5 } : prev) : setNewService({...newService, rating: parseFloat(e.target.value) || 4.5})}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <textarea
-              placeholder="Description"
-              value={editingId ? editingServiceState?.description || "" : newService.description}
-              onChange={(e) => editingId ? setEditingServiceState(prev => prev ? { ...prev, description: e.target.value } : prev) : setNewService({...newService, description: e.target.value})}
-              rows={3}
-              className="md:col-span-2 w-full rounded-xl border border-slate-200 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Details (bullet points)</label>
-              {(editingId ? (editingServiceState?.details || []) : newService.details).map((detail, index) => (
-                <input
-                  key={index}
-                  placeholder={`Detail ${index + 1}`}
-                  value={detail}
-                  onChange={(e) => {
-                    if (editingId && editingServiceState) {
-                      const newDetails = [...(editingServiceState.details || [])];
-                      newDetails[index] = e.target.value;
-                      setEditingServiceState({ ...editingServiceState, details: newDetails });
-                    } else {
-                      const newDetails = [...newService.details];
-                      newDetails[index] = e.target.value;
-                      setNewService({...newService, details: newDetails});
-                    }
-                  }}
-                  className="w-full rounded-lg border border-slate-200 p-3 mb-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  if (editingId && editingServiceState) {
-                    setEditingServiceState({ ...editingServiceState, details: [...(editingServiceState.details || []), ''] });
-                  } else {
-                    addDetailField();
-                  }
-                }}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-              >
-                + Add detail
-              </button>
-            </div>
-          </div>
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={() => {
-                if (editingId && editingServiceState) {
-                  updateService(editingServiceState);
-                } else {
-                  createService(newService);
-                }
-              }}
-              className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
-            >
-              <Save className="h-4 w-4" />
-              {editingId ? "Update Service" : "Create Service"}
-            </button>
-            {editingId && (
-              <button
-                onClick={() => { setEditingId(null); setEditingServiceState(null); }}
-                className="rounded-xl border border-slate-200 px-6 py-3 text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Services List */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
-            Services List ({services.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => (
-              <div key={service._id || service.id} className="rounded-[24px] border border-slate-200 bg-white/90 p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="text-3xl">{service.icon}</div>
-                    <div>
-                      <h3 className="font-semibold text-slate-950">{service.name}</h3>
-                      <p className="text-sm text-slate-600">{service.description}</p>
-                      <p className="text-sm font-mono text-slate-500 mt-1">ID: {service.id}</p>
-                    </div>
-                  </div>
-                    <div className="flex gap-2">
-                    <button
-                      onClick={() => startEdit(service)}
-                      className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
-                      title="Edit"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteService(service._id!)}
-                      className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-4 text-sm text-slate-600 mb-2">
-                    <span>₹{service.basePrice}/{service.priceUnit}</span>
-                    <span>⭐ {service.rating.toFixed(1)}</span>
-                  </div>
-                  <div className="space-y-1">
-                    {service.details.map((detail, index) => (
-                      <p key={index} className="text-xs text-slate-500">• {detail}</p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
 }
-

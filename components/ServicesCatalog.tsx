@@ -61,9 +61,11 @@ const locations = [
 ];
 
 export default function ServicesCatalog({ 
-  title = "Reliable home repair and maintenance services" 
+  title = "Reliable home repair and maintenance services",
+  limitCards,
 }: { 
-  title?: string 
+  title?: string;
+  limitCards?: number;
 }) {
   const router = useRouter();
 
@@ -226,12 +228,12 @@ export default function ServicesCatalog({
           - Filter Sidebar: lg:col-span-4 (Wider & Bolder)
           - Service Cards & Controls: lg:col-span-8 (Directly Barabar / Alongside)
         */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
           
           {/* =========================================================================
               LEFT SIDEBAR: EXPANDED & BOLDER FILTER
           ========================================================================= */}
-          <aside className={`lg:col-span-4 space-y-6 ${mobileFilterOpen ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24`}>
+          <aside className={`lg:col-span-3 space-y-6 ${mobileFilterOpen ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24`}>
             <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-6">
               
               {/* Filter Header & Reset */}
@@ -445,7 +447,7 @@ export default function ServicesCatalog({
           {/* =========================================================================
               RIGHT MAIN AREA: SERVICE CARDS SIDE-BY-SIDE WITH FILTER
           ========================================================================= */}
-          <main className="lg:col-span-8 space-y-6">
+          <main className="lg:col-span-9 space-y-6">
             
             {/* Top Search & Sort Row */}
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
@@ -548,8 +550,8 @@ export default function ServicesCatalog({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {filteredServices.map((service) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                {(limitCards ? filteredServices.slice(0, limitCards) : filteredServices).map((service) => (
                   <div
                     key={service.id}
                     className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition hover:shadow-xl hover:-translate-y-1 duration-300"
