@@ -222,9 +222,14 @@ export default function ProviderDashboardPage() {
       return;
     }
     if (isAuthenticated) {
+      if (user?.role !== 'provider' && !user?.isAdmin) {
+        toast.error('Access Denied: Provider Workspace is reserved for verified Service Providers only.');
+        router.push('/dashboard');
+        return;
+      }
       void fetchProviderData();
     }
-  }, [authLoading, fetchProviderData, isAuthenticated, router]);
+  }, [authLoading, fetchProviderData, isAuthenticated, router, user]);
 
   // Handle Accept or Reject
   const handleBookingAction = async (bookingId: string, action: 'accept' | 'reject') => {
@@ -415,6 +420,29 @@ export default function ProviderDashboardPage() {
       setSavingProfile(false);
     }
   };
+
+  // Strict Role Guard: Only providers and admin can view this dashboard
+  if (!authLoading && user && user.role !== 'provider' && !user.isAdmin) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md w-full rounded-3xl bg-white p-8 text-center shadow-xl border border-slate-200 space-y-4">
+          <div className="h-14 w-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+            <BriefcaseBusiness className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-extrabold text-slate-900">Access Restricted</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Yeh workspace sirf registered <strong>Service Providers (Pro)</strong> ke liye hai. Customer accounts yahan access nahi kar sakte.
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full rounded-2xl bg-slate-950 py-3 text-xs font-bold text-white hover:bg-slate-800 transition shadow-md"
+          >
+            Go to My Customer Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -64,7 +64,11 @@ function LoginForm() {
       const response = await fetch(`${apiUrl}/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+          role: loginRole,
+        }),
       });
 
       const result = await response.json();
@@ -81,10 +85,10 @@ function LoginForm() {
         checkAuth();
         toast.success(`Welcome back, ${result.user.username || "User"}!`);
         
-        if (result.user.isAdmin || result.user.role === "admin") {
-          router.push("/admin");
-        } else if (result.user.role === "provider") {
+        if (result.user.role === "provider" || loginRole === "provider") {
           router.push("/dashboard/provider");
+        } else if (result.user.isAdmin || result.user.role === "admin") {
+          router.push("/admin");
         } else {
           router.push("/dashboard");
         }
