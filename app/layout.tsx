@@ -3,6 +3,7 @@ import Script from 'next/script';
 import './globals.css';
 import AppShell from '@/components/AppShell';
 import JsonLd from '@/components/JsonLd';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://quick-services-indol.vercel.app';
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-QUICKSERV01';
@@ -101,8 +102,32 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var t = localStorage.getItem('app_theme');
+                  if (t === 'light') {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.style.colorScheme = 'light';
+                  } else {
+                    document.documentElement.classList.remove('light');
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                  }
+                } catch(e) {
+                  document.documentElement.classList.add('dark');
+                }
+              })();
+            `,
+          }}
+        />
         <JsonLd />
         {/* Google Analytics 4 (GA4) */}
         {GA_ID && (
@@ -128,8 +153,10 @@ export default function RootLayout({
           </>
         )}
       </head>
-      <body className="antialiased" style={{ background: '#0d1117', color: '#e6edf3' }}>
-        <AppShell>{children}</AppShell>
+      <body className="antialiased min-h-screen">
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );

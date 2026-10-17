@@ -201,7 +201,7 @@ export default function ServicesCatalog({
   };
 
   return (
-    <section style={{ background: '#0d1117' }} className="py-10 px-4 sm:px-6 lg:px-8 border-t border-white/8">
+    <section className="py-10 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/8 bg-[var(--background)]">
       <div className="mx-auto max-w-screen-2xl">
         
         {/* Mobile Filter Toggle */}
@@ -234,7 +234,7 @@ export default function ServicesCatalog({
               LEFT SIDEBAR: EXPANDED & BOLDER FILTER
           ========================================================================= */}
           <aside className={`lg:col-span-3 space-y-6 ${mobileFilterOpen ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24`}>
-            <div className="rounded-3xl border border-white/8 p-6 sm:p-7 shadow-sm space-y-6" style={{ background: '#161b22' }}>
+            <div className="rounded-3xl border border-slate-200 dark:border-white/8 p-6 sm:p-7 shadow-sm space-y-6 bg-white dark:bg-[#161b22]">
               
               {/* Filter Header & Reset */}
               <div className="border-b border-slate-100 pb-5">
@@ -450,7 +450,7 @@ export default function ServicesCatalog({
           <main className="lg:col-span-9 space-y-6">
             
             {/* Top Search & Sort Row */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-between p-4 rounded-3xl border border-white/8 shadow-sm" style={{ background: '#161b22' }}>
+            <div className="flex flex-col sm:flex-row items-center gap-4 justify-between p-4 rounded-3xl border border-slate-200 dark:border-white/8 shadow-sm bg-white dark:bg-[#161b22]">
               
               {/* Search Bar */}
               <div className="relative w-full sm:w-96">
@@ -460,7 +460,7 @@ export default function ServicesCatalog({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search home repair, cleaning, plumbers, electricians..."
-                  className="w-full rounded-2xl border border-white/10 pl-10 pr-8 py-2.5 text-xs font-medium placeholder-slate-500 outline-none transition" style={{ background: '#1c2333', color: '#e6edf3' }}
+                  className="w-full rounded-2xl border border-slate-200 dark:border-white/10 pl-10 pr-8 py-2.5 text-xs font-medium bg-slate-50 dark:bg-[#1c2333] text-slate-900 dark:text-[#e6edf3] placeholder-slate-400 dark:placeholder-slate-500 outline-none transition"
                 />
                 {search && (
                   <button
@@ -478,7 +478,7 @@ export default function ServicesCatalog({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-xl border border-white/10 px-3.5 py-2 text-xs font-bold shadow-sm outline-none cursor-pointer" style={{ background: '#1c2333', color: '#e6edf3' }}
+                  className="rounded-xl border border-slate-200 dark:border-white/10 px-3.5 py-2 text-xs font-bold shadow-sm outline-none cursor-pointer bg-slate-50 dark:bg-[#1c2333] text-slate-900 dark:text-[#e6edf3]"
                 >
                   <option value="Highest Ratings">Highest Ratings</option>
                   <option value="Most Booked">Most Booked</option>
@@ -520,7 +520,7 @@ export default function ServicesCatalog({
             {/* Title & Count Header (Directly alongside the filter) */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-4 gap-2">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                   {title}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1">
@@ -554,7 +554,7 @@ export default function ServicesCatalog({
                 {(limitCards ? filteredServices.slice(0, limitCards) : filteredServices).map((service) => (
                   <div
                     key={service.id}
-                    className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-white/8 shadow-sm transition hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1 duration-300" style={{ background: '#161b22' }}
+                    className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 dark:border-white/8 shadow-sm transition hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1 duration-300 bg-white dark:bg-[#161b22]"
                   >
                     {/* Image Header */}
                     <div className="relative h-44 w-full overflow-hidden bg-slate-100">
@@ -583,14 +583,14 @@ export default function ServicesCatalog({
                     {/* Card Content */}
                     <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
                       <div>
-                        <h3 className="font-extrabold text-base text-white group-hover:text-[#4f9cff] transition leading-snug">
+                        <h3 className="font-extrabold text-base text-slate-900 dark:text-white group-hover:text-[#4f9cff] transition leading-snug">
                           {service.name}
                         </h3>
 
                         {/* Rating & Review Count */}
                         <div className="mt-1.5 flex items-center gap-1.5 text-xs">
                           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          <span className="font-bold text-slate-200">{service.rating.toFixed(1)}</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-200">{service.rating.toFixed(1)}</span>
                           <span className="text-slate-500 font-medium">({service.reviewsCount} reviews)</span>
                         </div>
 
@@ -607,9 +607,9 @@ export default function ServicesCatalog({
                       </div>
 
                       {/* Price & Book Button */}
-                      <div className="pt-3 border-t border-white/8 flex items-center justify-between">
+                      <div className="pt-3 border-t border-slate-100 dark:border-white/8 flex items-center justify-between">
                         <div>
-                          <span className="text-xl font-black text-white font-mono">
+                          <span className="text-xl font-black text-slate-900 dark:text-white font-mono">
                             {service.price}
                           </span>
                           <span className="text-[11px] text-slate-500 ml-0.5">/{service.priceUnit}</span>

@@ -11,7 +11,6 @@ import {
   Menu, 
   MessageSquareText, 
   ReceiptText, 
-  ShieldCheck, 
   Sparkles, 
   Wrench, 
   X,
@@ -21,6 +20,8 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import ThemeToggle from '@/components/ThemeToggle';
+import { useTheme } from '@/components/ThemeProvider';
 
 const mainNavLinks = [
   { name: 'Home', href: '/', icon: House },
@@ -34,6 +35,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -56,9 +60,13 @@ export default function Navbar() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-[#0d1117]/97 shadow-lg shadow-black/40 backdrop-blur-xl border-b border-white/8 py-2.5'
-          : 'bg-[#0d1117]/90 shadow-sm backdrop-blur-lg border-b border-white/6 py-3'
+        isDark
+          ? scrolled
+            ? 'bg-[#0d1117]/97 shadow-lg shadow-black/40 backdrop-blur-xl border-b border-white/8 py-2.5'
+            : 'bg-[#0d1117]/90 shadow-sm backdrop-blur-lg border-b border-white/6 py-3'
+          : scrolled
+            ? 'bg-white/95 shadow-md shadow-slate-200/60 backdrop-blur-xl border-b border-slate-200 py-2.5'
+            : 'bg-white/90 shadow-sm backdrop-blur-lg border-b border-slate-200/80 py-3'
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -69,17 +77,21 @@ export default function Navbar() {
             <BriefcaseBusiness className="h-5 w-5" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-black tracking-tight text-white leading-none">
+            <span className={`text-lg font-black tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
               Quick<span className="text-[#4f9cff]">Services</span>
             </span>
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 mt-1">
+            <span className={`text-[10px] uppercase tracking-[0.2em] font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
               Home Support, Faster
             </span>
           </div>
         </Link>
 
         {/* ================= 2. Center Navigation Links (Clean & Spacious) ================= */}
-        <nav className="hidden lg:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 shadow-inner backdrop-blur">
+        <nav
+          className={`hidden lg:flex items-center gap-1 rounded-full border px-3 py-1.5 shadow-inner backdrop-blur ${
+            isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-100/80'
+          }`}
+        >
           {mainNavLinks.map(({ name, href, icon: Icon }) => {
             const active = pathname === href;
             return (
@@ -89,7 +101,9 @@ export default function Navbar() {
                 className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                   active
                     ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/15 text-[#4f9cff] shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-white/8'
+                    : isDark
+                      ? 'text-slate-400 hover:text-white hover:bg-white/8'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" />
@@ -99,16 +113,22 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* ================= 3. Right Action Buttons ================= */}
+        {/* ================= 3. Right Action Buttons & Theme Switcher ================= */}
         <div className="hidden lg:flex items-center gap-2.5 shrink-0">
-          
+          {/* Theme Toggle (Dark / Light) */}
+          <ThemeToggle />
+
           {/* If NOT logged in */}
           {!isAuthenticated ? (
             <>
               {/* Login Button */}
               <button
                 onClick={() => router.push('/login')}
-                className="rounded-full px-4 py-2 text-xs font-bold text-slate-300 transition hover:bg-white/8 hover:text-white whitespace-nowrap"
+                className={`rounded-full px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
+                  isDark
+                    ? 'text-slate-300 hover:bg-white/8 hover:text-white'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                }`}
               >
                 Login
               </button>
@@ -126,7 +146,13 @@ export default function Navbar() {
             /* If Logged In */
             <>
               {/* User Identity Pill */}
-              <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/6 px-3.5 py-1.5 text-xs font-bold text-slate-200 whitespace-nowrap">
+              <div
+                className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold whitespace-nowrap ${
+                  isDark
+                    ? 'border-white/10 bg-white/6 text-slate-200'
+                    : 'border-slate-200 bg-slate-100 text-slate-800'
+                }`}
+              >
                 <CircleUserRound className="h-3.5 w-3.5 text-blue-600 shrink-0" />
                 <span className="max-w-[120px] truncate">{user?.username || 'Account'}</span>
                 {isAdmin ? (
@@ -140,7 +166,7 @@ export default function Navbar() {
                 ) : null}
               </div>
 
-              {/* Role-specific Action Button (Admin gets only Admin Portal, Pro gets Workspace, Customer gets Dashboard) */}
+              {/* Role-specific Action Button */}
               {isAdmin ? (
                 <button
                   onClick={() => router.push('/admin')}
@@ -170,7 +196,11 @@ export default function Navbar() {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center justify-center rounded-full border border-white/10 p-2 text-slate-400 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400 transition shrink-0"
+                className={`inline-flex items-center justify-center rounded-full border p-2 transition shrink-0 ${
+                  isDark
+                    ? 'border-white/10 text-slate-400 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400'
+                    : 'border-slate-200 text-slate-600 hover:border-rose-500/30 hover:bg-rose-50 hover:text-rose-600'
+                }`}
                 title="Logout"
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -180,21 +210,33 @@ export default function Navbar() {
 
         </div>
 
-        {/* ================= 4. Mobile / Tablet Hamburger Button ================= */}
-        <button
-          onClick={() => setMobileMenuOpen((curr) => !curr)}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-slate-300 shadow-sm transition hover:bg-white/12 lg:hidden"
-          aria-label="Toggle navigation menu"
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        {/* ================= 4. Mobile / Tablet Header Actions ================= */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileMenuOpen((curr) => !curr)}
+            className={`flex h-10 w-10 items-center justify-center rounded-2xl border shadow-sm transition ${
+              isDark
+                ? 'border-white/10 bg-white/6 text-slate-300 hover:bg-white/12'
+                : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
 
       </div>
 
       {/* ================= 5. Mobile Slide-Down Drawer ================= */}
       {mobileMenuOpen && (
-        <div className="border-t border-white/8 bg-[#0d1117]/98 px-4 pb-6 pt-3 shadow-xl backdrop-blur-xl lg:hidden max-h-[85vh] overflow-y-auto">
-          
+        <div
+          className={`border-t px-4 pb-6 pt-3 shadow-xl backdrop-blur-xl lg:hidden max-h-[85vh] overflow-y-auto ${
+            isDark
+              ? 'border-white/8 bg-[#0d1117]/98 text-white'
+              : 'border-slate-200 bg-white/98 text-slate-900'
+          }`}
+        >
           <div className="space-y-1.5">
             {mainNavLinks.map(({ name, href, icon: Icon }) => {
               const active = pathname === href;
@@ -206,7 +248,9 @@ export default function Navbar() {
                   className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                     active
                       ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/10 text-[#4f9cff]'
-                      : 'text-slate-300 hover:bg-white/6'
+                      : isDark
+                        ? 'text-slate-300 hover:bg-white/6'
+                        : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -222,7 +266,9 @@ export default function Navbar() {
                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                   pathname === '/dashboard/history'
                     ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/10 text-[#4f9cff]'
-                    : 'text-slate-300 hover:bg-white/6'
+                    : isDark
+                      ? 'text-slate-300 hover:bg-white/6'
+                      : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <ReceiptText className="h-4 w-4 shrink-0" />
@@ -231,11 +277,11 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="mt-4 border-t border-white/8 pt-4 space-y-2">
+          <div className={`mt-4 border-t pt-4 space-y-2 ${isDark ? 'border-white/8' : 'border-slate-200'}`}>
             {isAuthenticated ? (
               <>
                 <div className="mb-2 px-2 flex items-center justify-between text-xs font-medium text-slate-400">
-                  <span>Signed in as <span className="font-bold text-white">{user?.username}</span></span>
+                  <span>Signed in as <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{user?.username}</span></span>
                   {isAdmin ? (
                     <span className="rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-[10px] font-black">ADMIN</span>
                   ) : isPro ? (
@@ -293,7 +339,11 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                     router.push('/login');
                   }}
-                  className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 py-3 text-sm font-bold text-slate-200 hover:bg-white/10"
+                  className={`flex items-center justify-center rounded-2xl border py-3 text-sm font-bold transition ${
+                    isDark
+                      ? 'border-white/10 bg-white/6 text-slate-200 hover:bg-white/10'
+                      : 'border-slate-200 bg-slate-100 text-slate-800 hover:bg-slate-200'
+                  }`}
                 >
                   Login
                 </button>
