@@ -60,12 +60,11 @@ const sendEmail = async (to, subject, html, text) => {
   const senderAddress = `"${emailFromName}" <${emailFrom}>`;
   const plainText = text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-  // Common headers for high deliverability & avoiding spam filters
+  // Common headers - keep minimal to avoid spam filters
+  // NOTE: X-Priority: 1 / "High Importance" headers ironically trigger spam filters.
   const mailHeaders = {
-    'X-Priority': '1',
-    'X-MSMail-Priority': 'High',
-    'Importance': 'high',
     'List-Unsubscribe': `<mailto:${emailFrom}?subject=unsubscribe>`,
+    'X-Mailer': 'QuickServices Mailer',
   };
 
   // Attempt 1: Gmail SMTP

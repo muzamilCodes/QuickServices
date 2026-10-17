@@ -173,7 +173,7 @@ exports.registerProvider = async (req, res) => {
                 profilePic: user.profilePic,
                 isAdmin: user.isAdmin
             },
-            provider: newProvider
+            provider: provider
         });
     } catch (error) {
         console.error('registerProvider error:', error);

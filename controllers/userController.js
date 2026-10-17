@@ -220,10 +220,18 @@ exports.login = async (req, res) => {
       const Provider = require('../models/Provider');
       const provider = await Provider.findOne({ $or: [{ userId: user._id }, { email: user.email }] });
       if (provider) {
-        isProviderApproved = provider.isApproved !== false;
+        isProviderApproved = provider.isApproved === true;
         if (!provider.userId) {
           provider.userId = user._id;
           await provider.save();
+        }
+        // Block login if not yet approved by admin
+        if (!isProviderApproved) {
+          return res.status(403).json({
+            success: false,
+            isPendingApproval: true,
+            message: "Your Service Provider account is pending Admin approval. You will receive a confirmation email once approved, and can then log in to your Provider Dashboard."
+          });
         }
       }
     }
