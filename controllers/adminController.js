@@ -214,31 +214,54 @@ exports.approveProvider = async (req, res) => {
         provider.isApproved = true;
         await provider.save();
 
-        if (provider.email) {
+        // Also ensure linked user has role = 'provider'
+        let user = null;
+        if (provider.userId) {
+            user = await User.findById(provider.userId);
+            if (user && user.role !== 'provider') {
+                user.role = 'provider';
+                await user.save();
+            }
+        }
+
+        const recipientEmails = new Set();
+        if (provider.email) recipientEmails.add(provider.email.trim().toLowerCase());
+        if (user && user.email) recipientEmails.add(user.email.trim().toLowerCase());
+
+        let emailsSent = 0;
+        const sendEmail = require('../utilities/emailService');
+
+        for (const recipient of recipientEmails) {
             try {
-                const sendEmail = require('../utilities/emailService');
+                console.log(`Sending approval email to: ${recipient}`);
                 await sendEmail(
-                    provider.email,
+                    recipient,
                     "🎉 QuickServices: Your Service Provider Account Has Been Approved!",
                     `<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
                         <h2 style="color: #0f62c9; margin-top: 0;">Congratulations, ${provider.name}!</h2>
-                        <p style="font-size: 15px; color: #334155; line-height: 1.6;">Your Service Provider registration for <strong>${provider.category}</strong> has been <strong>APPROVED</strong> by the QuickServices Admin.</p>
-                        <p style="font-size: 14px; color: #475569; line-height: 1.6;">You can now log in to your account and access your dedicated <strong>Provider Dashboard</strong> to manage your services, view customer requests, and enable live GPS tracking.</p>
+                        <p style="font-size: 15px; color: #334155; line-height: 1.6;">Your Service Provider registration for <strong>${provider.category}</strong> has been <strong>APPROVED</strong> by QuickServices Admin.</p>
+                        <p style="font-size: 14px; color: #475569; line-height: 1.6;">You can now log in to your account and access your dedicated <strong>Provider Dashboard</strong> to manage your services, add pricing, and receive live customer bookings.</p>
                         <div style="margin: 28px 0; text-align: center;">
-                            <a href="${process.env.FRONTEND_URL || 'https://quickservices-l7cqsppjx-war-muzamils-projects.vercel.app'}/login" style="background: linear-gradient(135deg, #0f62c9, #ff8a3d); color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 9999px; font-weight: bold; font-size: 14px; display: inline-block;">
-                                Login to Provider Dashboard →
+                            <a href="${process.env.FRONTEND_URL || 'https://quick-services-indol.vercel.app'}/login" style="background: linear-gradient(135deg, #0f62c9, #ff8a3d); color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 9999px; font-weight: bold; font-size: 14px; display: inline-block;">
+                                Login to Provider Workspace →
                             </a>
                         </div>
                         <p style="color: #94a3b8; font-size: 12px; border-top: 1px solid #f1f5f9; padding-top: 16px;">QuickServices Home Support • Faster Doorstep Services</p>
                     </div>`,
                     `Congratulations, ${provider.name}! Your Service Provider account on QuickServices has been approved by the Admin. Please log in to your Pro Dashboard.`
                 );
+                emailsSent++;
             } catch (emailErr) {
-                console.error("Failed to send approval email:", emailErr);
+                console.error(`Failed to send approval email to ${recipient}:`, emailErr);
             }
         }
 
-        res.json({ success: true, message: 'Provider approved successfully and notification sent', provider });
+        res.json({ 
+            success: true, 
+            message: `Provider approved successfully! Notification sent to ${Array.from(recipientEmails).join(', ')}`, 
+            provider,
+            emailsSent 
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });

@@ -150,27 +150,49 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email and password required" });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
-    if (!user) return res.status(401).json({ success: false, message: "Invalid credentials" });
+    const identifier = (email || '').toLowerCase().trim();
+    const cleanMobile = identifier.replace(/\D/g, "").slice(-10);
+
+    let user = await User.findOne({
+      $or: [
+        { email: identifier },
+        ...(cleanMobile.length === 10 ? [{ mobile: cleanMobile }] : [])
+      ]
+    });
+
+    // If user not found directly, check if a Provider profile exists with this email or phone
+    if (!user) {
+      const Provider = require('../models/Provider');
+      const provider = await Provider.findOne({
+        $or: [
+          { email: identifier },
+          ...(cleanMobile.length === 10 ? [{ phone: cleanMobile }] : [])
+        ]
+      });
+      if (provider && provider.userId) {
+        user = await User.findById(provider.userId);
+      }
+    }
+
+    if (!user) return res.status(401).json({ success: false, message: "Invalid credentials. Please check your email/mobile and password." });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ success: false, message: "Invalid credentials" });
+    if (!isMatch) return res.status(401).json({ success: false, message: "Invalid credentials. Please check your password." });
 
-    // If user is Admin, bypass role separation and approval blocks
+    // If user is Admin, bypass role separation
     if (!user.isAdmin) {
-      // Strict Role Separation:
+      // Role guidance: If logging in on wrong tab, return friendly error
       if (role === 'customer' && user.role === 'provider') {
         return res.status(403).json({
           success: false,
-          message: "This email is registered as a Service Provider (Pro) account. Please select the 'Service Provider (Pro)' tab to log in."
+          message: "This account is registered as a Service Provider (Pro). Please select the 'Service Provider (Pro)' tab above to log in."
         });
       }
 
       if (role === 'provider' && user.role === 'customer') {
         return res.status(403).json({
           success: false,
-          message: "This email is registered as a Customer account. Please select the 'Customer Login' tab to log in."
+          message: "This account is registered as a Customer. Please select the 'Customer Login' tab above to log in."
         });
       }
     }
@@ -230,7 +252,7 @@ exports.login = async (req, res) => {
         mobile: user.mobile,
         profilePic: user.profilePic,
         isAdmin: user.isAdmin,
-        role: user.role || (user.isAdmin ? 'admin' : 'customer'),
+        role: user.isAdmin ? 'admin' : (user.role || 'customer'),
         isApproved: isProviderApproved
       }
     });

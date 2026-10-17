@@ -52,65 +52,107 @@ exports.registerProvider = async (req, res) => {
         const normalizedEmail = email.trim().toLowerCase();
         const cleanMobile = phone.replace(/\D/g, "").slice(-10);
 
-        let user = await User.findOne({ $or: [{ email: normalizedEmail }, { mobile: cleanMobile }] });
+        let user = await User.findOne({ email: normalizedEmail });
+        const hashedPassword = await bcrypt.hash(password, 12);
 
+        let provider = null;
         if (user) {
             // Check if already registered as provider
-            const existingProvider = await Provider.findOne({ userId: user._id });
-            if (existingProvider) {
-                return res.status(400).json({ success: false, message: 'A service provider account already exists with this email or phone.' });
-            }
+            provider = await Provider.findOne({ $or: [{ userId: user._id }, { email: normalizedEmail }] });
             user.role = 'provider';
+            user.password = hashedPassword;
+            user.isVerified = true;
+            if (cleanMobile) user.mobile = cleanMobile;
             await user.save();
         } else {
-            const hashedPassword = await bcrypt.hash(password, 12);
-            user = await User.create({
-                username: name.trim(),
-                email: normalizedEmail,
-                mobile: cleanMobile,
-                password: hashedPassword,
-                role: 'provider',
-                isVerified: true,
-                profilePic: profilePicture || '/hero-user.jpg',
-                address: { street: address || '', city: city || 'Srinagar', state: 'Jammu & Kashmir' }
-            });
+            // Check if mobile already exists on another account
+            const existingMobileUser = await User.findOne({ mobile: cleanMobile });
+            if (existingMobileUser) {
+                // Reuse existing user, update their email and password for provider
+                user = existingMobileUser;
+                user.email = normalizedEmail;
+                user.role = 'provider';
+                user.password = hashedPassword;
+                user.isVerified = true;
+                await user.save();
+                provider = await Provider.findOne({ $or: [{ userId: user._id }, { email: normalizedEmail }] });
+            } else {
+                user = await User.create({
+                    username: name.trim(),
+                    email: normalizedEmail,
+                    mobile: cleanMobile,
+                    password: hashedPassword,
+                    role: 'provider',
+                    isVerified: true,
+                    profilePic: profilePicture || '/hero-user.jpg',
+                    address: { street: address || '', city: city || 'Srinagar', state: 'Jammu & Kashmir' }
+                });
+            }
         }
 
         // Clean services array if comma separated string
         let serviceList = Array.isArray(services) ? services : (services ? services.split(',').map(s => s.trim().toLowerCase()) : []);
         let skillList = Array.isArray(skills) ? skills : (skills ? skills.split(',').map(s => s.trim()) : []);
 
-        const newProvider = await Provider.create({
-            userId: user._id,
-            name: name.trim(),
-            phone: cleanMobile,
-            email: normalizedEmail,
-            whatsappNumber: whatsappNumber ? whatsappNumber.replace(/\D/g, "").slice(-10) : cleanMobile,
-            category,
-            services: serviceList,
-            experience: Number(experience) || 1,
-            skills: skillList,
-            qualifications: qualifications || 'Verified Professional Technician',
-            serviceArea: serviceArea || 'Srinagar & Handwara Kashmir',
-            location: {
-                city: city || 'Srinagar',
-                address: address || 'Kashmir',
-                lat: Number(lat) || 34.0837,
-                lng: Number(lng) || 74.7973
-            },
-            pricePerHour: Number(pricePerHour) || 499,
-            pricingDetails: pricingDetails || `Starting at ₹${pricePerHour || 499} per service visit.`,
-            availability: availability || {
-                days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-                hours: '08:00 AM - 08:00 PM'
-            },
-            description: description || 'Certified doorstep service specialist with hands-on technical experience.',
-            profilePicture: profilePicture || user.profilePic || '/hero-user.jpg',
-            portfolio: Array.isArray(portfolio) ? portfolio : [],
-            documents: Array.isArray(documents) ? documents : [],
-            isApproved: false, // Requires admin approval
-            isAvailable: true
-        });
+        if (provider) {
+            // Update existing provider profile with newly submitted info
+            provider.name = name.trim();
+            provider.phone = cleanMobile;
+            provider.email = normalizedEmail;
+            provider.whatsappNumber = whatsappNumber ? whatsappNumber.replace(/\D/g, "").slice(-10) : cleanMobile;
+            provider.category = category;
+            provider.services = serviceList;
+            if (experience) provider.experience = Number(experience) || 1;
+            if (skills) provider.skills = skillList;
+            if (qualifications) provider.qualifications = qualifications;
+            if (serviceArea) provider.serviceArea = serviceArea;
+            if (address || city) {
+                provider.location = {
+                    city: city || 'Srinagar',
+                    address: address || 'Kashmir',
+                    lat: Number(lat) || 34.0837,
+                    lng: Number(lng) || 74.7973
+                };
+            }
+            if (pricePerHour) provider.pricePerHour = Number(pricePerHour) || 499;
+            if (pricingDetails) provider.pricingDetails = pricingDetails;
+            if (description) provider.description = description;
+            if (profilePicture) provider.profilePicture = profilePicture;
+            provider.userId = user._id;
+            await provider.save();
+        } else {
+            provider = await Provider.create({
+                userId: user._id,
+                name: name.trim(),
+                phone: cleanMobile,
+                email: normalizedEmail,
+                whatsappNumber: whatsappNumber ? whatsappNumber.replace(/\D/g, "").slice(-10) : cleanMobile,
+                category,
+                services: serviceList,
+                experience: Number(experience) || 1,
+                skills: skillList,
+                qualifications: qualifications || 'Verified Professional Technician',
+                serviceArea: serviceArea || 'Srinagar & Handwara Kashmir',
+                location: {
+                    city: city || 'Srinagar',
+                    address: address || 'Kashmir',
+                    lat: Number(lat) || 34.0837,
+                    lng: Number(lng) || 74.7973
+                },
+                pricePerHour: Number(pricePerHour) || 499,
+                pricingDetails: pricingDetails || `Starting at ₹${pricePerHour || 499} per service visit.`,
+                availability: availability || {
+                    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                    hours: '08:00 AM - 08:00 PM'
+                },
+                description: description || 'Certified doorstep service specialist with hands-on technical experience.',
+                profilePicture: profilePicture || user.profilePic || '/hero-user.jpg',
+                portfolio: Array.isArray(portfolio) ? portfolio : [],
+                documents: Array.isArray(documents) ? documents : [],
+                isApproved: false, // Requires admin approval
+                isAvailable: true
+            });
+        }
 
         const token = jwt.sign(
             { userId: user._id, email: user.email },
