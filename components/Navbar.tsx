@@ -140,19 +140,16 @@ export default function Navbar() {
                 ) : null}
               </div>
 
-              {/* Admin Panel Button */}
-              {isAdmin && (
+              {/* Role-specific Action Button (Admin gets only Admin Portal, Pro gets Workspace, Customer gets Dashboard) */}
+              {isAdmin ? (
                 <button
                   onClick={() => router.push('/admin')}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-95 transition whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-red-600 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-sm hover:opacity-95 transition whitespace-nowrap"
                 >
                   <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
-                  <span>Admin</span>
+                  <span>Admin Portal</span>
                 </button>
-              )}
-
-              {/* Role-specific Dashboard Button */}
-              {isPro ? (
+              ) : isPro ? (
                 <button
                   onClick={() => router.push('/dashboard/provider')}
                   className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition whitespace-nowrap"
@@ -246,20 +243,18 @@ export default function Navbar() {
                   ) : null}
                 </div>
 
-                {isAdmin && (
+                {isAdmin ? (
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
                       router.push('/admin');
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-500 to-orange-500 py-3 text-sm font-bold text-white shadow-sm"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 py-3 text-sm font-bold text-white shadow-sm"
                   >
                     <ShieldAlert className="h-4 w-4 shrink-0" />
                     Admin Control Panel
                   </button>
-                )}
-
-                {isPro ? (
+                ) : isPro ? (
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);

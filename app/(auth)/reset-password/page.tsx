@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
       /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(newPassword);
 
     if (!isPasswordValid) {
-      toast.error("Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai.");
+      toast.error("Password must be at least 8 characters long and contain uppercase (A), lowercase (a), number (1), and special symbol (@).");
       return;
     }
     if (newPassword !== confirmPassword) {

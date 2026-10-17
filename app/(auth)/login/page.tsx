@@ -70,7 +70,7 @@ function LoginForm() {
       const result = await response.json();
 
       if (response.status === 403 && result.isPendingApproval) {
-        setPendingNotice(result.message || "Aapka account Admin verification ke liye pending hai. Admin approval ke baad aap login kar sakenge.");
+        setPendingNotice(result.message || "Your Service Provider account is pending Admin approval. You will be able to log in once verified by the Admin.");
         toast.error("Account pending Admin approval");
         return;
       }
@@ -81,9 +81,9 @@ function LoginForm() {
         checkAuth();
         toast.success(`Welcome back, ${result.user.username || "User"}!`);
         
-        if (result.user.isAdmin) {
+        if (result.user.isAdmin || result.user.role === "admin") {
           router.push("/admin");
-        } else if (result.user.role === "provider" || loginRole === "provider") {
+        } else if (result.user.role === "provider") {
           router.push("/dashboard/provider");
         } else {
           router.push("/dashboard");

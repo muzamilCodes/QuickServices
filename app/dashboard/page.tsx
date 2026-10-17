@@ -87,9 +87,29 @@ export default function DashboardPage() {
       return;
     }
     if (isAuthenticated) {
+      if (user?.isAdmin || user?.role === 'admin') {
+        router.push('/admin');
+        return;
+      }
+      if (user?.role === 'provider') {
+        router.push('/dashboard/provider');
+        return;
+      }
       void fetchMyBookings();
     }
-  }, [authLoading, fetchMyBookings, isAuthenticated, router]);
+  }, [authLoading, fetchMyBookings, isAuthenticated, router, user]);
+
+  // Prevent admin from ever seeing customer dashboard
+  if (user?.isAdmin || user?.role === 'admin') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-500 border-t-transparent" />
+          <p className="text-xs font-bold text-slate-700">Redirecting to Admin Portal...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Derived statistics
   const activeBookings = useMemo(() => {

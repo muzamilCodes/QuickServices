@@ -141,7 +141,7 @@ export default function ProviderRegisterPage() {
       /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(form.password);
 
     if (!isPasswordValid) {
-      setErrorMsg('Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai.');
+      setErrorMsg('Password must be at least 8 characters long and contain uppercase (A), lowercase (a), number (1), and special symbol (@).');
       toast.error('Password requirements not met (A / a / 1 / @)');
       return;
     }
