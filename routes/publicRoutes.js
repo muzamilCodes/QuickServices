@@ -67,7 +67,12 @@ router.get('/offers', async (req, res) => {
 
 router.post('/contact', async (req, res) => {
     try {
-        const { name, phone, email, topic, message } = req.body;
+        const { name, phone, email, topic, message, website } = req.body;
+
+        // Honeypot spam trap
+        if (website) {
+            return res.json({ success: true, message: 'Message sent successfully' });
+        }
 
         if (!name || !phone || !email || !message) {
             return res.status(400).json({ success: false, message: 'Name, phone, email, and message are required' });

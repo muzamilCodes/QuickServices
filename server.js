@@ -16,6 +16,36 @@ const port = process.env.PORT || 4000;
 connectDb();
 
 // Middlewares
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+// Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// General rate limiter
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+app.use(generalLimiter);
+
+// Stricter rate limiter for auth / brute-force protection
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many attempts. Please try again after 15 minutes.' }
+});
+app.use("/user/login", authLimiter);
+app.use("/user/register", authLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
