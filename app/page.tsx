@@ -58,31 +58,31 @@ export default function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <div className="overflow-hidden bg-white">
+    <div className="overflow-hidden" style={{ background: '#0d1117' }}>
       
       {/* =========================================================================
           HERO SECTION (ORIGINAL WARM BRAND PALETTE + USER'S OWN PHOTO)
       ========================================================================= */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/40 via-white to-slate-50/60 pb-16 pt-8 sm:pb-24 sm:pt-12">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(21,101,192,0.18),transparent_28%),radial-gradient(circle_at_78%_16%,rgba(255,138,61,0.22),transparent_24%)] pointer-events-none" />
+      <section className="relative overflow-hidden pb-16 pt-8 sm:pb-24 sm:pt-12" style={{ background: 'linear-gradient(180deg, #0d1117 0%, #090d13 100%)' }}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(15,98,201,0.22),transparent_28%),radial-gradient(circle_at_78%_16%,rgba(255,138,61,0.15),transparent_24%)] pointer-events-none" />
         
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
           
           {/* Left Hero Column */}
           <div className="space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/90 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-white/5 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-300 shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4 text-orange-500" />
               Trusted help for everyday home & office services
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-extrabold leading-tight text-slate-950 sm:text-5xl lg:text-6xl tracking-tight">
+            <h1 className="max-w-3xl text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl tracking-tight">
               Professional service bookings with a{' '}
               <span className="bg-gradient-to-r from-[#0f62c9] to-[#ff8a3d] bg-clip-text text-transparent">
                 calmer, faster flow.
               </span>
             </h1>
 
-            <p className="max-w-2xl text-base sm:text-lg leading-relaxed text-slate-600 mx-auto lg:mx-0">
+            <p className="max-w-2xl text-base sm:text-lg leading-relaxed text-slate-400 mx-auto lg:mx-0">
               QuickServices connects you directly with verified plumbers, electricians, drivers, cleaners, and appliance experts across Kashmir. Pick your service, confirm via secure OTP, and track your specialist live.
             </p>
 
@@ -101,7 +101,7 @@ export default function HomePage() {
                     const element = document.getElementById('popular-services');
                     element?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white/90 px-6 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400 active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/6 px-6 py-4 text-sm font-bold text-slate-300 shadow-sm transition hover:bg-white/10 hover:border-white/25 active:scale-95"
                 >
                   <span>Explore 16+ Categories</span>
                   <ChevronDown className="h-4 w-4 text-slate-400" />
@@ -112,7 +112,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-xs sm:text-sm font-medium text-slate-600">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-xs sm:text-sm font-medium text-slate-400">
               <span className="inline-flex items-center gap-1.5">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> 4.9 average rating
               </span>
@@ -132,7 +132,7 @@ export default function HomePage() {
               {/* Decorative Glow */}
               <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-tr from-[#0f62c9] to-[#ff8a3d] opacity-25 blur-xl" />
 
-              <div className="relative overflow-hidden rounded-[32px] border-4 border-white bg-white shadow-2xl shadow-slate-300/60">
+              <div className="relative overflow-hidden rounded-[32px] border-4 bg-[#161b22] shadow-2xl shadow-black/60" style={{ borderColor: '#1c2333' }}>
                 <div className="relative h-[420px] sm:h-[480px] w-full">
                   <Image
                     src="/hero-user.jpg"
@@ -144,7 +144,7 @@ export default function HomePage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
                   
                   {/* Floating Verified Badge on User Photo */}
-                  <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-white/95 p-3.5 shadow-xl backdrop-blur-md">
+                  <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-[#0d1117]/90 p-3.5 shadow-xl backdrop-blur-md border border-white/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="relative flex h-2.5 w-2.5">
@@ -152,8 +152,8 @@ export default function HomePage() {
                           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                         </span>
                         <div>
-                          <p className="text-xs font-bold text-slate-950">Muzamil War</p>
-                          <p className="text-[10px] text-slate-500 font-medium">Verified Services Lead</p>
+                          <p className="text-xs font-bold text-white">Muzamil War</p>
+                          <p className="text-[10px] text-slate-400 font-medium">Verified Services Lead</p>
                         </div>
                       </div>
                       <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-700">
@@ -300,15 +300,15 @@ export default function HomePage() {
       {/* =========================================================================
           SECTION 4: TRUST SIGNALS
       ========================================================================= */}
-      <section className="bg-slate-50 py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-200">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 border-t border-white/8" style={{ background: '#080c12' }}>
         <div className="mx-auto max-w-7xl grid gap-8 md:grid-cols-3">
           {trustSignals.map(({ icon: Icon, title, description }) => (
-            <div key={title} className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#0f62c9]">
+            <div key={title} className="rounded-2xl border border-white/8 p-6 shadow-sm" style={{ background: '#161b22' }}>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f62c9]/15 text-[#4f9cff]">
                 <Icon className="h-6 w-6" />
               </div>
-              <h3 className="mt-4 text-base font-extrabold text-slate-950">{title}</h3>
-              <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">{description}</p>
+              <h3 className="mt-4 text-base font-extrabold text-white">{title}</h3>
+              <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">{description}</p>
             </div>
           ))}
         </div>
@@ -317,17 +317,17 @@ export default function HomePage() {
       {/* =========================================================================
           SECTION 5: "PEOPLE ALSO ASK" (FAQ ACCORDION & TOPIC CLUSTER)
       ========================================================================= */}
-      <section className="bg-white py-20 px-4 sm:px-6 lg:px-8 border-t border-slate-100" id="faqs" aria-labelledby="faq-heading">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-white/8" id="faqs" aria-labelledby="faq-heading" style={{ background: '#0d1117' }}>
         <div className="mx-auto max-w-4xl">
           <div className="text-center space-y-2 mb-12">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
               <HelpCircle className="h-3.5 w-3.5" />
               PEOPLE ALSO ASK
             </div>
-            <h2 id="faq-heading" className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+            <h2 id="faq-heading" className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               Frequently Asked Questions
             </h2>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-400">
               Immediate answers to common queries regarding doorstep technicians, pricing, and bookings in Kashmir.
             </p>
           </div>
@@ -338,12 +338,12 @@ export default function HomePage() {
               return (
                 <div
                   key={faq.q}
-                  className="rounded-2xl border border-slate-200/90 bg-slate-50/60 overflow-hidden transition-all duration-200"
+                  className="rounded-2xl border border-white/8 overflow-hidden transition-all duration-200" style={{ background: '#161b22' }}
                 >
                   <button
                     type="button"
                     onClick={() => setOpenFaq(isOpen ? null : index)}
-                    className="flex w-full items-center justify-between p-5 text-left font-bold text-slate-900 transition hover:bg-slate-100/70"
+                    className="flex w-full items-center justify-between p-5 text-left font-bold text-white transition hover:bg-white/5"
                     aria-expanded={isOpen}
                   >
                     <span className="text-base sm:text-lg pr-4">{faq.q}</span>
@@ -355,7 +355,7 @@ export default function HomePage() {
                   </button>
 
                   {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-sm sm:text-base leading-relaxed text-slate-700 border-t border-slate-200/60 bg-white">
+                    <div className="px-5 pb-5 pt-1 text-sm sm:text-base leading-relaxed text-slate-400 border-t border-white/8" style={{ background: '#0f1419' }}>
                       <p>{faq.a}</p>
                     </div>
                   )}

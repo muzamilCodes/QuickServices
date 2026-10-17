@@ -1,31 +1,94 @@
 @import "tailwindcss";
 
+/* ============================================================
+   DARK THEME — CSS Variables
+   ============================================================ */
 :root {
-  --background: #f7f7f2;
-  --surface: rgba(255, 255, 255, 0.88);
-  --surface-strong: #ffffff;
-  --foreground: #1d1d1f;
-  --muted: #61616b;
-  --line: rgba(21, 21, 27, 0.08);
-  --brand: #1565c0;
-  --brand-strong: #0e4f99;
+  --background: #0d1117;
+  --surface: rgba(22, 27, 34, 0.95);
+  --surface-strong: #161b22;
+  --surface-card: #1c2333;
+  --foreground: #e6edf3;
+  --muted: #8b949e;
+  --line: rgba(255, 255, 255, 0.08);
+  --brand: #4f9cff;
+  --brand-strong: #0f62c9;
   --accent: #ff8a3d;
-  --hero: #dff0ff;
+  --border: rgba(255, 255, 255, 0.08);
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+/* ============================================================
+   DARK BODY BACKGROUND
+   ============================================================ */
 body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(255, 184, 120, 0.18), transparent 28%),
-    radial-gradient(circle at 85% 10%, rgba(74, 144, 226, 0.16), transparent 24%),
-    linear-gradient(180deg, #fbfbf8 0%, #f2f5f8 100%);
+    radial-gradient(circle at 10% 5%, rgba(15, 98, 201, 0.12), transparent 30%),
+    radial-gradient(circle at 90% 10%, rgba(255, 138, 61, 0.08), transparent 25%),
+    linear-gradient(180deg, #0d1117 0%, #090d13 100%);
   color: var(--foreground);
-  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  font-family: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+/* ============================================================
+   TAILWIND DARK OVERRIDES (class-based)
+   ============================================================ */
+
+/* Slate light → dark equivalents */
+.bg-white { background-color: #161b22 !important; }
+.bg-white\/90 { background-color: rgba(22, 27, 34, 0.92) !important; }
+.bg-white\/95 { background-color: rgba(22, 27, 34, 0.97) !important; }
+.bg-white\/5 { background-color: rgba(255,255,255,0.04) !important; }
+.bg-white\/10 { background-color: rgba(255,255,255,0.07) !important; }
+
+/* Slate backgrounds */
+.bg-slate-50 { background-color: #0f1419 !important; }
+.bg-slate-50\/70 { background-color: rgba(15, 20, 25, 0.70) !important; }
+.bg-slate-100 { background-color: #1c2333 !important; }
+.bg-slate-200 { background-color: #21262d !important; }
+
+/* Text colors */
+.text-slate-900 { color: #e6edf3 !important; }
+.text-slate-950 { color: #f0f6fc !important; }
+.text-slate-800 { color: #cdd9e5 !important; }
+.text-slate-700 { color: #adbac7 !important; }
+.text-slate-600 { color: #8b949e !important; }
+.text-slate-500 { color: #768390 !important; }
+.text-slate-400 { color: #636e7b !important; }
+
+/* Border colors */
+.border-slate-100 { border-color: rgba(255,255,255,0.06) !important; }
+.border-slate-200 { border-color: rgba(255,255,255,0.09) !important; }
+.border-slate-300 { border-color: rgba(255,255,255,0.12) !important; }
+.border-slate-200\/80 { border-color: rgba(255,255,255,0.08) !important; }
+
+/* Input / form backgrounds */
+input, textarea, select {
+  background-color: #1c2333 !important;
+  color: #e6edf3 !important;
+  border-color: rgba(255,255,255,0.10) !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #636e7b !important;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #4f9cff !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 156, 255, 0.15);
+}
+select option {
+  background-color: #1c2333;
+  color: #e6edf3;
+}
+
+/* Card surfaces */
+.rounded-3xl, .rounded-2xl, .rounded-xl {
+  /* Let individual components handle bg — don't blanket override */
 }
 
 a {
@@ -37,13 +100,27 @@ button {
   cursor: pointer;
 }
 
-input,
-textarea,
-select,
-button {
+input, textarea, select, button {
   font: inherit;
 }
 
 ::selection {
-  background: rgba(21, 101, 192, 0.18);
+  background: rgba(79, 156, 255, 0.25);
+  color: #f0f6fc;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4f9cff;
 }

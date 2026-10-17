@@ -7,7 +7,7 @@ const quickLinks = [
   { name: 'Home', href: '/' },
   { name: 'Services', href: '/services' },
   { name: 'Book Now', href: '/dashboard/booking' },
-  { name: 'History', href: '/history' },
+  { name: 'Highlights', href: '/offers' },
   { name: 'About', href: '/about' },
   { name: 'Contact', href: '/contact' },
   { name: 'Become a Provider', href: '/providers' },
@@ -17,20 +17,20 @@ const quickLinks = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-black/10 bg-slate-950 text-white">
+    <footer className="border-t border-white/8" style={{ background: '#080c12' }}>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        
+
         {/* Top row: Brand + Links */}
         <div className="flex flex-col md:flex-row md:items-start gap-8">
-          
+
           {/* Brand */}
           <div className="flex items-center gap-3 shrink-0">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)]">
-              <Wrench className="h-4 w-4" />
+              <Wrench className="h-4 w-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold">QuickServices</p>
-              <p className="text-[11px] text-slate-400">Reliable help at your doorstep</p>
+              <p className="text-sm font-bold text-white">QuickServices</p>
+              <p className="text-[11px] text-slate-500">Reliable help at your doorstep</p>
             </div>
           </div>
 
@@ -40,7 +40,7 @@ export default function Footer() {
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-xs text-slate-400 hover:text-white transition whitespace-nowrap"
+                className="text-xs text-slate-500 hover:text-white transition whitespace-nowrap"
               >
                 {link.name}
               </Link>
@@ -49,22 +49,22 @@ export default function Footer() {
         </div>
 
         {/* Bottom divider + copyright */}
-        <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-white/10 pt-5 text-[11px] text-slate-500">
+        <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-white/6 pt-5 text-[11px] text-slate-600">
           <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
-              <Phone className="h-3 w-3" />
+              <Phone className="h-3 w-3 text-slate-500" />
               +91 9682645127
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Mail className="h-3 w-3" />
+              <Mail className="h-3 w-3 text-slate-500" />
               Quickservices@gmail.com
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <MapPin className="h-3 w-3" />
+              <MapPin className="h-3 w-3 text-slate-500" />
               Handwara, Qalamabad
             </span>
           </div>
-          <p>© 2026 QuickServices · Founded by Muzamil War</p>
+          <p className="text-slate-600">© 2026 QuickServices · Founded by Muzamil War</p>
         </div>
 
       </div>

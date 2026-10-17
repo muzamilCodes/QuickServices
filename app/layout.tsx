@@ -8,7 +8,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://quick-services-ind
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-QUICKSERV01';
 
 export const viewport: Viewport = {
-  themeColor: '#0f62c9',
+  themeColor: '#0d1117',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -128,7 +128,7 @@ export default function RootLayout({
           </>
         )}
       </head>
-      <body className="antialiased text-slate-900 bg-white">
+      <body className="antialiased" style={{ background: '#0d1117', color: '#e6edf3' }}>
         <AppShell>{children}</AppShell>
       </body>
     </html>
