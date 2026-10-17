@@ -45,7 +45,7 @@ exports.registerProvider = async (req, res) => {
         if (!hasMinLen || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
             return res.status(400).json({
                 success: false,
-                message: 'Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai (aik hi type ka nahi hona chahiye).'
+                message: 'Password must be at least 8 characters long and contain at least one uppercase letter (A), one lowercase letter (a), one number (1), and one special character (@).'
             });
         }
 

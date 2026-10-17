@@ -50,7 +50,7 @@ exports.register = async (req, res) => {
     if (!validateStrongPassword(password)) {
       return res.status(400).json({
         success: false,
-        message: "Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai (aik hi type ka nahi hona chahiye)."
+        message: "Password must be at least 8 characters long and contain at least one uppercase letter (A), one lowercase letter (a), one number (1), and one special character (@)."
       });
     }
 
@@ -157,19 +157,22 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ success: false, message: "Invalid credentials" });
 
-    // Strict Role Separation:
-    if (role === 'customer' && user.role === 'provider') {
-      return res.status(403).json({
-        success: false,
-        message: "Yeh email Service Provider (Pro) account ke taur par registered hai. Kripya 'Service Provider (Pro)' tab select karke login karein."
-      });
-    }
+    // If user is Admin, bypass role separation and approval blocks
+    if (!user.isAdmin) {
+      // Strict Role Separation:
+      if (role === 'customer' && user.role === 'provider') {
+        return res.status(403).json({
+          success: false,
+          message: "This email is registered as a Service Provider (Pro) account. Please select the 'Service Provider (Pro)' tab to log in."
+        });
+      }
 
-    if (role === 'provider' && user.role === 'customer' && !user.isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: "Yeh email Customer account ke taur par registered hai. Kripya 'Customer Login' tab select karein ya Provider register karein."
-      });
+      if (role === 'provider' && user.role === 'customer') {
+        return res.status(403).json({
+          success: false,
+          message: "This email is registered as a Customer account. Please select the 'Customer Login' tab to log in."
+        });
+      }
     }
 
     // OTP verification check: If not verified, generate new OTP and return needsVerification
@@ -185,19 +188,19 @@ exports.login = async (req, res) => {
         needsVerification: true,
         email: user.email,
         devOtp: newOtp,
-        message: "Aapka account verify nahi hai. Naya OTP email par bhej diya gaya hai."
+        message: "Your account is not verified yet. A new OTP has been sent to your email."
       });
     }
 
-    // Check if service provider is approved by Admin
-    if (user.role === 'provider') {
+    // Check if service provider is approved by Admin (Admins are always exempt)
+    if (!user.isAdmin && user.role === 'provider') {
       const Provider = require('../models/Provider');
       const provider = await Provider.findOne({ userId: user._id });
       if (provider && !provider.isApproved) {
         return res.status(403).json({
           success: false,
           isPendingApproval: true,
-          message: "Aapka Service Provider profile Admin verification ke liye pending hai. Admin approval ke baad aap login kar sakenge."
+          message: "Your Service Provider account is pending Admin approval. You will be able to log in once verified by the Admin."
         });
       }
     }
@@ -531,7 +534,7 @@ exports.changePass = async (req, res) => {
 
     if (!validateStrongPassword(password)) {
       return res.status(400).json({
-        message: "Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai."
+        message: "Password must be at least 8 characters long and contain at least one uppercase letter (A), one lowercase letter (a), one number (1), and one special character (@)."
       });
     }
 
@@ -599,7 +602,7 @@ exports.resetPassword = async (req, res) => {
     if (!validateStrongPassword(newPassword)) {
       return res.status(400).json({
         success: false,
-        message: "Password kam se kam 8 digits/characters ka hona chahiye aur usme Uppercase (A), Lowercase (a), Number (1), aur Special symbol (@) hona zaroori hai."
+        message: "Password must be at least 8 characters long and contain at least one uppercase letter (A), one lowercase letter (a), one number (1), and one special character (@)."
       });
     }
 
