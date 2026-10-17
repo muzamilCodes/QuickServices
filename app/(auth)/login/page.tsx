@@ -64,6 +64,7 @@ function LoginForm() {
       const response = await fetch(`${apiUrl}/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           email: formData.email.trim(),
           password: formData.password,
@@ -73,9 +74,30 @@ function LoginForm() {
 
       const result = await response.json();
 
+      // Provider pending approval
       if (response.status === 403 && result.isPendingApproval) {
         setPendingNotice(result.message || "Your Service Provider account is pending Admin approval. You will be able to log in once verified by the Admin.");
         toast.error("Account pending Admin approval");
+        return;
+      }
+
+      // Wrong tab: provider logging in as customer or vice versa
+      if (response.status === 403) {
+        toast.error(result.message || "You are logging in on the wrong tab. Please switch the tab above.");
+        return;
+      }
+
+      // Account not verified — redirect to OTP verification
+      if (response.status === 401 && result.needsVerification) {
+        localStorage.setItem("pendingEmail", result.email || formData.email.trim());
+        toast.error("Account not verified. Check your email for OTP.");
+        router.push(`/otp?email=${encodeURIComponent(result.email || formData.email.trim())}`);
+        return;
+      }
+
+      // Wrong credentials or account doesn't exist
+      if (response.status === 401) {
+        toast.error(result.message || "Incorrect email/password. If you don't have an account, please register first.");
         return;
       }
 
@@ -97,11 +119,11 @@ function LoginForm() {
           router.push("/dashboard");
         }
       } else {
-        toast.error(result.message || "Invalid email or password");
+        toast.error(result.message || "Login failed. Please try again.");
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Network error. Please try again.");
+      toast.error("Network error. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -254,13 +276,18 @@ function LoginForm() {
         </form>
 
         {/* New to platform */}
-        <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-          <p className="text-xs text-slate-600">
-            Don&apos;t have an account yet?{" "}
-            <Link href="/register" className="font-bold text-blue-600 hover:underline">
-              Sign up on Register page
-            </Link>
-          </p>
+        <div className="mt-5 pt-5 border-t border-slate-100">
+          <div className="rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-center">
+            <p className="text-xs text-slate-700 font-medium">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="font-extrabold text-blue-600 hover:underline">
+                Create a free account →
+              </Link>
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Customer Login tab = normal customer accounts only
+            </p>
+          </div>
         </div>
       </div>
 

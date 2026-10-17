@@ -1,108 +1,72 @@
 'use client';
 
 import Link from 'next/link';
-import { Headphones, Mail, MapPin, Phone, ShieldCheck, TimerReset, Wrench } from 'lucide-react';
+import { Mail, MapPin, Phone, Wrench } from 'lucide-react';
 
-const footerGroups = [
-  {
-    title: 'Explore',
-    links: [
-      { name: 'Home', href: '/' },
-      { name: 'Services', href: '/services' },
-      { name: 'Highlights', href: '/offers' },
-      { name: 'Benefits', href: '/benefits' },
-      { name: 'About', href: '/about' },
-      { name: 'Contact', href: '/contact' },
-      { name: 'Bookings', href: '/history' },
-      { name: 'Profile', href: '/profile' },
-    ],
-  },
-  {
-    title: 'Company',
-    links: [
-      { name: 'Become a Provider', href: '/providers' },
-      { name: 'Contact', href: '/contact' },
-      { name: 'Support', href: '/contact' },
-      { name: 'Privacy Policy', href: '/privacy' },
-      { name: 'Terms of Service', href: '/terms' },
-    ],
-  },
-  {
-    title: 'Top Services',
-    links: [
-      { name: 'Plumber', href: '/booking?service=plumber' },
-      { name: 'Electrician', href: '/booking?service=electrician' },
-      { name: 'AC Technician', href: '/booking?service=ac' },
-      { name: 'Pest Control', href: '/booking?service=pest' },
-    ],
-  },
-];
-
-const trustPoints = [
-  { icon: TimerReset, text: 'Fast dispatch across major cities' },
-  { icon: ShieldCheck, text: 'Verified professionals and OTP confirmation' },
-  { icon: Headphones, text: 'Real support before and after the booking' },
+const quickLinks = [
+  { name: 'Home', href: '/' },
+  { name: 'Services', href: '/services' },
+  { name: 'Book Now', href: '/dashboard/booking' },
+  { name: 'History', href: '/history' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+  { name: 'Become a Provider', href: '/providers' },
+  { name: 'Privacy Policy', href: '/privacy' },
+  { name: 'Terms', href: '/terms' },
 ];
 
 export default function Footer() {
   return (
-    <footer className="border-t border-black/5 bg-slate-950 text-white">
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)]">
-                <Wrench className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold">QuickServices</p>
-                <p className="text-sm text-slate-400">Reliable help at your doorstep</p>
-              </div>
+    <footer className="border-t border-black/10 bg-slate-950 text-white">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        
+        {/* Top row: Brand + Links */}
+        <div className="flex flex-col md:flex-row md:items-start gap-8">
+          
+          {/* Brand */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)]">
+              <Wrench className="h-4 w-4" />
             </div>
-
-            <p className="max-w-md text-sm leading-6 text-slate-400">
-              Book everyday services without the usual phone-tag. Choose the job, confirm the details,
-              verify the OTP, and track the request in one place.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {trustPoints.map(({ icon: Icon, text }) => (
-                <div key={text} className="rounded-2xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
-                  <Icon className="mb-2 h-4 w-4 text-orange-300" />
-                  <p>{text}</p>
-                </div>
-              ))}
+            <div>
+              <p className="text-sm font-bold">QuickServices</p>
+              <p className="text-[11px] text-slate-400">Reliable help at your doorstep</p>
             </div>
           </div>
 
-          {footerGroups.map((group) => (
-            <div key={group.title}>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">{group.title}</h3>
-              <div className="space-y-3">
-                {group.links.map((link) => (
-                  <Link key={link.name} href={link.href} className="block text-sm text-slate-400 transition hover:text-white">
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
-            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> +91 9682645127</span>
-            <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> Quickservices@gmail.com</span>
-            <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> Handwara Qalamabad</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
-            <span>•</span>
-            <Link href="/terms" className="hover:text-white transition">Terms</Link>
-            <span>•</span>
-            <p>© 2026 QuickServices. Founded by Muzamil War.</p>
+          {/* Quick Links */}
+          <div className="flex flex-wrap gap-x-5 gap-y-2 flex-1">
+            {quickLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="text-xs text-slate-400 hover:text-white transition whitespace-nowrap"
+              >
+                {link.name}
+              </Link>
+            ))}
           </div>
         </div>
+
+        {/* Bottom divider + copyright */}
+        <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-white/10 pt-5 text-[11px] text-slate-500">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="inline-flex items-center gap-1.5">
+              <Phone className="h-3 w-3" />
+              +91 9682645127
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Mail className="h-3 w-3" />
+              Quickservices@gmail.com
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="h-3 w-3" />
+              Handwara, Qalamabad
+            </span>
+          </div>
+          <p>© 2026 QuickServices · Founded by Muzamil War</p>
+        </div>
+
       </div>
     </footer>
   );

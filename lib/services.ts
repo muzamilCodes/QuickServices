@@ -253,7 +253,7 @@ export const allServices: Service[] = [
     color: 'from-lime-500 to-emerald-700',
     category: 'Landscaping',
     popular: false,
-    image: 'https://images.unsplash.com/photo-1599685315640-9ceab2f58944?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'salon',
