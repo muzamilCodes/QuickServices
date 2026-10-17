@@ -24,7 +24,11 @@ const {
     updateUserDetails,
     updateUserAdmin,
     updateUserActive,
-    deleteUser
+    deleteUser,
+    // Provider service submissions
+    getProviderServiceSubmissions,
+    approveProviderService,
+    rejectProviderService
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -45,6 +49,11 @@ router.get('/services', getServices);
 router.post('/services', createService);
 router.put('/services/:id', updateService);
 router.delete('/services/:id', deleteService);
+
+// Provider-submitted service approval
+router.get('/provider-services', getProviderServiceSubmissions);
+router.put('/provider-services/:id/approve', approveProviderService);
+router.put('/provider-services/:id/reject', rejectProviderService);
 
 router.get('/offers', getOffers);
 router.post('/offers', createOffer);

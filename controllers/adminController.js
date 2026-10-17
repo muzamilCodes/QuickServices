@@ -4,6 +4,7 @@ const Service = require('../models/Service');
 const Offer = require('../models/Offer');
 const Contact = require('../models/Contact');
 const { User } = require('../models/userModel');
+const ProviderService = require('../models/ProviderService');
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -460,6 +461,85 @@ exports.getDashboardStats = async (req, res) => {
             recentContacts
         });
 
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ===================== ADMIN: PROVIDER SERVICE SUBMISSIONS =====================
+
+// Get all provider-submitted services (pending/approved/rejected)
+exports.getProviderServiceSubmissions = async (req, res) => {
+    try {
+        const { status } = req.query;
+        const query = status ? { status } : {};
+        const submissions = await ProviderService.find(query)
+            .populate('providerId', 'name email phone')
+            .sort({ createdAt: -1 });
+        res.json({ success: true, submissions });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Admin approves a provider-submitted service → adds to global Service catalog
+exports.approveProviderService = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { adminNote } = req.body;
+
+        const submission = await ProviderService.findById(id);
+        if (!submission) return res.status(404).json({ success: false, message: 'Submission not found' });
+
+        // Mark as approved
+        submission.status = 'approved';
+        submission.adminNote = adminNote || '';
+        submission.approvedAt = new Date();
+        await submission.save();
+
+        // Add to the main Service catalog (so it appears on home page & booking)
+        const serviceId = `prov_${submission.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}_${Date.now()}`;
+        const existing = await Service.findOne({ name: submission.name });
+        if (!existing) {
+            await Service.create({
+                id: serviceId,
+                name: submission.name,
+                icon: submission.icon || '🔧',
+                description: submission.description,
+                details: submission.details || [],
+                basePrice: submission.price,
+                priceUnit: submission.priceUnit || 'visit',
+                rating: 4.5,
+                category: submission.category,
+                image: submission.image || '',
+                isProviderSubmitted: true,
+                submittedBy: submission.providerName
+            });
+        }
+
+        res.json({ success: true, message: 'Service approved and added to catalog' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Admin rejects a provider-submitted service
+exports.rejectProviderService = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { adminNote } = req.body;
+
+        const submission = await ProviderService.findById(id);
+        if (!submission) return res.status(404).json({ success: false, message: 'Submission not found' });
+
+        submission.status = 'rejected';
+        submission.adminNote = adminNote || 'Not approved';
+        await submission.save();
+
+        res.json({ success: true, message: 'Service rejected' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });

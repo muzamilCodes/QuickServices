@@ -398,3 +398,62 @@ exports.handleBookingAction = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// ===================== PROVIDER: SUBMIT SERVICE FOR APPROVAL =====================
+exports.submitServiceForApproval = async (req, res) => {
+    try {
+        const { name, icon, category, description, details, price, priceUnit, image } = req.body;
+
+        if (!name || !category || !description || !price) {
+            return res.status(400).json({ success: false, message: 'Name, category, description, and price are required.' });
+        }
+
+        // Find provider profile
+        const ProviderService = require('../models/ProviderService');
+        const provider = await Provider.findOne({ userId: req.userId });
+        if (!provider) {
+            return res.status(403).json({ success: false, message: 'Provider profile not found.' });
+        }
+
+        const submission = new ProviderService({
+            providerId: provider._id,
+            providerName: provider.name,
+            providerEmail: provider.email,
+            name: name.trim(),
+            icon: icon || '🔧',
+            category,
+            description,
+            details: Array.isArray(details) ? details.filter(Boolean) : [],
+            price: Number(price),
+            priceUnit: priceUnit || 'visit',
+            image: image || '',
+            status: 'pending'
+        });
+
+        await submission.save();
+
+        return res.status(201).json({
+            success: true,
+            message: 'Service submitted for admin approval. You will be notified once reviewed.',
+            submission
+        });
+    } catch (error) {
+        console.error('submitServiceForApproval error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Get my submitted services
+exports.getMyServiceSubmissions = async (req, res) => {
+    try {
+        const ProviderService = require('../models/ProviderService');
+        const provider = await Provider.findOne({ userId: req.userId });
+        if (!provider) return res.status(403).json({ success: false, message: 'Provider profile not found.' });
+
+        const submissions = await ProviderService.find({ providerId: provider._id }).sort({ createdAt: -1 });
+        return res.json({ success: true, submissions });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
