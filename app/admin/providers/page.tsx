@@ -333,9 +333,20 @@ export default function AdminProvidersPage() {
                       <span>Verify & Approve Provider</span>
                     </button>
                   ) : (
-                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-300 px-3.5 py-2 text-xs font-extrabold text-emerald-800">
-                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                      <span>Verified & Approved</span>
+                    <div className="flex items-center gap-2">
+                      <div className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-300 px-3.5 py-2 text-xs font-extrabold text-emerald-800">
+                        <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                        <span>Verified & Approved</span>
+                      </div>
+                      <button
+                        disabled={actionLoading === provider._id}
+                        onClick={() => approveProvider(provider._id, true)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition disabled:opacity-50"
+                        title="Resend approval notification email to provider"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>Resend Email</span>
+                      </button>
                     </div>
                   )}
                 </div>
