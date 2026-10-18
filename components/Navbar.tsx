@@ -65,8 +65,8 @@ export default function Navbar() {
             ? 'bg-[#0d1117]/97 shadow-lg shadow-black/40 backdrop-blur-xl border-b border-white/8 py-2.5'
             : 'bg-[#0d1117]/90 shadow-sm backdrop-blur-lg border-b border-white/6 py-3'
           : scrolled
-            ? 'bg-white/95 shadow-md shadow-slate-200/60 backdrop-blur-xl border-b border-slate-200 py-2.5'
-            : 'bg-white/90 shadow-sm backdrop-blur-lg border-b border-slate-200/80 py-3'
+            ? 'bg-white/95 shadow-sm border-b border-slate-200/80 backdrop-blur-lg py-2.5'
+            : 'bg-white/85 shadow-xs border-b border-black/5 backdrop-blur-md py-3'
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -78,9 +78,9 @@ export default function Navbar() {
           </div>
           <div className="flex flex-col">
             <span className={`text-lg font-black tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Quick<span className="text-[#4f9cff]">Services</span>
+              Quick<span className={isDark ? 'text-[#4f9cff]' : 'text-[#0f62c9]'}>Services</span>
             </span>
-            <span className={`text-[10px] uppercase tracking-[0.2em] font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 mt-1">
               Home Support, Faster
             </span>
           </div>
@@ -89,7 +89,7 @@ export default function Navbar() {
         {/* ================= 2. Center Navigation Links (Clean & Spacious) ================= */}
         <nav
           className={`hidden lg:flex items-center gap-1 rounded-full border px-3 py-1.5 shadow-inner backdrop-blur ${
-            isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-100/80'
+            isDark ? 'border-white/10 bg-white/5' : 'border-black/5 bg-black/[0.03]'
           }`}
         >
           {mainNavLinks.map(({ name, href, icon: Icon }) => {
@@ -99,11 +99,13 @@ export default function Navbar() {
                 key={name}
                 href={href}
                 className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
-                  active
-                    ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/15 text-[#4f9cff] shadow-sm'
-                    : isDark
-                      ? 'text-slate-400 hover:text-white hover:bg-white/8'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                  isDark
+                    ? active
+                      ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/15 text-[#4f9cff] shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-white/8'
+                    : active
+                      ? 'border border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                      : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" />
@@ -115,7 +117,7 @@ export default function Navbar() {
 
         {/* ================= 3. Right Action Buttons & Theme Switcher ================= */}
         <div className="hidden lg:flex items-center gap-2.5 shrink-0">
-          {/* Theme Toggle (Dark / Light) */}
+          {/* Theme Toggle (Original Light / Dark) */}
           <ThemeToggle />
 
           {/* If NOT logged in */}
@@ -150,7 +152,7 @@ export default function Navbar() {
                 className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold whitespace-nowrap ${
                   isDark
                     ? 'border-white/10 bg-white/6 text-slate-200'
-                    : 'border-slate-200 bg-slate-100 text-slate-800'
+                    : 'border-slate-200 bg-slate-50 text-slate-800'
                 }`}
               >
                 <CircleUserRound className="h-3.5 w-3.5 text-blue-600 shrink-0" />
@@ -199,7 +201,7 @@ export default function Navbar() {
                 className={`inline-flex items-center justify-center rounded-full border p-2 transition shrink-0 ${
                   isDark
                     ? 'border-white/10 text-slate-400 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400'
-                    : 'border-slate-200 text-slate-600 hover:border-rose-500/30 hover:bg-rose-50 hover:text-rose-600'
+                    : 'border-slate-200 text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600'
                 }`}
                 title="Logout"
               >
@@ -218,7 +220,7 @@ export default function Navbar() {
             className={`flex h-10 w-10 items-center justify-center rounded-2xl border shadow-sm transition ${
               isDark
                 ? 'border-white/10 bg-white/6 text-slate-300 hover:bg-white/12'
-                : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
             }`}
             aria-label="Toggle navigation menu"
           >
@@ -234,7 +236,7 @@ export default function Navbar() {
           className={`border-t px-4 pb-6 pt-3 shadow-xl backdrop-blur-xl lg:hidden max-h-[85vh] overflow-y-auto ${
             isDark
               ? 'border-white/8 bg-[#0d1117]/98 text-white'
-              : 'border-slate-200 bg-white/98 text-slate-900'
+              : 'border-slate-100 bg-white/95 text-slate-900'
           }`}
         >
           <div className="space-y-1.5">
@@ -246,11 +248,13 @@ export default function Navbar() {
                   href={href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                    active
-                      ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/10 text-[#4f9cff]'
-                      : isDark
-                        ? 'text-slate-300 hover:bg-white/6'
-                        : 'text-slate-700 hover:bg-slate-100'
+                    isDark
+                      ? active
+                        ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/10 text-[#4f9cff]'
+                        : 'text-slate-300 hover:bg-white/6'
+                      : active
+                        ? 'border border-blue-200 bg-blue-50 text-blue-700'
+                        : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -265,10 +269,12 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                   pathname === '/dashboard/history'
-                    ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/10 text-[#4f9cff]'
+                    ? isDark
+                      ? 'border border-[#4f9cff]/30 bg-[#4f9cff]/10 text-[#4f9cff]'
+                      : 'border border-blue-200 bg-blue-50 text-blue-700'
                     : isDark
                       ? 'text-slate-300 hover:bg-white/6'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 <ReceiptText className="h-4 w-4 shrink-0" />
@@ -277,10 +283,10 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className={`mt-4 border-t pt-4 space-y-2 ${isDark ? 'border-white/8' : 'border-slate-200'}`}>
+          <div className={`mt-4 border-t pt-4 space-y-2 ${isDark ? 'border-white/8' : 'border-slate-100'}`}>
             {isAuthenticated ? (
               <>
-                <div className="mb-2 px-2 flex items-center justify-between text-xs font-medium text-slate-400">
+                <div className="mb-2 px-2 flex items-center justify-between text-xs font-medium text-slate-500">
                   <span>Signed in as <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{user?.username}</span></span>
                   {isAdmin ? (
                     <span className="rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-[10px] font-black">ADMIN</span>
@@ -342,7 +348,7 @@ export default function Navbar() {
                   className={`flex items-center justify-center rounded-2xl border py-3 text-sm font-bold transition ${
                     isDark
                       ? 'border-white/10 bg-white/6 text-slate-200 hover:bg-white/10'
-                      : 'border-slate-200 bg-slate-100 text-slate-800 hover:bg-slate-200'
+                      : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
                   }`}
                 >
                   Login

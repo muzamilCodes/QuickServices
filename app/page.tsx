@@ -112,7 +112,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-xs sm:text-sm font-medium text-slate-400">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">
               <span className="inline-flex items-center gap-1.5">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> 4.9 average rating
               </span>
@@ -132,7 +132,7 @@ export default function HomePage() {
               {/* Decorative Glow */}
               <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-tr from-[#0f62c9] to-[#ff8a3d] opacity-25 blur-xl" />
 
-              <div className="relative overflow-hidden rounded-[32px] border-4 bg-[#161b22] shadow-2xl shadow-black/60" style={{ borderColor: '#1c2333' }}>
+              <div className="relative overflow-hidden rounded-[32px] border-4 border-white dark:border-[#1c2333] bg-white dark:bg-[#161b22] shadow-2xl shadow-slate-300/60 dark:shadow-black/60">
                 <div className="relative h-[420px] sm:h-[480px] w-full">
                   <Image
                     src="/hero-user.jpg"
@@ -152,8 +152,8 @@ export default function HomePage() {
                           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                         </span>
                         <div>
-                          <p className="text-xs font-bold text-white">Muzamil War</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Verified Services Lead</p>
+                          <p className="text-xs font-bold text-slate-950 dark:text-white">Muzamil War</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Verified Services Lead</p>
                         </div>
                       </div>
                       <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-700">

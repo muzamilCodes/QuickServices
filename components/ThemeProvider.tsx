@@ -11,25 +11,25 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // By default, start with 'dark' as requested
-  const [theme, setThemeState] = useState<Theme>('dark');
+  // Original theme is default ('light')
+  const [theme, setThemeState] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem('app_theme') as Theme | null;
-      // Default to 'dark' if none is stored
-      const initialTheme = savedTheme === 'light' ? 'light' : 'dark';
+      // Default to 'light' (original website theme) unless user explicitly selected 'dark'
+      const initialTheme = savedTheme === 'dark' ? 'dark' : 'light';
       setThemeState(initialTheme);
       applyTheme(initialTheme);
     } catch {
-      applyTheme('dark');
+      applyTheme('light');
     }
     setMounted(true);
   }, []);
@@ -37,16 +37,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const applyTheme = (t: Theme) => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
-    if (t === 'light') {
-      root.classList.remove('dark');
-      root.classList.add('light');
-      root.setAttribute('data-theme', 'light');
-      root.style.colorScheme = 'light';
-    } else {
+    if (t === 'dark') {
       root.classList.remove('light');
       root.classList.add('dark');
       root.setAttribute('data-theme', 'dark');
       root.style.colorScheme = 'dark';
+    } else {
+      root.classList.remove('dark');
+      root.classList.add('light');
+      root.setAttribute('data-theme', 'light');
+      root.style.colorScheme = 'light';
     }
   };
 

@@ -13,9 +13,8 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
   }, []);
 
   if (!mounted) {
-    // Avoid hydration mismatch during SSR
     return (
-      <div className={`h-9 w-9 rounded-full border border-white/10 bg-white/5 ${className}`} />
+      <div className={`h-9 w-9 rounded-full border border-slate-200 bg-white/50 ${className}`} />
     );
   }
 
@@ -30,13 +29,13 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
       className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-300 ${
         isDark
           ? 'border-white/15 bg-white/8 text-amber-400 hover:bg-white/15 hover:border-amber-400/50 shadow-sm shadow-amber-400/10'
-          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-sm'
+          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-sm'
       } ${className}`}
     >
       {isDark ? (
         <Sun className="h-4 w-4 transition-transform duration-300 rotate-0 hover:rotate-45" />
       ) : (
-        <Moon className="h-4 w-4 transition-transform duration-300 -rotate-12 hover:rotate-0" />
+        <Moon className="h-4 w-4 transition-transform duration-300 -rotate-12 hover:rotate-0 text-slate-700" />
       )}
     </button>
   );
