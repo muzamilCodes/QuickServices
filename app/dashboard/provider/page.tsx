@@ -166,13 +166,35 @@ export default function ProviderDashboardPage() {
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
       return;
     }
+
+    // Try server multipart upload first
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${API_URL}/providers/upload-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        const fullUrl = data.url.startsWith('http') ? data.url : `${API_URL}${data.url}`;
+        setEditForm((prev) => ({ ...prev, profilePicture: fullUrl }));
+        toast.success('Profile photo uploaded!');
+        return;
+      }
+    } catch {
+      // fallback to FileReader
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setEditForm((prev) => ({ ...prev, profilePicture: reader.result as string }));
@@ -181,19 +203,41 @@ export default function ProviderDashboardPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleServiceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleServiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
       return;
     }
+
+    // Immediate local preview for responsive UI
     const reader = new FileReader();
     reader.onloadend = () => {
       setNewService((prev) => ({ ...prev, image: reader.result as string }));
-      toast.success('Service image loaded from device!');
     };
     reader.readAsDataURL(file);
+
+    // Upload to server endpoint to keep payload light
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${API_URL}/providers/upload-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        const fullUrl = data.url.startsWith('http') ? data.url : `${API_URL}${data.url}`;
+        setNewService((prev) => ({ ...prev, image: fullUrl }));
+        toast.success('Service photo uploaded successfully!');
+        return;
+      }
+    } catch {
+      // already set base64 preview via reader
+    }
   };
 
   const fetchProviderData = useCallback(async () => {
