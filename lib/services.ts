@@ -14,6 +14,8 @@ export interface Service {
   category: string;
   popular: boolean;
   image: string;
+  isProviderSubmitted?: boolean;
+  submittedBy?: string;
 }
 
 export const allServices: Service[] = [

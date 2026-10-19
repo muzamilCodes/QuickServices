@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   RotateCcw
 } from 'lucide-react';
-import { allServices } from '@/lib/services';
+import { allServices, Service } from '@/lib/services';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 const categories = [
   { name: 'All Categories', icon: '✨' },
@@ -68,6 +69,58 @@ export default function ServicesCatalog({
   limitCards?: number;
 }) {
   const router = useRouter();
+  const API_URL = getApiBaseUrl();
+
+  // Dynamic live services state (defaults to static, updates when API responds)
+  const [servicesList, setServicesList] = useState<Service[]>(allServices);
+
+  useEffect(() => {
+    let active = true;
+    const fetchServicesFromDb = async () => {
+      try {
+        const res = await fetch(`${API_URL}/services`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.services) && data.services.length > 0) {
+          const mapped: Service[] = data.services.map((s: any) => {
+            const staticMatch = allServices.find(
+              as => as.id === s.id || as.name.toLowerCase() === s.name.toLowerCase()
+            );
+            return {
+              id: s.id || s._id,
+              name: s.name,
+              icon: s.icon || staticMatch?.icon || '🔧',
+              description: s.description || staticMatch?.description || '',
+              details: Array.isArray(s.details) && s.details.length > 0 ? s.details : (staticMatch?.details || [s.description]),
+              price: `₹${s.basePrice || s.price || 499}`,
+              numericPrice: Number(s.basePrice || s.price) || 499,
+              priceUnit: s.priceUnit || 'visit',
+              rating: Number(s.rating) || staticMatch?.rating || 4.8,
+              reviewsCount: staticMatch?.reviewsCount || (s.isProviderSubmitted ? 12 : 68),
+              eta: staticMatch?.eta || 'Fast doorstep dispatch',
+              color: staticMatch?.color || 'from-blue-500 to-indigo-700',
+              category: s.category || staticMatch?.category || 'General Maintenance',
+              popular: s.isProviderSubmitted ? false : (staticMatch?.popular ?? true),
+              image: s.image || staticMatch?.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
+              isProviderSubmitted: Boolean(s.isProviderSubmitted),
+              submittedBy: s.submittedBy || '',
+            };
+          });
+
+          // Also merge any allServices defaults not yet in DB
+          const existingNames = new Set(mapped.map(m => m.name.toLowerCase()));
+          const remaining = allServices.filter(as => !existingNames.has(as.name.toLowerCase()));
+
+          if (active) {
+            setServicesList([...mapped, ...remaining]);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load live services from API, using default catalog:', err);
+      }
+    };
+    fetchServicesFromDb();
+    return () => { active = false; };
+  }, [API_URL]);
 
   // Filters state
   const [search, setSearch] = useState('');
@@ -83,20 +136,20 @@ export default function ServicesCatalog({
 
   // Category counts
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { 'All Categories': allServices.length };
+    const counts: Record<string, number> = { 'All Categories': servicesList.length };
     categories.forEach((cat) => {
       if (cat.name !== 'All Categories') {
-        counts[cat.name] = allServices.filter(
+        counts[cat.name] = servicesList.filter(
           (s) => s.category.toLowerCase() === cat.name.toLowerCase()
         ).length;
       }
     });
     return counts;
-  }, []);
+  }, [servicesList]);
 
   // Filter & Sort Logic
   const filteredServices = useMemo(() => {
-    return allServices.filter((service) => {
+    return servicesList.filter((service) => {
       // Search filter
       const matchesSearch = 
         !search.trim() ||
@@ -132,7 +185,7 @@ export default function ServicesCatalog({
       if (sortBy === 'Price: High to Low') return b.numericPrice - a.numericPrice;
       return 0;
     });
-  }, [search, selectedCategory, selectedPriceRange, selectedRating, popularOnly, expressDispatchOnly, sortBy]);
+  }, [servicesList, search, selectedCategory, selectedPriceRange, selectedRating, popularOnly, expressDispatchOnly, sortBy]);
 
   // Active filter pills
   const activeFilters = useMemo(() => {
@@ -570,12 +623,12 @@ export default function ServicesCatalog({
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
                       
                       {/* Category Badge */}
-                      <span className="absolute top-3 left-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-900 shadow-sm backdrop-blur-sm">
+                      <span className="absolute top-3 left-3 rounded-full bg-white/95 dark:bg-slate-900/90 border border-slate-200/50 dark:border-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white shadow-sm backdrop-blur-sm">
                         {service.category}
                       </span>
 
                       {/* Icon Bubble */}
-                      <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-2xl bg-white/95 text-base shadow-md backdrop-blur-sm">
+                      <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-2xl bg-white/95 dark:bg-slate-800/90 border border-slate-200/50 dark:border-white/10 text-base shadow-md backdrop-blur-sm text-slate-900 dark:text-white">
                         {service.icon}
                       </span>
                     </div>
@@ -587,21 +640,29 @@ export default function ServicesCatalog({
                           {service.name}
                         </h3>
 
+                        {service.submittedBy && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] text-orange-600 dark:text-orange-400 font-bold bg-orange-50 dark:bg-orange-500/10 px-2 py-0.5 rounded-md">
+                              ★ Verified Specialist: {service.submittedBy}
+                            </span>
+                          </div>
+                        )}
+
                         {/* Rating & Review Count */}
                         <div className="mt-1.5 flex items-center gap-1.5 text-xs">
                           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                           <span className="font-bold text-slate-700 dark:text-slate-200">{service.rating.toFixed(1)}</span>
-                          <span className="text-slate-500 font-medium">({service.reviewsCount} reviews)</span>
+                          <span className="text-slate-500 dark:text-slate-400 font-medium">({service.reviewsCount} reviews)</span>
                         </div>
 
                         {/* Description */}
-                        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        <p className="mt-2 text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
                           {service.description}
                         </p>
 
                         {/* ETA / Feature Pill */}
-                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg w-fit">
-                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50 dark:border-emerald-800/40 px-2.5 py-1 rounded-lg w-fit">
+                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span>{service.eta}</span>
                         </div>
                       </div>
@@ -612,7 +673,7 @@ export default function ServicesCatalog({
                           <span className="text-xl font-black text-slate-900 dark:text-white font-mono">
                             {service.price}
                           </span>
-                          <span className="text-[11px] text-slate-500 ml-0.5">/{service.priceUnit}</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-0.5">/{service.priceUnit}</span>
                         </div>
 
                         <button

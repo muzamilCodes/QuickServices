@@ -40,6 +40,8 @@ interface CustomService {
   priceUnit?: string;
   description?: string;
   details?: string[];
+  status?: 'pending' | 'approved' | 'rejected';
+  isApproved?: boolean;
 }
 
 interface ProviderProfile {
@@ -296,36 +298,31 @@ export default function ProviderDashboardPage() {
     setAddingService(true);
     try {
       const token = localStorage.getItem('token');
-      const existing = provider?.customServices || [];
       const detailsList = newService.details
         ? newService.details.split(',').map(s => s.trim()).filter(Boolean)
         : [newService.description || newService.name];
 
-      const updated = [
-        ...existing,
-        {
-          name: newService.name.trim(),
-          category: newService.category,
-          image: newService.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
-          price: Number(newService.price) || 499,
-          priceUnit: newService.priceUnit || 'visit',
-          description: newService.description,
-          details: detailsList
-        }
-      ];
-
-      const res = await fetch(`${API_URL}/providers/me`, {
-        method: 'PUT',
+      // Submit directly to Admin for approval
+      const res = await fetch(`${API_URL}/providers/submit-service`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ customServices: updated })
+        body: JSON.stringify({
+          name: newService.name.trim(),
+          category: newService.category || 'General Maintenance',
+          image: newService.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
+          price: Number(newService.price) || 499,
+          priceUnit: newService.priceUnit || 'visit',
+          description: newService.description || newService.name.trim(),
+          details: detailsList
+        })
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success('New service added successfully!');
+        toast.success('🎉 Service submitted to Admin for approval! Once approved, it will go live on the website.');
         setNewService({
           name: '',
           category: 'Plumbing',
@@ -337,10 +334,10 @@ export default function ProviderDashboardPage() {
         });
         void fetchProviderData();
       } else {
-        toast.error(data.message || 'Failed to add service');
+        toast.error(data.message || 'Failed to submit service');
       }
     } catch {
-      toast.error('Network error adding service');
+      toast.error('Network error submitting service');
     } finally {
       setAddingService(false);
     }
@@ -973,9 +970,24 @@ export default function ProviderDashboardPage() {
                       </div>
 
                       <div className="p-5 pt-0 space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">
-                          {svc.category || 'General'}
-                        </span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">
+                            {svc.category || 'General'}
+                          </span>
+                          {svc.isApproved || svc.status === 'approved' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-[10px] font-black">
+                              ✓ Approved & Live
+                            </span>
+                          ) : svc.status === 'rejected' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 px-2.5 py-0.5 text-[10px] font-black">
+                              ✕ Rejected
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-[10px] font-black">
+                              ⏳ Pending Admin Approval
+                            </span>
+                          )}
+                        </div>
                         <h4 className="font-extrabold text-slate-950 text-base leading-snug">
                           {svc.name}
                         </h4>
