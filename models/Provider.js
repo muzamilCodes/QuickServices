@@ -32,8 +32,19 @@ const providerSchema = new mongoose.Schema({
         image: String,
         price: Number,
         priceUnit: { type: String, default: 'visit' },
+        pricingUnit: { type: String, default: 'per_visit' },
+        hourlyRate: { type: Number, default: 0 },
+        minDurationHours: { type: Number, default: 1 },
+        additionalTimeBilling: { type: String, default: '1 hour' },
+        visitingCharges: { type: Number, default: 0 },
+        materialCharges: { type: Number, default: 0 },
+        estimatedLabourCost: { type: Number, default: 0 },
+        totalEstimatedPrice: { type: Number, default: 0 },
         description: String,
-        details: [String]
+        details: [String],
+        status: { type: String, default: 'pending' },
+        isApproved: { type: Boolean, default: false },
+        submissionId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProviderService' }
     }],
     whatsappNumber: {
         type: String

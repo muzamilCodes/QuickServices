@@ -502,6 +502,8 @@ exports.approveProviderService = async (req, res) => {
         // Add or update in the main Service catalog (so it appears on home page & booking)
         const serviceId = `prov_${submission.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}_${Date.now()}`;
         const existing = await Service.findOne({ name: submission.name });
+        let activeServiceId = serviceId;
+
         if (!existing) {
             await Service.create({
                 id: serviceId,
@@ -511,36 +513,74 @@ exports.approveProviderService = async (req, res) => {
                 details: submission.details || [],
                 basePrice: submission.price,
                 priceUnit: submission.priceUnit || 'visit',
-                rating: 4.5,
+                pricingUnit: submission.pricingUnit || 'per_visit',
+                hourlyRate: submission.hourlyRate || 0,
+                minDurationHours: submission.minDurationHours || 1,
+                additionalTimeBilling: submission.additionalTimeBilling || '1 hour',
+                visitingCharges: submission.visitingCharges || 0,
+                materialCharges: submission.materialCharges || 0,
+                estimatedLabourCost: submission.estimatedLabourCost || submission.price,
+                totalEstimatedPrice: submission.totalEstimatedPrice || submission.price,
+                rating: 4.8,
                 category: submission.category,
                 image: submission.image || '',
                 isProviderSubmitted: true,
-                submittedBy: submission.providerName
+                submittedBy: submission.providerName,
+                providerId: submission.providerId
             });
         } else {
+            activeServiceId = existing.id;
             existing.basePrice = submission.price;
             existing.priceUnit = submission.priceUnit || existing.priceUnit;
+            existing.pricingUnit = submission.pricingUnit || existing.pricingUnit || 'per_visit';
+            existing.hourlyRate = submission.hourlyRate || 0;
+            existing.minDurationHours = submission.minDurationHours || 1;
+            existing.additionalTimeBilling = submission.additionalTimeBilling || '1 hour';
+            existing.visitingCharges = submission.visitingCharges || 0;
+            existing.materialCharges = submission.materialCharges || 0;
+            existing.estimatedLabourCost = submission.estimatedLabourCost || submission.price;
+            existing.totalEstimatedPrice = submission.totalEstimatedPrice || submission.price;
             existing.description = submission.description;
             existing.category = submission.category;
+            existing.details = submission.details || existing.details;
             if (submission.image) existing.image = submission.image;
             existing.isProviderSubmitted = true;
             existing.submittedBy = submission.providerName;
+            existing.providerId = submission.providerId;
             await existing.save();
         }
 
-        // Also update provider customServices status to approved
+        // Also update provider customServices status to approved and add to services array
         if (submission.providerId) {
             const provider = await Provider.findById(submission.providerId);
-            if (provider && provider.customServices) {
-                const svcIdx = provider.customServices.findIndex(
-                    cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
-                          (cs.submissionId && String(cs.submissionId) === String(submission._id))
-                );
-                if (svcIdx >= 0) {
-                    provider.customServices[svcIdx].status = 'approved';
-                    provider.customServices[svcIdx].isApproved = true;
-                    await provider.save();
+            if (provider) {
+                provider.services = provider.services || [];
+                if (!provider.services.includes(submission.name)) {
+                    provider.services.push(submission.name);
                 }
+                if (!provider.services.includes(activeServiceId)) {
+                    provider.services.push(activeServiceId);
+                }
+
+                if (provider.customServices) {
+                    const svcIdx = provider.customServices.findIndex(
+                        cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
+                              (cs.submissionId && String(cs.submissionId) === String(submission._id))
+                    );
+                    if (svcIdx >= 0) {
+                        provider.customServices[svcIdx].status = 'approved';
+                        provider.customServices[svcIdx].isApproved = true;
+                        provider.customServices[svcIdx].pricingUnit = submission.pricingUnit || 'per_visit';
+                        provider.customServices[svcIdx].hourlyRate = submission.hourlyRate || 0;
+                        provider.customServices[svcIdx].minDurationHours = submission.minDurationHours || 1;
+                        provider.customServices[svcIdx].additionalTimeBilling = submission.additionalTimeBilling || '1 hour';
+                        provider.customServices[svcIdx].visitingCharges = submission.visitingCharges || 0;
+                        provider.customServices[svcIdx].materialCharges = submission.materialCharges || 0;
+                        provider.customServices[svcIdx].estimatedLabourCost = submission.estimatedLabourCost || submission.price;
+                        provider.customServices[svcIdx].totalEstimatedPrice = submission.totalEstimatedPrice || submission.price;
+                    }
+                }
+                await provider.save();
             }
         }
 

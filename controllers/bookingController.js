@@ -90,10 +90,31 @@ const createBooking = async (req, res) => {
       waterpurifier: 449,
     };
 
-    const originalAmount = amountByServiceType[serviceType] ?? 0;
+    let originalAmount = amountByServiceType[serviceType] ?? 0;
+    const Service = require('../models/Service');
+    const mongoose = require('mongoose');
+    const isObjId = mongoose.Types.ObjectId.isValid(serviceType);
+    const dbService = await Service.findOne({
+      $or: [
+        { id: serviceType },
+        { name: serviceType },
+        ...(isObjId ? [{ _id: serviceType }] : [])
+      ]
+    });
+
+    if (dbService) {
+      originalAmount = dbService.totalEstimatedPrice || dbService.basePrice || originalAmount || 499;
+    }
+
+    if (req.body.amount && Number(req.body.amount) > 0) {
+      originalAmount = Number(req.body.amount);
+    }
+
+    if (!originalAmount || originalAmount <= 0) {
+      originalAmount = 499;
+    }
 
     bookingOTPs.set(userId, {
-
       otp,
       expiry: Date.now() + 10 * 60 * 1000,
       bookingData: {
@@ -108,6 +129,8 @@ const createBooking = async (req, res) => {
         couponCode: req.body.couponCode || null,
         originalAmount,
         amount: originalAmount,
+        dbServiceId: dbService ? dbService._id : null,
+        providerId: dbService?.providerId || null,
       },
     });
 
@@ -243,10 +266,16 @@ const verifyBookingOTP = async (req, res) => {
     }
 
     // Check for an approved provider for this service
-    const matchedProvider = await Provider.findOne({
-      services: bookingData.serviceType,
-      isApproved: true,
-    });
+    let matchedProvider = null;
+    if (bookingData.providerId) {
+      matchedProvider = await Provider.findOne({ _id: bookingData.providerId, isApproved: true });
+    }
+    if (!matchedProvider) {
+      matchedProvider = await Provider.findOne({
+        services: { $in: [bookingData.serviceType] },
+        isApproved: true,
+      });
+    }
 
     const newBooking = new Booking({
       user: userId,

@@ -402,10 +402,63 @@ exports.handleBookingAction = async (req, res) => {
 // ===================== PROVIDER: SUBMIT SERVICE FOR APPROVAL =====================
 exports.submitServiceForApproval = async (req, res) => {
     try {
-        const { name, icon, category, description, details, price, priceUnit, image } = req.body;
+        const {
+            name,
+            icon,
+            category,
+            description,
+            details,
+            pricingUnit = 'per_visit',
+            hourlyRate = 0,
+            minDurationHours = 1,
+            additionalTimeBilling = '1 hour',
+            visitingCharges = 0,
+            materialCharges = 0,
+            price = 0,
+            priceUnit = 'visit',
+            image
+        } = req.body;
 
-        if (!name || !category || !description || !price) {
-            return res.status(400).json({ success: false, message: 'Name, category, description, and price are required.' });
+        if (!name || !name.trim() || !category || !category.trim() || !description || !description.trim()) {
+            return res.status(400).json({ success: false, message: 'Service name, category, and description are required.' });
+        }
+
+        // Normalize pricingUnit
+        const unitNorm = String(pricingUnit || '').toLowerCase().trim();
+        let normalizedUnit = 'per_visit';
+        if (unitNorm === 'per_hour' || unitNorm === 'hour') normalizedUnit = 'per_hour';
+        else if (unitNorm === 'per_day' || unitNorm === 'day') normalizedUnit = 'per_day';
+        else if (unitNorm === 'per_job' || unitNorm === 'job') normalizedUnit = 'per_job';
+        else normalizedUnit = 'per_visit';
+
+        const numHourlyRate = Math.max(0, Number(hourlyRate) || 0);
+        const numMinDurationHours = Math.max(1, Number(minDurationHours) || 1);
+        const numVisitingCharges = Math.max(0, Number(visitingCharges) || 0);
+        const numMaterialCharges = Math.max(0, Number(materialCharges) || 0);
+        const numBasePrice = Math.max(0, Number(price) || 0);
+
+        let calculatedLabourCost = 0;
+        let finalEstimatedTotal = 0;
+        let legacyPriceUnit = 'visit';
+
+        if (normalizedUnit === 'per_hour') {
+            if (numHourlyRate <= 0) {
+                return res.status(400).json({ success: false, message: 'Please enter a valid Hourly Rate greater than ₹0.' });
+            }
+            if (numMinDurationHours < 1) {
+                return res.status(400).json({ success: false, message: 'Minimum booking duration must be at least 1 hour.' });
+            }
+            // Auto calculate labour cost
+            calculatedLabourCost = numHourlyRate * numMinDurationHours;
+            finalEstimatedTotal = calculatedLabourCost + numVisitingCharges + numMaterialCharges;
+            legacyPriceUnit = 'hour';
+        } else {
+            if (numBasePrice <= 0) {
+                return res.status(400).json({ success: false, message: 'Please enter a valid Service Price greater than ₹0.' });
+            }
+            calculatedLabourCost = numBasePrice;
+            finalEstimatedTotal = numBasePrice + numVisitingCharges + numMaterialCharges;
+            legacyPriceUnit = normalizedUnit === 'per_day' ? 'day' : (normalizedUnit === 'per_job' ? 'job' : 'visit');
         }
 
         // Find provider profile
@@ -415,17 +468,29 @@ exports.submitServiceForApproval = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Provider profile not found.' });
         }
 
+        const detailsArray = Array.isArray(details)
+            ? details.filter(Boolean)
+            : (typeof details === 'string' ? details.split(',').map(s => s.trim()).filter(Boolean) : []);
+
         const submission = new ProviderService({
             providerId: provider._id,
             providerName: provider.name,
             providerEmail: provider.email,
             name: name.trim(),
             icon: icon || '🔧',
-            category,
-            description,
-            details: Array.isArray(details) ? details.filter(Boolean) : [],
-            price: Number(price),
-            priceUnit: priceUnit || 'visit',
+            category: category.trim(),
+            description: description.trim(),
+            details: detailsArray.length > 0 ? detailsArray : [description.trim()],
+            price: finalEstimatedTotal,
+            priceUnit: legacyPriceUnit,
+            pricingUnit: normalizedUnit,
+            hourlyRate: numHourlyRate,
+            minDurationHours: numMinDurationHours,
+            additionalTimeBilling: additionalTimeBilling === '30 minutes' ? '30 minutes' : '1 hour',
+            visitingCharges: numVisitingCharges,
+            materialCharges: numMaterialCharges,
+            estimatedLabourCost: calculatedLabourCost,
+            totalEstimatedPrice: finalEstimatedTotal,
             image: image || '',
             status: 'pending'
         });
@@ -433,20 +498,24 @@ exports.submitServiceForApproval = async (req, res) => {
         await submission.save();
 
         // Also track in provider's customServices list with status
-        const detailsArray = Array.isArray(details)
-            ? details.filter(Boolean)
-            : (typeof details === 'string' ? details.split(',').map(s => s.trim()).filter(Boolean) : []);
-
         provider.customServices = provider.customServices || [];
         const existingIdx = provider.customServices.findIndex(cs => cs.name.toLowerCase() === name.trim().toLowerCase());
         const customServiceObj = {
             name: name.trim(),
-            category,
+            category: category.trim(),
             image: image || '',
-            price: Number(price),
-            priceUnit: priceUnit || 'visit',
-            description,
-            details: detailsArray,
+            price: finalEstimatedTotal,
+            priceUnit: legacyPriceUnit,
+            pricingUnit: normalizedUnit,
+            hourlyRate: numHourlyRate,
+            minDurationHours: numMinDurationHours,
+            additionalTimeBilling: additionalTimeBilling === '30 minutes' ? '30 minutes' : '1 hour',
+            visitingCharges: numVisitingCharges,
+            materialCharges: numMaterialCharges,
+            estimatedLabourCost: calculatedLabourCost,
+            totalEstimatedPrice: finalEstimatedTotal,
+            description: description.trim(),
+            details: detailsArray.length > 0 ? detailsArray : [description.trim()],
             status: 'pending',
             isApproved: false,
             submissionId: submission._id
