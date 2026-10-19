@@ -16,6 +16,14 @@ interface Service {
   details: string[];
   basePrice: number;
   priceUnit: string;
+  pricingUnit?: string;
+  hourlyRate?: number;
+  minDurationHours?: number;
+  additionalTimeBilling?: string;
+  visitingCharges?: number;
+  materialCharges?: number;
+  estimatedLabourCost?: number;
+  totalEstimatedPrice?: number;
   rating: number;
   category?: string;
   image?: string;
@@ -32,11 +40,25 @@ interface ProviderSubmission {
   details: string[];
   price: number;
   priceUnit: string;
+  pricingUnit?: string;
+  hourlyRate?: number;
+  minDurationHours?: number;
+  additionalTimeBilling?: string;
+  visitingCharges?: number;
+  materialCharges?: number;
+  estimatedLabourCost?: number;
+  totalEstimatedPrice?: number;
   image?: string;
   status: 'pending' | 'approved' | 'rejected';
   adminNote?: string;
   providerName: string;
   providerEmail: string;
+  providerId?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
   createdAt: string;
 }
 
@@ -310,74 +332,133 @@ export default function AdminServicesPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {submissions.map((sub) => (
-                  <div key={sub._id} className={`rounded-3xl border bg-white p-6 shadow-sm flex flex-col sm:flex-row sm:items-start gap-5 ${
-                    sub.status === 'pending' ? 'border-amber-200' : sub.status === 'approved' ? 'border-emerald-200' : 'border-rose-200'
-                  }`}>
-                    {/* Service Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl">{sub.icon || '🔧'}</span>
-                        <div>
-                          <h3 className="font-extrabold text-base text-slate-900">{sub.name}</h3>
-                          <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                            <span>{sub.category}</span>
-                            <span>·</span>
-                            <span>₹{sub.price}/{sub.priceUnit}</span>
-                            <span>·</span>
-                            <span>by <strong>{sub.providerName}</strong></span>
+                {submissions.map((sub) => {
+                  const isHourly = sub.pricingUnit === 'per_hour' || sub.priceUnit === 'hour';
+                  const unitLabel = sub.pricingUnit === 'per_hour' ? 'Per Hour' :
+                    sub.pricingUnit === 'per_day' ? 'Per Day' :
+                    sub.pricingUnit === 'per_job' ? 'Per Job' : 'Per Visit';
+
+                  return (
+                    <div key={sub._id} className={`rounded-3xl border bg-white p-6 shadow-sm flex flex-col md:flex-row md:items-start gap-5 ${
+                      sub.status === 'pending' ? 'border-amber-200' : sub.status === 'approved' ? 'border-emerald-200' : 'border-rose-200'
+                    }`}>
+                      {/* Image Thumbnail if available */}
+                      {sub.image && (
+                        <div className="h-24 w-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                          <img src={sub.image} alt={sub.name} className="h-full w-full object-cover" />
+                        </div>
+                      )}
+
+                      {/* Service Info */}
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{sub.icon || '🔧'}</span>
+                            <div>
+                              <h3 className="font-extrabold text-base text-slate-900">{sub.name}</h3>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
+                                <span className="font-bold text-orange-600">{unitLabel}</span>
+                                <span>·</span>
+                                <span>{sub.category}</span>
+                                <span>·</span>
+                                <span>Submitted by: <strong>{sub.providerName}</strong> ({sub.providerEmail || (sub.providerId as any)?.phone || 'Verified Pro'})</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status badge */}
+                          <span className={`text-[11px] font-extrabold px-3 py-1 rounded-full shrink-0 ${
+                            sub.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            sub.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                            'bg-rose-50 text-rose-700 border border-rose-200'
+                          }`}>
+                            {sub.status === 'pending' ? '⏳ Pending Review' : sub.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
+                          </span>
+                        </div>
+
+                        {/* Complete Pricing Breakdown Grid */}
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3.5 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                          {isHourly ? (
+                            <>
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-bold block uppercase">Hourly Rate</span>
+                                <span className="font-extrabold text-slate-900 font-mono">₹{sub.hourlyRate || sub.price} / hr</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-bold block uppercase">Min Duration</span>
+                                <span className="font-extrabold text-slate-900">{sub.minDurationHours || 1} hrs min ({sub.additionalTimeBilling || '1 hr'} billing)</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-bold block uppercase">Labour Total</span>
+                                <span className="font-extrabold text-slate-900 font-mono">
+                                  ₹{sub.estimatedLabourCost || ((sub.hourlyRate || sub.price) * (sub.minDurationHours || 1))}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="col-span-2 sm:col-span-3">
+                              <span className="text-[10px] text-slate-400 font-bold block uppercase">Base Price</span>
+                              <span className="font-extrabold text-slate-900 font-mono">₹{sub.price} ({unitLabel})</span>
+                            </div>
+                          )}
+
+                          <div className="rounded-xl bg-white p-2 border border-slate-200">
+                            <span className="text-[10px] text-slate-400 font-bold block uppercase">Visiting / Materials</span>
+                            <span className="text-[11px] font-semibold text-slate-700">
+                              +₹{sub.visitingCharges || 0} visit / +₹{sub.materialCharges || 0} mat
+                            </span>
+                          </div>
+
+                          <div className="col-span-2 sm:col-span-4 flex items-center justify-between pt-1 border-t border-slate-200/70 text-xs">
+                            <span className="font-bold text-slate-600">Total Customer Estimated Price:</span>
+                            <span className="font-extrabold text-emerald-700 text-sm font-mono">
+                              ₹{sub.totalEstimatedPrice || sub.price}
+                            </span>
                           </div>
                         </div>
-                        {/* Status badge */}
-                        <span className={`ml-auto text-[11px] font-extrabold px-3 py-1 rounded-full ${
-                          sub.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                          sub.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}>
-                          {sub.status === 'pending' ? '⏳ Pending' : sub.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
-                        </span>
+
+                        <p className="text-xs text-slate-600 line-clamp-2">{sub.description}</p>
+                        {sub.details && sub.details.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {sub.details.filter(Boolean).map((d, i) => (
+                              <span key={i} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">• {d}</span>
+                            ))}
+                          </div>
+                        )}
+                        {sub.adminNote && (
+                          <p className="text-[11px] italic text-slate-400">Admin note: {sub.adminNote}</p>
+                        )}
+                        <p className="text-[10px] text-slate-300">{new Date(sub.createdAt).toLocaleString()}</p>
                       </div>
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-2">{sub.description}</p>
-                      {sub.details && sub.details.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {sub.details.filter(Boolean).map((d, i) => (
-                            <span key={i} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">• {d}</span>
-                          ))}
+
+                      {/* Actions */}
+                      {sub.status === 'pending' && (
+                        <div className="flex sm:flex-col gap-2 shrink-0 md:self-center">
+                          <button
+                            onClick={() => approveSubmission(sub._id)}
+                            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-sm"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Approve & Go Live
+                          </button>
+                          <button
+                            onClick={() => rejectSubmission(sub._id)}
+                            className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-5 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition border border-rose-200"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Reject
+                          </button>
                         </div>
                       )}
-                      {sub.adminNote && (
-                        <p className="text-[11px] italic text-slate-400">Admin note: {sub.adminNote}</p>
+                      {sub.status === 'approved' && (
+                        <div className="shrink-0 flex items-center gap-1.5 text-emerald-600 text-xs font-bold md:self-center">
+                          <ShieldCheck className="h-5 w-5" />
+                          Live on Catalog
+                        </div>
                       )}
-                      <p className="text-[10px] text-slate-300 mt-1">{new Date(sub.createdAt).toLocaleString()}</p>
                     </div>
-
-                    {/* Actions */}
-                    {sub.status === 'pending' && (
-                      <div className="flex sm:flex-col gap-2 shrink-0">
-                        <button
-                          onClick={() => approveSubmission(sub._id)}
-                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition"
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => rejectSubmission(sub._id)}
-                          className="flex items-center gap-1.5 rounded-xl bg-rose-100 px-5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-200 transition border border-rose-200"
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                    {sub.status === 'approved' && (
-                      <div className="shrink-0 flex items-center gap-1.5 text-emerald-600 text-xs font-bold">
-                        <ShieldCheck className="h-5 w-5" />
-                        Live on Catalog
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

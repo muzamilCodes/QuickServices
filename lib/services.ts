@@ -1,4 +1,5 @@
 export interface Service {
+  _id?: string;
   id: string;
   name: string;
   icon: string;
@@ -16,6 +17,15 @@ export interface Service {
   image: string;
   isProviderSubmitted?: boolean;
   submittedBy?: string;
+  basePrice?: number;
+  pricingUnit?: string;
+  hourlyRate?: number;
+  minDurationHours?: number;
+  additionalTimeBilling?: string;
+  visitingCharges?: number;
+  materialCharges?: number;
+  estimatedLabourCost?: number;
+  totalEstimatedPrice?: number;
 }
 
 export const allServices: Service[] = [

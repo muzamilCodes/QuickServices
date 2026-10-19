@@ -4,22 +4,9 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock3, IndianRupee, MapPin, ShieldCheck, Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { servicesById } from '@/lib/services';
+import { servicesById, Service } from '@/lib/services';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import Breadcrumbs from '@/components/Breadcrumbs';
-
-interface Service {
-  _id?: string;
-  id: string;
-  name: string;
-  icon: string;
-  description: string;
-  details: string[];
-  price: string;
-  priceUnit: string;
-  rating: number;
-  eta: string;
-}
 
 function BookingPageContent() {
   const router = useRouter();
@@ -35,7 +22,7 @@ function BookingPageContent() {
   const [isLoyalCustomer, setIsLoyalCustomer] = useState(false);
   const [bookingCount, setBookingCount] = useState(0);
   const [loyaltyCouponCode, setLoyaltyCouponCode] = useState<string | null>(null);
-
+  const [selectedDuration, setSelectedDuration] = useState<number>(2);
 
   const apiUrl = getApiBaseUrl();
 
@@ -52,10 +39,21 @@ function BookingPageContent() {
             icon: s.icon || '🔧',
             description: s.description || '',
             details: s.details || [],
-            price: `₹${s.basePrice || 499}`,
+            price: `₹${s.totalEstimatedPrice || s.basePrice || s.price || 499}`,
+            numericPrice: Number(s.totalEstimatedPrice || s.basePrice || s.price) || 499,
+            basePrice: Number(s.basePrice || s.price) || 499,
             priceUnit: s.priceUnit || 'visit',
+            pricingUnit: s.pricingUnit || (s.priceUnit === 'hour' ? 'per_hour' : 'per_visit'),
+            hourlyRate: Number(s.hourlyRate) || 0,
+            minDurationHours: Number(s.minDurationHours) || 1,
+            additionalTimeBilling: s.additionalTimeBilling || '1 hour',
+            visitingCharges: Number(s.visitingCharges) || 0,
+            materialCharges: Number(s.materialCharges) || 0,
+            estimatedLabourCost: Number(s.estimatedLabourCost) || 0,
+            totalEstimatedPrice: Number(s.totalEstimatedPrice || s.basePrice || s.price) || 499,
             rating: s.rating || 4.5,
             eta: s.eta || '30 min average dispatch',
+            submittedBy: s.submittedBy || '',
           }));
           setBackendServices(services);
         }
@@ -118,6 +116,29 @@ function BookingPageContent() {
     return backend || servicesById[serviceId] || servicesById.plumber;
   }, [backendServices, serviceId]);
 
+  useEffect(() => {
+    if (service.minDurationHours) {
+      setSelectedDuration(service.minDurationHours);
+    }
+  }, [service.minDurationHours]);
+
+  const isHourly = service.pricingUnit === 'per_hour' || service.priceUnit === 'hour';
+  const hourlyRate = service.hourlyRate || (isHourly ? (service.numericPrice || 300) : 0);
+  const minDuration = service.minDurationHours || 1;
+  const effectiveDuration = Math.max(minDuration, selectedDuration || minDuration);
+
+  const labourTotal = isHourly
+    ? hourlyRate * effectiveDuration
+    : (service.basePrice || service.numericPrice || 499);
+
+  const visitingFee = Number(service.visitingCharges) || 0;
+  const materialFee = Number(service.materialCharges) || 0;
+  const originalBookingAmount = labourTotal + visitingFee + materialFee;
+
+  const finalPayableAmount = isLoyalCustomer
+    ? Math.round(originalBookingAmount * 0.5)
+    : originalBookingAmount;
+
   const [form, setForm] = useState({
     customerName: '',
     customerPhone: '',
@@ -151,6 +172,9 @@ function BookingPageContent() {
           customerName: form.customerName || user?.username || '',
           customerPhone: form.customerPhone || user?.mobile || '',
           serviceType: serviceId,
+          amount: finalPayableAmount,
+          originalAmount: originalBookingAmount,
+          selectedDuration: isHourly ? effectiveDuration : undefined,
           // Backend uses this to validate + mark coupon as used during OTP verify
           couponCode: loyaltyCouponCode || null,
           address: {
@@ -247,13 +271,19 @@ function BookingPageContent() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <IndianRupee className="h-4 w-4 text-emerald-300" />
-              <p className="mt-2 text-lg font-semibold">{service.price}</p>
-              <p className="text-xs text-slate-400">per {service.priceUnit}</p>
+              <p className="mt-2 text-lg font-semibold font-mono">
+                {isHourly ? `₹${hourlyRate}` : service.price}
+              </p>
+              <p className="text-xs text-slate-400">
+                {isHourly ? `per hour (min ${minDuration} hrs)` : `per ${service.priceUnit}`}
+              </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <Clock3 className="h-4 w-4 text-blue-300" />
               <p className="mt-2 text-sm font-semibold">{service.eta}</p>
-              <p className="text-xs text-slate-400">Timing</p>
+              <p className="text-xs text-slate-400">
+                {service.submittedBy ? `Pro: ${service.submittedBy}` : 'Timing'}
+              </p>
             </div>
           </div>
 
@@ -369,14 +399,103 @@ function BookingPageContent() {
               required
             />
 
+            {/* If Hourly Service, allow customer to select hours with minimum duration enforced */}
+            {isHourly && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800">
+                    Booking Duration (Hours)
+                  </label>
+                  <span className="text-[11px] text-blue-700 font-semibold">
+                    Minimum: {minDuration} hr{minDuration > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {[minDuration, minDuration + 1, minDuration + 2, minDuration + 3, 6, 8]
+                    .filter((v, idx, arr) => arr.indexOf(v) === idx && v >= minDuration)
+                    .slice(0, 5)
+                    .map((hrs) => (
+                      <button
+                        key={hrs}
+                        type="button"
+                        onClick={() => setSelectedDuration(hrs)}
+                        className={`flex-1 rounded-xl py-2 text-xs font-bold transition border ${
+                          effectiveDuration === hrs
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {hrs} hrs
+                      </button>
+                    ))}
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Rate: <strong>₹{hourlyRate}/hour</strong> · Additional time billed every{' '}
+                  <strong>{service.additionalTimeBilling || '1 hour'}</strong>.
+                </p>
+              </div>
+            )}
+
+            {/* Complete Estimated Price Breakdown Card */}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                  Estimated Price Summary
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">No hidden charges</span>
+              </div>
+
+              <div className="space-y-1.5 text-xs text-slate-600">
+                <div className="flex items-center justify-between">
+                  <span>
+                    Labour Cost {isHourly ? `(${effectiveDuration} hrs @ ₹${hourlyRate}/hr)` : ''}:
+                  </span>
+                  <span className="font-bold text-slate-900 font-mono">₹{labourTotal}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span>Visiting / Inspection Fee:</span>
+                  <span className="font-semibold text-slate-700 font-mono">
+                    {visitingFee > 0 ? `+₹${visitingFee}` : '₹0 (Free Visit)'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span>Estimated Material Charges:</span>
+                  <span className="font-semibold text-slate-700 font-mono">
+                    {materialFee > 0 ? `+₹${materialFee}` : '₹0 (As actuals / none)'}
+                  </span>
+                </div>
+
+                {isLoyalCustomer && (
+                  <div className="flex items-center justify-between text-emerald-700 font-bold">
+                    <span>Loyalty 50% Discount Applied:</span>
+                    <span className="font-mono">-₹{Math.round(originalBookingAmount * 0.5)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+                <span className="text-sm font-extrabold text-slate-900">
+                  Total Estimated Payable:
+                </span>
+                <span className="text-lg font-black text-emerald-700 font-mono">
+                  ₹{finalPayableAmount}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 text-center">
+                Payment is made after job completion via Cash on Delivery or UPI.
+              </p>
+            </div>
+
             {message && <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{message}</div>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+              className="w-full rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60 shadow-lg"
             >
-              {loading ? 'Processing...' : `Continue with ${service.name}`}
+              {loading ? 'Processing...' : `Confirm Booking · ₹${finalPayableAmount}`}
             </button>
           </form>
         </section>

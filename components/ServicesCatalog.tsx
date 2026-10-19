@@ -91,9 +91,13 @@ export default function ServicesCatalog({
               icon: s.icon || staticMatch?.icon || '🔧',
               description: s.description || staticMatch?.description || '',
               details: Array.isArray(s.details) && s.details.length > 0 ? s.details : (staticMatch?.details || [s.description]),
-              price: `₹${s.basePrice || s.price || 499}`,
-              numericPrice: Number(s.basePrice || s.price) || 499,
-              priceUnit: s.priceUnit || 'visit',
+              price: s.pricingUnit === 'per_hour' || s.priceUnit === 'hour'
+                ? `₹${s.hourlyRate || s.basePrice || s.price || 300}`
+                : `₹${s.basePrice || s.price || 499}`,
+              numericPrice: Number(s.basePrice || s.price || s.hourlyRate) || 499,
+              priceUnit: s.pricingUnit === 'per_hour' || s.priceUnit === 'hour'
+                ? `hr${s.minDurationHours ? ` (min ${s.minDurationHours}h)` : ''}`
+                : (s.pricingUnit === 'per_day' ? 'day' : (s.pricingUnit === 'per_job' ? 'job' : (s.priceUnit || 'visit'))),
               rating: Number(s.rating) || staticMatch?.rating || 4.8,
               reviewsCount: staticMatch?.reviewsCount || (s.isProviderSubmitted ? 12 : 68),
               eta: staticMatch?.eta || 'Fast doorstep dispatch',

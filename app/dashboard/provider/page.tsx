@@ -25,7 +25,10 @@ import {
   Layers,
   IndianRupee,
   Images,
-  Upload
+  Upload,
+  Timer,
+  Calculator,
+  Tag
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
@@ -38,10 +41,19 @@ interface CustomService {
   image?: string;
   price: number;
   priceUnit?: string;
+  pricingUnit?: 'per_hour' | 'per_visit' | 'per_day' | 'per_job' | string;
+  hourlyRate?: number;
+  minDurationHours?: number;
+  additionalTimeBilling?: '30 minutes' | '1 hour' | string;
+  visitingCharges?: number;
+  materialCharges?: number;
+  estimatedLabourCost?: number;
+  totalEstimatedPrice?: number;
   description?: string;
   details?: string[];
   status?: 'pending' | 'approved' | 'rejected';
   isApproved?: boolean;
+  submissionId?: string;
 }
 
 interface ProviderProfile {
@@ -109,17 +121,31 @@ export default function ProviderDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  // New Service Form State
+  // New Service Form State with Dynamic Pricing Units
   const [newService, setNewService] = useState({
     name: '',
     category: 'Plumbing',
     image: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
-    price: 499,
-    priceUnit: 'visit',
+    pricingUnit: 'per_hour' as 'per_hour' | 'per_visit' | 'per_day' | 'per_job',
+    hourlyRate: 300,
+    minDurationHours: 2,
+    additionalTimeBilling: '1 hour' as '30 minutes' | '1 hour',
+    visitingCharges: 0,
+    materialCharges: 0,
+    basePrice: 499,
     description: '',
     details: ''
   });
   const [addingService, setAddingService] = useState(false);
+
+  // Automatic labour and total cost calculation
+  const calculatedLabourCost = newService.pricingUnit === 'per_hour'
+    ? (Math.max(0, Number(newService.hourlyRate) || 0) * Math.max(1, Number(newService.minDurationHours) || 1))
+    : Math.max(0, Number(newService.basePrice) || 0);
+
+  const calculatedTotalEstimatedPrice = calculatedLabourCost +
+    Math.max(0, Number(newService.visitingCharges) || 0) +
+    Math.max(0, Number(newService.materialCharges) || 0);
 
   // Edit profile state
   const [editForm, setEditForm] = useState({
@@ -290,9 +316,25 @@ export default function ProviderDashboardPage() {
   // Handle Adding a New Custom Service
   const handleAddCustomService = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newService.name.trim() || !newService.price) {
-      toast.error('Please enter service name and price');
+    if (!newService.name.trim()) {
+      toast.error('Please enter service name');
       return;
+    }
+
+    if (newService.pricingUnit === 'per_hour') {
+      if (!newService.hourlyRate || Number(newService.hourlyRate) <= 0) {
+        toast.error('Please enter a valid Hourly Rate greater than ₹0');
+        return;
+      }
+      if (!newService.minDurationHours || Number(newService.minDurationHours) < 1) {
+        toast.error('Minimum booking duration must be at least 1 hour');
+        return;
+      }
+    } else {
+      if (!newService.basePrice || Number(newService.basePrice) <= 0) {
+        toast.error('Please enter a valid Service Price greater than ₹0');
+        return;
+      }
     }
 
     setAddingService(true);
@@ -313,8 +355,14 @@ export default function ProviderDashboardPage() {
           name: newService.name.trim(),
           category: newService.category || 'General Maintenance',
           image: newService.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
-          price: Number(newService.price) || 499,
-          priceUnit: newService.priceUnit || 'visit',
+          pricingUnit: newService.pricingUnit,
+          hourlyRate: Number(newService.hourlyRate) || 0,
+          minDurationHours: Number(newService.minDurationHours) || 1,
+          additionalTimeBilling: newService.additionalTimeBilling,
+          visitingCharges: Number(newService.visitingCharges) || 0,
+          materialCharges: Number(newService.materialCharges) || 0,
+          price: calculatedTotalEstimatedPrice,
+          priceUnit: newService.pricingUnit === 'per_hour' ? 'hour' : (newService.pricingUnit === 'per_day' ? 'day' : (newService.pricingUnit === 'per_job' ? 'job' : 'visit')),
           description: newService.description || newService.name.trim(),
           details: detailsList
         })
@@ -327,8 +375,13 @@ export default function ProviderDashboardPage() {
           name: '',
           category: 'Plumbing',
           image: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
-          price: 499,
-          priceUnit: 'visit',
+          pricingUnit: 'per_hour',
+          hourlyRate: 300,
+          minDurationHours: 2,
+          additionalTimeBilling: '1 hour',
+          visitingCharges: 0,
+          materialCharges: 0,
+          basePrice: 499,
           description: '',
           details: ''
         });
@@ -800,7 +853,8 @@ export default function ProviderDashboardPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleAddCustomService} className="space-y-4">
+              <form onSubmit={handleAddCustomService} className="space-y-6">
+                {/* 1. Basic Service Info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">Service Name / Title *</label>
@@ -816,7 +870,7 @@ export default function ProviderDashboardPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Service Category * (Aap khud likhein ya select karein)
+                      Service Category *
                     </label>
                     <input
                       type="text"
@@ -833,38 +887,291 @@ export default function ProviderDashboardPage() {
                       ))}
                     </datalist>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Service Price (₹) *</label>
-                    <div className="relative">
-                      <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-                      <input
-                        type="number"
-                        required
-                        min={100}
-                        placeholder="499"
-                        value={newService.price}
-                        onChange={(e) => setNewService({ ...newService, price: Number(e.target.value) })}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-300 text-sm focus:border-orange-500 focus:outline-none font-bold text-emerald-700"
-                      />
+                {/* 2. PRICING UNITS (Per Hour, Per Visit, Per Day, Per Job) */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                      Pricing Unit * (Choose how you bill customers)
+                    </label>
+                    <span className="text-[11px] text-slate-400 font-medium">Set your own custom rate</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[
+                      { id: 'per_hour', label: 'Per Hour', icon: '⏱️', desc: 'Hourly labor rate' },
+                      { id: 'per_visit', label: 'Per Visit', icon: '🚪', desc: 'Flat per visit' },
+                      { id: 'per_day', label: 'Per Day', icon: '📅', desc: 'Full day rate' },
+                      { id: 'per_job', label: 'Per Job', icon: '🛠️', desc: 'Fixed lump sum' },
+                    ].map((unit) => {
+                      const isSelected = newService.pricingUnit === unit.id;
+                      return (
+                        <button
+                          key={unit.id}
+                          type="button"
+                          onClick={() => setNewService({ ...newService, pricingUnit: unit.id as any })}
+                          className={`rounded-2xl p-3 text-left border transition relative flex flex-col justify-between ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-50/70 text-orange-950 shadow-sm ring-2 ring-orange-400/40'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xl">{unit.icon}</span>
+                            {isSelected && (
+                              <span className="h-2 w-2 rounded-full bg-orange-600" />
+                            )}
+                          </div>
+                          <span className="text-xs font-extrabold">{unit.label}</span>
+                          <span className="text-[10px] text-slate-500 mt-0.5">{unit.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. DYNAMIC PRICING FIELDS */}
+                {newService.pricingUnit === 'per_hour' ? (
+                  <div className="rounded-2xl border border-orange-200/80 bg-orange-50/40 p-4 sm:p-5 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Timer className="h-4 w-4 text-orange-600" />
+                      <h4 className="text-xs font-black uppercase tracking-wider text-orange-900">
+                        Hourly Rate Configuration
+                      </h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      {/* Hourly Rate */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Hourly Rate (₹) *
+                        </label>
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                          <input
+                            type="number"
+                            required
+                            min={50}
+                            placeholder="300"
+                            value={newService.hourlyRate || ''}
+                            onChange={(e) => setNewService({ ...newService, hourlyRate: Number(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:border-orange-500 focus:outline-none font-bold text-slate-900"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500">e.g. ₹300 per hour</span>
+                      </div>
+
+                      {/* Minimum Booking Duration */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Minimum Booking Duration *
+                        </label>
+                        <select
+                          value={newService.minDurationHours}
+                          onChange={(e) => setNewService({ ...newService, minDurationHours: Number(e.target.value) })}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-orange-500 focus:outline-none"
+                        >
+                          <option value={1}>1 hour</option>
+                          <option value={2}>2 hours (Recommended)</option>
+                          <option value={3}>3 hours</option>
+                          <option value={4}>4 hours</option>
+                          <option value={6}>6 hours</option>
+                          <option value={8}>8 hours (Full shift)</option>
+                        </select>
+                        <span className="text-[10px] text-slate-500">Minimum time billed to customer</span>
+                      </div>
+
+                      {/* Additional Time Billing */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Additional Time Billing *
+                        </label>
+                        <select
+                          value={newService.additionalTimeBilling}
+                          onChange={(e) => setNewService({ ...newService, additionalTimeBilling: e.target.value as any })}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-orange-500 focus:outline-none"
+                        >
+                          <option value="30 minutes">Every 30 minutes</option>
+                          <option value="1 hour">Every 1 hour</option>
+                        </select>
+                        <span className="text-[10px] text-slate-500">Billing step for extra time</span>
+                      </div>
+                    </div>
+
+                    {/* Optional Surcharges for Hourly */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 border-t border-orange-200/50">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Optional Visiting Charges (₹)
+                        </label>
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="0 (Free visit)"
+                            value={newService.visitingCharges || ''}
+                            onChange={(e) => setNewService({ ...newService, visitingCharges: Number(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:border-orange-500 focus:outline-none"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500">Inspection/doorstep visit fee (optional)</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Optional Material Charges (₹)
+                        </label>
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="0 (Parts/materials as actuals)"
+                            value={newService.materialCharges || ''}
+                            onChange={(e) => setNewService({ ...newService, materialCharges: Number(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:border-orange-500 focus:outline-none"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500">Initial basic consumable/spare cost</span>
+                      </div>
                     </div>
                   </div>
+                ) : (
+                  /* Fixed / Flat rate configuration (Per Visit, Per Day, Per Job) */
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Base Service Price (₹) *
+                        </label>
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                          <input
+                            type="number"
+                            required
+                            min={50}
+                            placeholder="499"
+                            value={newService.basePrice || ''}
+                            onChange={(e) => setNewService({ ...newService, basePrice: Number(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:border-orange-500 focus:outline-none font-bold text-slate-900"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500">Flat price for this {newService.pricingUnit.replace('per_', '')}</span>
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Price Unit</label>
-                    <select
-                      value={newService.priceUnit}
-                      onChange={(e) => setNewService({ ...newService, priceUnit: e.target.value })}
-                      className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-orange-500 focus:outline-none"
-                    >
-                      <option value="visit">per visit</option>
-                      <option value="hour">per hour</option>
-                      <option value="room">per room</option>
-                      <option value="device">per appliance / device</option>
-                      <option value="sqft">per sq. ft.</option>
-                    </select>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Optional Visiting Charges (₹)
+                        </label>
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="0"
+                            value={newService.visitingCharges || ''}
+                            onChange={(e) => setNewService({ ...newService, visitingCharges: Number(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:border-orange-500 focus:outline-none"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500">Inspection fee (if applicable)</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Optional Material Charges (₹)
+                        </label>
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="0"
+                            value={newService.materialCharges || ''}
+                            onChange={(e) => setNewService({ ...newService, materialCharges: Number(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:border-orange-500 focus:outline-none"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500">Base materials estimate</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. AUTOMATED LABOUR COST & ESTIMATED TOTAL BREAKDOWN CARD */}
+                <div className="rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-4 sm:p-5 shadow-sm">
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                        <Calculator className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                          Automatic Price Calculation
+                        </h4>
+                        <p className="text-[11px] text-slate-500">Calculated automatically for transparent customer billing</p>
+                      </div>
+                    </div>
+                    {newService.pricingUnit === 'per_hour' && (
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300">
+                        Formula: ₹{newService.hourlyRate || 0}/hr × {newService.minDurationHours} hrs
+                      </span>
+                    )}
                   </div>
 
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center sm:text-left">
+                    <div className="rounded-xl bg-white p-3 border border-emerald-100 shadow-xs">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                        {newService.pricingUnit === 'per_hour' ? 'Labour Total' : 'Base Service'}
+                      </span>
+                      <span className="text-base font-black text-slate-900 font-mono">
+                        ₹{calculatedLabourCost}
+                      </span>
+                      {newService.pricingUnit === 'per_hour' && (
+                        <span className="text-[10px] text-emerald-700 block">
+                          ₹{newService.hourlyRate} × {newService.minDurationHours}h
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl bg-white p-3 border border-emerald-100 shadow-xs">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Visiting Fee</span>
+                      <span className="text-base font-black text-slate-900 font-mono">
+                        +₹{Number(newService.visitingCharges) || 0}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {(Number(newService.visitingCharges) || 0) === 0 ? 'Free' : 'Applicable'}
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl bg-white p-3 border border-emerald-100 shadow-xs">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Material Fee</span>
+                      <span className="text-base font-black text-slate-900 font-mono">
+                        +₹{Number(newService.materialCharges) || 0}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {(Number(newService.materialCharges) || 0) === 0 ? 'None' : 'Included'}
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl bg-emerald-600 text-white p-3 shadow-md">
+                      <span className="text-[10px] font-bold text-emerald-200 block uppercase tracking-wider">
+                        Customer Total
+                      </span>
+                      <span className="text-lg font-black text-white font-mono">
+                        ₹{calculatedTotalEstimatedPrice}
+                      </span>
+                      <span className="text-[10px] text-emerald-100 block">
+                        {newService.pricingUnit === 'per_hour' ? `for ${newService.minDurationHours}h minimum` : `per ${newService.pricingUnit.replace('per_', '')}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Image & Description Fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Service Image (Device se photo upload karein ya URL daalein)
@@ -906,9 +1213,10 @@ export default function ProviderDashboardPage() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Short Description</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Short Description *</label>
                     <input
                       type="text"
+                      required
                       placeholder="e.g. Complete leak detection, washer replacement, and pressure valve check."
                       value={newService.description}
                       onChange={(e) => setNewService({ ...newService, description: e.target.value })}
@@ -928,14 +1236,17 @@ export default function ProviderDashboardPage() {
                   </div>
                 </div>
 
-                <div className="pt-4 flex justify-end">
+                <div className="pt-4 flex items-center justify-between border-t border-slate-100 flex-wrap gap-3">
+                  <div className="text-xs text-slate-500">
+                    💡 This service will be sent to Admin with complete pricing details for verification.
+                  </div>
                   <button
                     type="submit"
                     disabled={addingService}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:opacity-95 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-7 py-3 text-sm font-bold text-white shadow-md hover:opacity-95 transition disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>{addingService ? 'Adding Service...' : 'Add Service to Offerings'}</span>
+                    <span>{addingService ? 'Submitting to Admin...' : 'Submit Service Offering'}</span>
                   </button>
                 </div>
               </form>
@@ -943,9 +1254,14 @@ export default function ProviderDashboardPage() {
 
             {/* List of Active Services */}
             <div>
-              <h3 className="text-xl font-extrabold text-slate-950 mb-4 flex items-center gap-2">
-                <Layers className="h-5 w-5 text-orange-500" /> Active Service Offerings
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-extrabold text-slate-950 flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-orange-500" /> Active Service Offerings
+                </h3>
+                <span className="text-xs font-bold text-slate-500">
+                  {provider?.customServices?.length || 0} services configured
+                </span>
+              </div>
 
               {(!provider?.customServices || provider.customServices.length === 0) ? (
                 <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 text-xs">
@@ -953,61 +1269,115 @@ export default function ProviderDashboardPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {provider.customServices.map((svc, idx) => (
-                    <div key={idx} className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-md hover:shadow-xl transition space-y-3">
-                      <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
-                        <img
-                          src={svc.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80'}
-                          alt={svc.name}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/hero-user.jpg';
-                          }}
-                        />
-                        <span className="absolute top-3 right-3 rounded-full bg-slate-950/80 backdrop-blur px-3 py-1 text-xs font-black text-white">
-                          ₹{svc.price} <span className="text-[10px] text-slate-300 font-normal">/ {svc.priceUnit || 'visit'}</span>
-                        </span>
-                      </div>
+                  {provider.customServices.map((svc, idx) => {
+                    const isHourly = svc.pricingUnit === 'per_hour' || svc.priceUnit === 'hour';
+                    const unitLabel = svc.pricingUnit === 'per_hour' ? 'Per Hour' :
+                      svc.pricingUnit === 'per_day' ? 'Per Day' :
+                      svc.pricingUnit === 'per_job' ? 'Per Job' : 'Per Visit';
 
-                      <div className="p-5 pt-0 space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">
-                            {svc.category || 'General'}
-                          </span>
-                          {svc.isApproved || svc.status === 'approved' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-[10px] font-black">
-                              ✓ Approved & Live
-                            </span>
-                          ) : svc.status === 'rejected' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 px-2.5 py-0.5 text-[10px] font-black">
-                              ✕ Rejected
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-[10px] font-black">
-                              ⏳ Pending Admin Approval
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="font-extrabold text-slate-950 text-base leading-snug">
-                          {svc.name}
-                        </h4>
-                        {svc.description && (
-                          <p className="text-xs text-slate-600 line-clamp-2">
-                            {svc.description}
-                          </p>
-                        )}
-
-                        {svc.details && svc.details.length > 0 && (
-                          <div className="pt-2 flex flex-wrap gap-1">
-                            {svc.details.map((d, dIdx) => (
-                              <span key={dIdx} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-                                ✓ {d}
+                    return (
+                      <div key={idx} className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-md hover:shadow-xl transition space-y-3 flex flex-col justify-between">
+                        <div>
+                          <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+                            <img
+                              src={svc.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80'}
+                              alt={svc.name}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/hero-user.jpg';
+                              }}
+                            />
+                            <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+                              <span className="rounded-full bg-slate-950/85 backdrop-blur px-3 py-1 text-xs font-black text-white shadow-md">
+                                {isHourly
+                                  ? `₹${svc.hourlyRate || svc.price} / hr`
+                                  : `₹${svc.price} / ${svc.priceUnit || 'visit'}`}
                               </span>
-                            ))}
+                              {isHourly && svc.minDurationHours && (
+                                <span className="rounded-full bg-orange-600/90 backdrop-blur px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                                  Min {svc.minDurationHours}h
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        )}
 
-                        <div className="pt-3 border-t border-slate-100 flex justify-end">
+                          <div className="p-5 pt-3 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 flex items-center gap-1">
+                                <Tag className="h-3 w-3" /> {unitLabel} · {svc.category || 'General'}
+                              </span>
+                              {svc.isApproved || svc.status === 'approved' ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-[10px] font-black">
+                                  ✓ Approved & Live
+                                </span>
+                              ) : svc.status === 'rejected' ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 px-2.5 py-0.5 text-[10px] font-black">
+                                  ✕ Rejected
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-[10px] font-black">
+                                  ⏳ Pending Admin Approval
+                                </span>
+                              )}
+                            </div>
+
+                            <h4 className="font-extrabold text-slate-950 text-base leading-snug">
+                              {svc.name}
+                            </h4>
+
+                            {svc.description && (
+                              <p className="text-xs text-slate-600 line-clamp-2">
+                                {svc.description}
+                              </p>
+                            )}
+
+                            {/* Pricing Breakdown Pills */}
+                            <div className="pt-2 rounded-2xl bg-slate-50 p-2.5 border border-slate-100 text-[11px] space-y-1">
+                              {isHourly ? (
+                                <div className="flex items-center justify-between text-slate-700">
+                                  <span>Labour ({svc.minDurationHours || 1} hrs min):</span>
+                                  <span className="font-bold text-slate-900 font-mono">
+                                    ₹{svc.estimatedLabourCost || (svc.hourlyRate || svc.price) * (svc.minDurationHours || 1)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between text-slate-700">
+                                  <span>Base Price:</span>
+                                  <span className="font-bold text-slate-900 font-mono">₹{svc.price}</span>
+                                </div>
+                              )}
+
+                              {(svc.visitingCharges || 0) > 0 && (
+                                <div className="flex items-center justify-between text-slate-600 text-[10px]">
+                                  <span>Visiting Fee:</span>
+                                  <span className="font-semibold font-mono">+₹{svc.visitingCharges}</span>
+                                </div>
+                              )}
+                              {(svc.materialCharges || 0) > 0 && (
+                                <div className="flex items-center justify-between text-slate-600 text-[10px]">
+                                  <span>Material Fee:</span>
+                                  <span className="font-semibold font-mono">+₹{svc.materialCharges}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between text-emerald-800 font-extrabold pt-1 border-t border-slate-200/60">
+                                <span>Total Estimated:</span>
+                                <span className="font-mono text-xs">₹{svc.totalEstimatedPrice || svc.price}</span>
+                              </div>
+                            </div>
+
+                            {svc.details && svc.details.length > 0 && (
+                              <div className="pt-1 flex flex-wrap gap-1">
+                                {svc.details.map((d, dIdx) => (
+                                  <span key={dIdx} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                                    ✓ {d}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="p-5 pt-0 border-t border-slate-100 flex justify-end">
                           <button
                             onClick={() => handleDeleteCustomService(idx)}
                             className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-800 transition"
@@ -1016,8 +1386,8 @@ export default function ProviderDashboardPage() {
                           </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
