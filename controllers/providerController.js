@@ -432,9 +432,35 @@ exports.submitServiceForApproval = async (req, res) => {
 
         await submission.save();
 
+        // Also track in provider's customServices list with status
+        const detailsArray = Array.isArray(details)
+            ? details.filter(Boolean)
+            : (typeof details === 'string' ? details.split(',').map(s => s.trim()).filter(Boolean) : []);
+
+        provider.customServices = provider.customServices || [];
+        const existingIdx = provider.customServices.findIndex(cs => cs.name.toLowerCase() === name.trim().toLowerCase());
+        const customServiceObj = {
+            name: name.trim(),
+            category,
+            image: image || '',
+            price: Number(price),
+            priceUnit: priceUnit || 'visit',
+            description,
+            details: detailsArray,
+            status: 'pending',
+            isApproved: false,
+            submissionId: submission._id
+        };
+        if (existingIdx >= 0) {
+            provider.customServices[existingIdx] = customServiceObj;
+        } else {
+            provider.customServices.push(customServiceObj);
+        }
+        await provider.save();
+
         return res.status(201).json({
             success: true,
-            message: 'Service submitted for admin approval. You will be notified once reviewed.',
+            message: 'Service submitted for admin approval. It will appear on the website once approved.',
             submission
         });
     } catch (error) {

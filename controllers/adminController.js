@@ -499,7 +499,7 @@ exports.approveProviderService = async (req, res) => {
         submission.approvedAt = new Date();
         await submission.save();
 
-        // Add to the main Service catalog (so it appears on home page & booking)
+        // Add or update in the main Service catalog (so it appears on home page & booking)
         const serviceId = `prov_${submission.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}_${Date.now()}`;
         const existing = await Service.findOne({ name: submission.name });
         if (!existing) {
@@ -517,6 +517,31 @@ exports.approveProviderService = async (req, res) => {
                 isProviderSubmitted: true,
                 submittedBy: submission.providerName
             });
+        } else {
+            existing.basePrice = submission.price;
+            existing.priceUnit = submission.priceUnit || existing.priceUnit;
+            existing.description = submission.description;
+            existing.category = submission.category;
+            if (submission.image) existing.image = submission.image;
+            existing.isProviderSubmitted = true;
+            existing.submittedBy = submission.providerName;
+            await existing.save();
+        }
+
+        // Also update provider customServices status to approved
+        if (submission.providerId) {
+            const provider = await Provider.findById(submission.providerId);
+            if (provider && provider.customServices) {
+                const svcIdx = provider.customServices.findIndex(
+                    cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
+                          (cs.submissionId && String(cs.submissionId) === String(submission._id))
+                );
+                if (svcIdx >= 0) {
+                    provider.customServices[svcIdx].status = 'approved';
+                    provider.customServices[svcIdx].isApproved = true;
+                    await provider.save();
+                }
+            }
         }
 
         res.json({ success: true, message: 'Service approved and added to catalog' });
@@ -538,6 +563,21 @@ exports.rejectProviderService = async (req, res) => {
         submission.status = 'rejected';
         submission.adminNote = adminNote || 'Not approved';
         await submission.save();
+
+        if (submission.providerId) {
+            const provider = await Provider.findById(submission.providerId);
+            if (provider && provider.customServices) {
+                const svcIdx = provider.customServices.findIndex(
+                    cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
+                          (cs.submissionId && String(cs.submissionId) === String(submission._id))
+                );
+                if (svcIdx >= 0) {
+                    provider.customServices[svcIdx].status = 'rejected';
+                    provider.customServices[svcIdx].isApproved = false;
+                    await provider.save();
+                }
+            }
+        }
 
         res.json({ success: true, message: 'Service rejected' });
     } catch (error) {
