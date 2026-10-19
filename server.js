@@ -46,8 +46,8 @@ const authLimiter = rateLimit({
 app.use("/user/login", authLimiter);
 app.use("/user/register", authLimiter);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cookieParser());
 
 // ✅ CORS with FRONTEND_URL from env
@@ -260,8 +260,9 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error("Error:", err.stack);
-  res.status(500).json({ success: false, message: err.message || "Something went wrong!" });
+  console.error("Global Error Handler:", err.message || err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ success: false, message: err.message || "Something went wrong!" });
 });
 
 // Handle port listen errors gracefully
