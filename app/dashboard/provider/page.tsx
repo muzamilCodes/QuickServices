@@ -303,8 +303,39 @@ export default function ProviderDashboardPage() {
     }
   }, [authLoading, fetchProviderData, isAuthenticated, router, user]);
 
+  // Handle Toggle Online / Offline
+  const handleToggleOnline = async (newOnlineState: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/providers/me/availability`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ isAvailable: newOnlineState })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(newOnlineState ? 'You are now ONLINE and ready for bookings!' : 'You are now OFFLINE.');
+        void fetchProviderData();
+      } else {
+        toast.error(data.message || 'Failed to update availability');
+      }
+    } catch {
+      toast.error('Network error');
+    }
+  };
+
   // Handle Accept or Reject
   const handleBookingAction = async (bookingId: string, action: 'accept' | 'reject') => {
+    let reason = '';
+    if (action === 'reject') {
+      const inputReason = window.prompt('Please provide a reason for declining this booking request (optional):', 'Scheduling conflict or outside service area');
+      if (inputReason === null) return; // User cancelled prompt
+      reason = inputReason;
+    }
+
     setActionLoadingId(bookingId);
     try {
       const token = localStorage.getItem('token');
@@ -314,7 +345,7 @@ export default function ProviderDashboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ action, reason })
       });
       const data = await res.json();
       if (data.success) {
@@ -594,23 +625,39 @@ export default function ProviderDashboardPage() {
               </div>
             </div>
 
-            {/* Quick Metrics */}
-            <div className="flex items-center gap-3 bg-white/10 rounded-2xl p-3 backdrop-blur text-center text-xs">
-              <div className="px-3">
-                <p className="text-slate-400 font-semibold">Active Jobs</p>
-                <p className="text-xl font-black text-white">{assignedBookings.length}</p>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div className="px-3">
-                <p className="text-slate-400 font-semibold">Services</p>
-                <p className="text-xl font-black text-emerald-300">
-                  {(provider?.services?.length || 0) + (provider?.customServices?.length || 0)}
-                </p>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div className="px-3">
-                <p className="text-slate-400 font-semibold">Rating</p>
-                <p className="text-xl font-black text-amber-300">★ {provider?.rating || '4.8'}</p>
+            {/* Availability Toggle & Quick Metrics */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Go Online / Go Offline Button */}
+              <button
+                type="button"
+                onClick={() => handleToggleOnline(!provider?.isAvailable)}
+                className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-xs font-black transition border shadow-lg ${
+                  provider?.isAvailable
+                    ? 'bg-emerald-500 text-white border-emerald-400 hover:bg-emerald-600 shadow-emerald-500/20'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                }`}
+              >
+                <span className={`h-2.5 w-2.5 rounded-full ${provider?.isAvailable ? 'bg-white animate-pulse' : 'bg-rose-500'}`} />
+                <span>{provider?.isAvailable ? 'STATUS: ONLINE (Accepting Jobs)' : 'STATUS: OFFLINE (Paused)'}</span>
+              </button>
+
+              <div className="flex items-center gap-3 bg-white/10 rounded-2xl p-3 backdrop-blur text-center text-xs">
+                <div className="px-3">
+                  <p className="text-slate-400 font-semibold">Active Jobs</p>
+                  <p className="text-xl font-black text-white">{assignedBookings.length}</p>
+                </div>
+                <div className="h-8 w-px bg-white/20" />
+                <div className="px-3">
+                  <p className="text-slate-400 font-semibold">Services</p>
+                  <p className="text-xl font-black text-emerald-300">
+                    {(provider?.services?.length || 0) + (provider?.customServices?.length || 0)}
+                  </p>
+                </div>
+                <div className="h-8 w-px bg-white/20" />
+                <div className="px-3">
+                  <p className="text-slate-400 font-semibold">Rating</p>
+                  <p className="text-xl font-black text-amber-300">★ {provider?.rating || '4.8'}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -755,67 +802,126 @@ export default function ProviderDashboardPage() {
                         )}
                       </div>
 
-                      {/* Contact Buttons */}
-                      <div className="grid grid-cols-2 gap-2">
+                      {/* Contact & Navigation Buttons */}
+                      <div className="grid grid-cols-3 gap-2">
                         <a
                           href={`tel:${b.customerPhone}`}
-                          className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition"
+                          className="flex items-center justify-center gap-1 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition"
                         >
-                          <Phone className="h-3.5 w-3.5" /> Call Customer
+                          <Phone className="h-3.5 w-3.5" /> Call
                         </a>
                         <a
                           href={`https://wa.me/91${b.customerPhone?.replace(/\D/g, '').slice(-10)}?text=Hello%20${encodeURIComponent(b.customerName || 'Customer')},%20I%20am%20your%20QuickServices%20Technician%20for%20booking%20#${b._id.slice(-6)}.`}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition"
+                          className="flex items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition"
                         >
                           <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
                         </a>
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((b.address?.fullAddress || '') + ' ' + (b.address?.city || ''))}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-center gap-1 rounded-xl border border-slate-300 bg-slate-100 py-2.5 text-xs font-bold text-slate-800 hover:bg-slate-200 transition"
+                        >
+                          <MapPin className="h-3.5 w-3.5 text-red-600" /> Navigate
+                        </a>
                       </div>
 
-                      {/* Status Stepper Actions */}
-                      <div className="pt-2 border-t border-slate-100">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                          Update Job Progress:
-                        </p>
-                        <div className="grid grid-cols-3 gap-2">
+                      {/* If pending, provider must accept or reject */}
+                      {b.status === 'pending' && (
+                        <div className="flex gap-2 pt-2 border-t border-slate-100">
                           <button
-                            onClick={() => updateStatus(b._id, 'on-the-way')}
-                            disabled={actionLoadingId === b._id || b.status === 'completed'}
-                            className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
-                              b.status === 'on-the-way'
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                            }`}
+                            onClick={() => handleBookingAction(b._id, 'accept')}
+                            disabled={actionLoadingId === b._id}
+                            className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition"
                           >
-                            <Navigation className="h-3 w-3" /> On Way
+                            Accept Booking
                           </button>
-
                           <button
-                            onClick={() => updateStatus(b._id, 'in-progress')}
-                            disabled={actionLoadingId === b._id || b.status === 'completed'}
-                            className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
-                              b.status === 'in-progress'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                            }`}
+                            onClick={() => handleBookingAction(b._id, 'reject')}
+                            disabled={actionLoadingId === b._id}
+                            className="flex-1 rounded-xl border border-rose-300 bg-rose-50 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition"
                           >
-                            <Wrench className="h-3 w-3" /> In Progress
-                          </button>
-
-                          <button
-                            onClick={() => updateStatus(b._id, 'completed')}
-                            disabled={actionLoadingId === b._id || b.status === 'completed'}
-                            className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
-                              b.status === 'completed'
-                                ? 'bg-emerald-600 text-white shadow-md'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                            }`}
-                          >
-                            <CheckCircle2 className="h-3 w-3" /> Done
+                            Reject (Provide Reason)
                           </button>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Terminal State Banner: Completed */}
+                      {b.status === 'completed' && (
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            Job Completed Successfully (Status Locked)
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Final</span>
+                        </div>
+                      )}
+
+                      {/* Terminal State Banner: Cancelled */}
+                      {b.status === 'cancelled' && (
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-xs font-bold text-rose-800 bg-rose-50 px-3.5 py-2 rounded-xl border border-rose-200">
+                            <XCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                            Booking Cancelled (Status Locked)
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Final</span>
+                        </div>
+                      )}
+
+                      {/* Status Stepper Actions (ONLY if accepted, on-the-way, or in-progress) */}
+                      {['accepted', 'on-the-way', 'in-progress'].includes(b.status) && (
+                        <div className="pt-2 border-t border-slate-100">
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                            Update Job Progress:
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              onClick={() => updateStatus(b._id, 'on-the-way')}
+                              disabled={actionLoadingId === b._id}
+                              className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
+                                b.status === 'on-the-way'
+                                  ? 'bg-indigo-600 text-white shadow-md'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                              }`}
+                            >
+                              <Navigation className="h-3 w-3" /> On Way
+                            </button>
+
+                            <button
+                              onClick={() => updateStatus(b._id, 'in-progress')}
+                              disabled={actionLoadingId === b._id}
+                              className={`rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 ${
+                                b.status === 'in-progress'
+                                  ? 'bg-blue-600 text-white shadow-md'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                              }`}
+                            >
+                              <Wrench className="h-3 w-3" /> In Progress
+                            </button>
+
+                            <button
+                              onClick={() => updateStatus(b._id, 'completed')}
+                              disabled={actionLoadingId === b._id}
+                              className="rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-1 bg-emerald-600 text-white shadow-md hover:bg-emerald-700"
+                            >
+                              <CheckCircle2 className="h-3 w-3" /> Complete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Can no longer attend? Mark unavailable */}
+                      {['accepted', 'on-the-way'].includes(b.status) && (
+                        <button
+                          type="button"
+                          onClick={() => handleBookingAction(b._id, 'reject')}
+                          className="w-full text-center text-[11px] font-bold text-rose-600 hover:underline pt-1"
+                        >
+                          Cannot attend this job? Mark unavailable & request reassignment
+                        </button>
+                      )}
 
                       {/* Live GPS Tracking Link */}
                       <button

@@ -41,7 +41,19 @@ interface LiveTrackingMapProps {
 }
 
 // Haversine formula
+function isValidCoord(loc: any): loc is LatLng {
+  return Boolean(
+    loc &&
+    typeof loc === 'object' &&
+    typeof loc.lat === 'number' &&
+    !isNaN(loc.lat) &&
+    typeof loc.lng === 'number' &&
+    !isNaN(loc.lng)
+  );
+}
+
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 0;
   const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -54,7 +66,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 }
 
 function calculateETA(distanceKm: number | null): string {
-  if (distanceKm === null || distanceKm === undefined) return 'Calculating...';
+  if (distanceKm === null || distanceKm === undefined || isNaN(distanceKm)) return 'Calculating...';
   if (distanceKm < 0.1) return 'Arrived at location!';
   const minutes = Math.max(2, Math.round((distanceKm / 25) * 60));
   if (minutes < 60) return `~${minutes} mins`;
@@ -90,12 +102,12 @@ export default function LiveTrackingMap({
   const defaultCustomerCoords: LatLng = { lat: 34.0837, lng: 74.7973 };
   const defaultProviderCoords: LatLng = { lat: 34.0720, lng: 74.8210 };
 
-  const [providerLoc, setProviderLoc] = useState<LatLng | null>(
-    initialProviderLocation || defaultProviderCoords
-  );
-  const [customerLoc, setCustomerLoc] = useState<LatLng | null>(
-    initialCustomerLocation || defaultCustomerCoords
-  );
+  const [providerLoc, setProviderLoc] = useState<LatLng>(() => {
+    return isValidCoord(initialProviderLocation) ? initialProviderLocation : defaultProviderCoords;
+  });
+  const [customerLoc, setCustomerLoc] = useState<LatLng>(() => {
+    return isValidCoord(initialCustomerLocation) ? initialCustomerLocation : defaultCustomerCoords;
+  });
   const [isSharingLocation, setIsSharingLocation] = useState<boolean>(false);
   const [locationPermissionError, setLocationPermissionError] = useState<string | null>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
@@ -107,7 +119,7 @@ export default function LiveTrackingMap({
 
   // Update distance & ETA whenever coordinates change
   useEffect(() => {
-    if (providerLoc && customerLoc) {
+    if (isValidCoord(providerLoc) && isValidCoord(customerLoc)) {
       const d = calculateDistanceKm(providerLoc.lat, providerLoc.lng, customerLoc.lat, customerLoc.lng);
       setDistanceKm(d);
       setEta(calculateETA(d));
@@ -138,10 +150,10 @@ export default function LiveTrackingMap({
         mapInstanceRef.current = null;
       }
 
-      const pLat = providerLoc?.lat || defaultProviderCoords.lat;
-      const pLng = providerLoc?.lng || defaultProviderCoords.lng;
-      const cLat = customerLoc?.lat || defaultCustomerCoords.lat;
-      const cLng = customerLoc?.lng || defaultCustomerCoords.lng;
+      const pLat = isValidCoord(providerLoc) ? providerLoc.lat : defaultProviderCoords.lat;
+      const pLng = isValidCoord(providerLoc) ? providerLoc.lng : defaultProviderCoords.lng;
+      const cLat = isValidCoord(customerLoc) ? customerLoc.lat : defaultCustomerCoords.lat;
+      const cLng = isValidCoord(customerLoc) ? customerLoc.lng : defaultCustomerCoords.lng;
 
       const map = L.map(mapContainerRef.current, {
         center: [(pLat + cLat) / 2, (pLng + cLng) / 2],
@@ -225,13 +237,13 @@ export default function LiveTrackingMap({
   useEffect(() => {
     if (!mapInstanceRef.current || !isMapReady) return;
 
-    if (providerLoc && providerMarkerRef.current) {
+    if (isValidCoord(providerLoc) && providerMarkerRef.current) {
       providerMarkerRef.current.setLatLng([providerLoc.lat, providerLoc.lng]);
     }
-    if (customerLoc && customerMarkerRef.current) {
+    if (isValidCoord(customerLoc) && customerMarkerRef.current) {
       customerMarkerRef.current.setLatLng([customerLoc.lat, customerLoc.lng]);
     }
-    if (providerLoc && customerLoc && polylineRef.current) {
+    if (isValidCoord(providerLoc) && isValidCoord(customerLoc) && polylineRef.current) {
       polylineRef.current.setLatLngs([
         [providerLoc.lat, providerLoc.lng],
         [customerLoc.lat, customerLoc.lng]
@@ -257,11 +269,15 @@ export default function LiveTrackingMap({
       if (data && data.bookingId === bookingId) {
         if (data.role === 'provider' || data.providerLiveLocation) {
           const loc = data.providerLiveLocation || { lat: data.lat, lng: data.lng, heading: data.heading, speed: data.speed };
-          setProviderLoc(loc);
+          if (isValidCoord(loc)) {
+            setProviderLoc(loc);
+          }
         }
         if (data.role === 'customer' || data.customerLiveLocation) {
           const loc = data.customerLiveLocation || { lat: data.lat, lng: data.lng };
-          setCustomerLoc(loc);
+          if (isValidCoord(loc)) {
+            setCustomerLoc(loc);
+          }
         }
       }
     });
@@ -295,9 +311,9 @@ export default function LiveTrackingMap({
         });
         const data = await res.json();
         if (data.success) {
-          if (data.providerLiveLocation) setProviderLoc(data.providerLiveLocation);
-          if (data.customerLiveLocation) setCustomerLoc(data.customerLiveLocation);
-          if (data.distanceKm !== undefined) setDistanceKm(data.distanceKm);
+          if (isValidCoord(data.providerLiveLocation)) setProviderLoc(data.providerLiveLocation);
+          if (isValidCoord(data.customerLiveLocation)) setCustomerLoc(data.customerLiveLocation);
+          if (data.distanceKm !== undefined && !isNaN(data.distanceKm)) setDistanceKm(data.distanceKm);
           if (data.eta) setEta(data.eta);
         }
       } catch (err) {
@@ -396,7 +412,7 @@ export default function LiveTrackingMap({
 
   // Recenter map on both locations
   const handleRecenter = () => {
-    if (!mapInstanceRef.current || !providerLoc || !customerLoc) return;
+    if (!mapInstanceRef.current || !isValidCoord(providerLoc) || !isValidCoord(customerLoc)) return;
     mapInstanceRef.current.fitBounds(
       [
         [providerLoc.lat, providerLoc.lng],
@@ -540,7 +556,7 @@ export default function LiveTrackingMap({
             )}
 
             {/* Direct Google Maps External Route Link */}
-            {customerLoc && providerLoc && (
+            {isValidCoord(customerLoc) && isValidCoord(providerLoc) && (
               <a
                 href={`https://www.google.com/maps/dir/?api=1&origin=${providerLoc.lat},${providerLoc.lng}&destination=${customerLoc.lat},${customerLoc.lng}&travelmode=driving`}
                 target="_blank"

@@ -22,6 +22,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useTheme } from '@/components/ThemeProvider';
+import NotificationBell from '@/components/NotificationBell';
 
 const mainNavLinks = [
   { name: 'Home', href: '/', icon: House },
@@ -147,6 +148,9 @@ export default function Navbar() {
           ) : (
             /* If Logged In */
             <>
+              {/* Notification Bell */}
+              <NotificationBell />
+
               {/* User Identity Pill */}
               <div
                 className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold whitespace-nowrap ${

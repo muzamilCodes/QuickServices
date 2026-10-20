@@ -285,8 +285,30 @@ export default function BookingDetailPage() {
           customerName={booking.customerName || booking.user?.username || 'Customer'}
           customerPhone={customerMobile}
           customerAddress={booking.address?.fullAddress}
-          initialProviderLocation={booking.providerLiveLocation}
-          initialCustomerLocation={booking.customerLiveLocation || (booking.address && (booking.address as any).location?.lat ? { lat: (booking.address as any).location.lat, lng: (booking.address as any).location.lng } : null)}
+          initialProviderLocation={
+            booking.providerLiveLocation &&
+            typeof booking.providerLiveLocation.lat === 'number' &&
+            !isNaN(booking.providerLiveLocation.lat) &&
+            typeof booking.providerLiveLocation.lng === 'number' &&
+            !isNaN(booking.providerLiveLocation.lng)
+              ? booking.providerLiveLocation
+              : null
+          }
+          initialCustomerLocation={
+            booking.customerLiveLocation &&
+            typeof booking.customerLiveLocation.lat === 'number' &&
+            !isNaN(booking.customerLiveLocation.lat) &&
+            typeof booking.customerLiveLocation.lng === 'number' &&
+            !isNaN(booking.customerLiveLocation.lng)
+              ? booking.customerLiveLocation
+              : (booking.address &&
+                 typeof (booking.address as any).location?.lat === 'number' &&
+                 !isNaN((booking.address as any).location.lat) &&
+                 typeof (booking.address as any).location?.lng === 'number' &&
+                 !isNaN((booking.address as any).location.lng)
+                  ? { lat: (booking.address as any).location.lat, lng: (booking.address as any).location.lng }
+                  : null)
+          }
           onStatusChange={(newStatus) => {
             setBooking((prev) => prev ? { ...prev, status: newStatus } : null);
           }}
