@@ -4,6 +4,7 @@ const { User } = require('../models/userModel');
 const { sendEmail, generateBookingTemplate } = require('../utilities/emailService');
 const WhatsAppService = require('../services/whatsappService');
 const loyaltyService = require('../utilities/loyaltyService');
+const { sendNotification } = require('../utilities/notificationService');
 
 const bookingOTPs = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -114,6 +115,27 @@ const createBooking = async (req, res) => {
       originalAmount = 499;
     }
 
+    const targetProviderId = req.body.providerId || dbService?.providerId || null;
+    if (targetProviderId && preferredDate && preferredTime) {
+      const pDate = new Date(preferredDate);
+      if (!isNaN(pDate.getTime())) {
+        const startOfDay = new Date(pDate); startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(pDate); endOfDay.setHours(23, 59, 59, 999);
+        const conflict = await Booking.findOne({
+          provider: targetProviderId,
+          preferredDate: { $gte: startOfDay, $lte: endOfDay },
+          preferredTime,
+          status: { $in: ['accepted', 'on-the-way', 'in-progress'] }
+        });
+        if (conflict) {
+          return res.status(400).json({
+            success: false,
+            message: 'Sorry, this service provider is already booked for the selected time slot. Please choose another time slot.'
+          });
+        }
+      }
+    }
+
     bookingOTPs.set(userId, {
       otp,
       expiry: Date.now() + 10 * 60 * 1000,
@@ -130,7 +152,7 @@ const createBooking = async (req, res) => {
         originalAmount,
         amount: originalAmount,
         dbServiceId: dbService ? dbService._id : null,
-        providerId: dbService?.providerId || null,
+        providerId: targetProviderId,
       },
     });
 
@@ -174,6 +196,7 @@ const createBooking = async (req, res) => {
 
           const newBooking = new Booking({
             user: userId,
+            provider: bookingData.providerId || undefined,
             serviceType: bookingData.serviceType,
             customerName: bookingData.customerName,
             customerPhone: bookingData.customerPhone,
@@ -265,21 +288,53 @@ const verifyBookingOTP = async (req, res) => {
       coupon.usedAt = new Date();
     }
 
-    // Check for an approved provider for this service
+    // Check for a provider for this service
     let matchedProvider = null;
     if (bookingData.providerId) {
-      matchedProvider = await Provider.findOne({ _id: bookingData.providerId, isApproved: true });
+      matchedProvider = await Provider.findById(bookingData.providerId);
+    }
+    if (!matchedProvider && bookingData.dbServiceId) {
+      const Service = require('../models/Service');
+      const dbSvc = await Service.findById(bookingData.dbServiceId);
+      if (dbSvc && dbSvc.providerId) {
+        matchedProvider = await Provider.findById(dbSvc.providerId);
+      }
     }
     if (!matchedProvider) {
       matchedProvider = await Provider.findOne({
-        services: { $in: [bookingData.serviceType] },
-        isApproved: true,
+        $or: [
+          { services: { $in: [bookingData.serviceType, String(bookingData.serviceType).toLowerCase()] } },
+          { category: new RegExp(`^${bookingData.serviceType}$`, 'i') }
+        ]
       });
+    }
+
+    const assignedProviderId = matchedProvider ? matchedProvider._id : (bookingData.providerId || undefined);
+
+    // Server-side double booking prevention immediately before confirming
+    if (assignedProviderId && bookingData.preferredDate && bookingData.preferredTime) {
+      const pDate = new Date(bookingData.preferredDate);
+      if (!isNaN(pDate.getTime())) {
+        const startOfDay = new Date(pDate); startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(pDate); endOfDay.setHours(23, 59, 59, 999);
+        const conflict = await Booking.findOne({
+          provider: assignedProviderId,
+          preferredDate: { $gte: startOfDay, $lte: endOfDay },
+          preferredTime: bookingData.preferredTime,
+          status: { $in: ['accepted', 'on-the-way', 'in-progress'] }
+        });
+        if (conflict) {
+          return res.status(409).json({
+            success: false,
+            message: 'Conflict: This provider was just booked for this time slot. Please reschedule or pick another slot.'
+          });
+        }
+      }
     }
 
     const newBooking = new Booking({
       user: userId,
-      provider: matchedProvider ? matchedProvider._id : undefined,
+      provider: assignedProviderId,
       serviceType: bookingData.serviceType,
       customerName: bookingData.customerName,
       customerPhone: bookingData.customerPhone,
@@ -290,7 +345,7 @@ const verifyBookingOTP = async (req, res) => {
       isEmergency: bookingData.isEmergency,
       bookingMode,
       otpVerified: true,
-      status: matchedProvider ? 'accepted' : 'pending',
+      status: 'pending',
       appliedCoupon: coupon ? coupon.code : null,
       isLoyaltyDiscount: !!coupon,
       discountAmount: coupon ? coupon.discountPercent : 0,
@@ -304,6 +359,50 @@ const verifyBookingOTP = async (req, res) => {
 
     if (newBooking.provider) {
       await newBooking.populate('provider', 'name phone whatsappNumber');
+    }
+
+    // In-App Notifications
+    try {
+      // 1. Notify Customer
+      await sendNotification({
+        recipient: userId,
+        recipientRole: 'customer',
+        title: 'Booking Request Placed',
+        message: `Your booking for ${newBooking.serviceType} has been placed. We have notified ${matchedProvider ? matchedProvider.name : 'available service providers'}.`,
+        type: 'booking_created',
+        bookingId: newBooking._id,
+        io: req.io
+      });
+
+      // 2. Notify Provider
+      if (matchedProvider && matchedProvider.userId) {
+        await sendNotification({
+          recipient: matchedProvider.userId,
+          recipientRole: 'provider',
+          title: 'New Booking Request',
+          message: `New booking request for ${newBooking.serviceType} from ${newBooking.customerName} on ${newBooking.preferredDate ? new Date(newBooking.preferredDate).toLocaleDateString() : 'Today'} (${newBooking.preferredTime || 'Immediate'}).`,
+          type: 'booking_created',
+          bookingId: newBooking._id,
+          metadata: {
+            customerName: newBooking.customerName,
+            customerPhone: newBooking.customerPhone,
+            address: newBooking.address
+          },
+          io: req.io
+        });
+      }
+
+      // 3. Notify Admin
+      await sendNotification({
+        recipientRole: 'admin',
+        title: 'New Booking Placed',
+        message: `New booking #${newBooking._id.toString().slice(-6)} created for ${newBooking.customerName} (${newBooking.serviceType}).`,
+        type: 'booking_created',
+        bookingId: newBooking._id,
+        io: req.io
+      });
+    } catch (notifErr) {
+      console.warn('Failed to send in-app notifications:', notifErr.message);
     }
 
     // Send Confirmation Emails to Customer & Admin
@@ -390,14 +489,53 @@ const cancelBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (booking.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'Cannot cancel this booking' });
+    if (['in-progress', 'completed', 'cancelled'].includes(booking.status)) {
+      return res.status(400).json({ success: false, message: 'Cannot cancel a booking that is already in progress, completed, or cancelled' });
     }
 
     booking.status = 'cancelled';
     await booking.save();
 
-    return res.json({ success: true, message: 'Booking cancelled', booking });
+    try {
+      // In-app notifications
+      await sendNotification({
+        recipient: booking.user,
+        recipientRole: 'customer',
+        title: 'Booking Cancelled',
+        message: `Your booking #${booking._id.toString().slice(-6)} for ${booking.serviceType} has been cancelled.`,
+        type: 'booking_cancelled',
+        bookingId: booking._id,
+        io: req.io
+      });
+
+      if (booking.provider) {
+        const prov = await Provider.findById(booking.provider);
+        if (prov && prov.userId) {
+          await sendNotification({
+            recipient: prov.userId,
+            recipientRole: 'provider',
+            title: 'Customer Cancelled Booking',
+            message: `Booking #${booking._id.toString().slice(-6)} for ${booking.serviceType} was cancelled by the customer.`,
+            type: 'booking_cancelled',
+            bookingId: booking._id,
+            io: req.io
+          });
+        }
+      }
+
+      await sendNotification({
+        recipientRole: 'admin',
+        title: 'Booking Cancelled',
+        message: `Booking #${booking._id.toString().slice(-6)} was cancelled by customer ${booking.customerName}.`,
+        type: 'booking_cancelled',
+        bookingId: booking._id,
+        io: req.io
+      });
+    } catch (notifErr) {
+      console.warn('Cancel notification error:', notifErr.message);
+    }
+
+    return res.json({ success: true, message: 'Booking cancelled successfully', booking });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -641,6 +779,13 @@ const updateBookingStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+    if (['completed', 'cancelled'].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `This booking is already marked as ${booking.status}. Its status is locked and cannot be modified further.`
+      });
+    }
+
     booking.status = status;
     const now = new Date();
     if (status === 'accepted') booking.assignedAt = now;
@@ -655,6 +800,41 @@ const updateBookingStatus = async (req, res) => {
         status,
         updatedAt: now
       });
+    }
+
+    try {
+      const statusTitles = {
+        'accepted': 'Booking Accepted',
+        'on-the-way': 'Provider is On The Way',
+        'in-progress': 'Service Started',
+        'completed': 'Service Completed',
+        'cancelled': 'Booking Cancelled'
+      };
+      const statusMessages = {
+        'accepted': `Your booking for ${booking.serviceType} has been accepted!`,
+        'on-the-way': `Your specialist is now traveling to your service address.`,
+        'in-progress': `Service work for ${booking.serviceType} has started.`,
+        'completed': `Your service has been completed! Please rate your experience.`,
+        'cancelled': `Your booking #${booking._id.toString().slice(-6)} has been cancelled.`
+      };
+      const notifType = status === 'on-the-way' ? 'provider_on_the_way'
+        : (status === 'in-progress' ? 'service_started'
+        : (status === 'completed' ? 'service_completed'
+        : (status === 'cancelled' ? 'booking_cancelled' : 'booking_accepted')));
+
+      if (statusTitles[status]) {
+        await sendNotification({
+          recipient: booking.user,
+          recipientRole: 'customer',
+          title: statusTitles[status],
+          message: statusMessages[status],
+          type: notifType,
+          bookingId: booking._id,
+          io: req.io
+        });
+      }
+    } catch (notifErr) {
+      console.warn('Status notification error:', notifErr.message);
     }
 
     return res.json({ success: true, message: `Booking status updated to ${status}`, booking });

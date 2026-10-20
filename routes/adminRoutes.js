@@ -4,6 +4,8 @@ const admin = require('../middlewares/admin');
 const {
     getAllBookings,
     updateBookingStatus,
+    reassignBooking,
+    rescheduleBooking,
     deleteBooking,
     getAllProviders,
     approveProvider,
@@ -40,6 +42,8 @@ router.use(admin);
 router.get('/dashboard', getDashboardStats);
 router.get('/bookings', getAllBookings);
 router.put('/bookings/:bookingId', updateBookingStatus);
+router.put('/bookings/:bookingId/reassign', reassignBooking);
+router.put('/bookings/:bookingId/reschedule', rescheduleBooking);
 router.delete('/bookings/:bookingId', deleteBooking);
 router.get('/providers', getAllProviders);
 router.put('/providers/:providerId/approve', approveProvider);

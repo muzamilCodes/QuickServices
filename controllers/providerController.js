@@ -3,6 +3,7 @@ const { User } = require('../models/userModel');
 const Booking = require('../models/Booking');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { sendNotification } = require('../utilities/notificationService');
 
 // ===================== REGISTER PROVIDER =====================
 exports.registerProvider = async (req, res) => {
@@ -317,7 +318,24 @@ exports.getProviderById = async (req, res) => {
 exports.getProviderBookings = async (req, res) => {
     try {
         const userId = req.userId;
-        const provider = await Provider.findOne({ userId });
+        let provider = await Provider.findOne({ userId });
+
+        if (!provider) {
+            const user = await User.findById(userId);
+            if (user) {
+                provider = await Provider.findOne({
+                    $or: [
+                        { userId },
+                        { email: user.email ? user.email.toLowerCase().trim() : undefined },
+                        { phone: user.mobile ? user.mobile : undefined }
+                    ].filter(c => Object.values(c)[0] !== undefined)
+                });
+                if (provider && !provider.userId) {
+                    provider.userId = user._id;
+                    await provider.save();
+                }
+            }
+        }
 
         if (!provider) {
             return res.status(404).json({ success: false, message: 'Provider record not found' });
@@ -329,11 +347,33 @@ exports.getProviderBookings = async (req, res) => {
             .sort({ createdAt: -1 });
 
         // Available pending bookings matching provider's services that aren't assigned yet
+        const Service = require('../models/Service');
+        const myCustomServices = await Service.find({ providerId: provider._id });
+        const serviceTokens = new Set([
+            ...(provider.services || []),
+            ...(provider.services || []).map(s => String(s).toLowerCase().trim()),
+        ]);
+        if (provider.category) {
+            serviceTokens.add(provider.category);
+            serviceTokens.add(provider.category.toLowerCase().trim());
+        }
+        myCustomServices.forEach(cs => {
+            if (cs.id) serviceTokens.add(cs.id);
+            if (cs.name) serviceTokens.add(cs.name);
+            serviceTokens.add(cs._id.toString());
+        });
+
         const availableBookings = await Booking.find({
             status: 'pending',
-            provider: null,
-            serviceType: { $in: provider.services }
-        }).sort({ createdAt: -1 });
+            $or: [
+                { provider: null },
+                { provider: { $exists: false } }
+            ],
+            $or: [
+                { serviceType: { $in: Array.from(serviceTokens) } },
+                { serviceType: new RegExp(provider.category || '', 'i') }
+            ]
+        }).populate('user', 'username email mobile').sort({ createdAt: -1 });
 
         return res.json({
             success: true,
@@ -347,14 +387,61 @@ exports.getProviderBookings = async (req, res) => {
     }
 };
 
+// ===================== PROVIDER TOGGLE AVAILABILITY / WORKING HOURS =====================
+exports.updateAvailability = async (req, res) => {
+    try {
+        const userId = req.userId;
+        let provider = await Provider.findOne({ userId });
+        if (!provider) {
+            const user = await User.findById(userId);
+            if (user && user.email) {
+                provider = await Provider.findOne({ email: user.email.toLowerCase().trim() });
+            }
+        }
+        if (!provider) {
+            return res.status(404).json({ success: false, message: 'Provider profile not found' });
+        }
+
+        const { isAvailable, workingHours, workingDays } = req.body;
+
+        if (isAvailable !== undefined) {
+            provider.isAvailable = Boolean(isAvailable);
+        }
+
+        if (workingHours || workingDays) {
+            provider.availability = provider.availability || {};
+            if (workingHours) provider.availability.hours = workingHours;
+            if (workingDays && Array.isArray(workingDays)) provider.availability.days = workingDays;
+        }
+
+        await provider.save();
+
+        return res.json({
+            success: true,
+            message: `Availability updated: ${provider.isAvailable ? 'Online' : 'Offline'}`,
+            isAvailable: provider.isAvailable,
+            availability: provider.availability
+        });
+    } catch (error) {
+        console.error('updateAvailability error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // ===================== PROVIDER ACCEPT OR REJECT BOOKING =====================
 exports.handleBookingAction = async (req, res) => {
     try {
         const userId = req.userId;
         const { bookingId } = req.params;
-        const { action } = req.body; // 'accept' | 'reject'
+        const { action, reason } = req.body; // 'accept' | 'reject', optional reason
 
-        const provider = await Provider.findOne({ userId });
+        let provider = await Provider.findOne({ userId });
+        if (!provider) {
+            const user = await User.findById(userId);
+            if (user && user.email) {
+                provider = await Provider.findOne({ email: user.email.toLowerCase().trim() });
+            }
+        }
         if (!provider) {
             return res.status(404).json({ success: false, message: 'Provider not found' });
         }
@@ -362,6 +449,13 @@ exports.handleBookingAction = async (req, res) => {
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        if (['completed', 'cancelled'].includes(booking.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `This booking is already marked as ${booking.status}. No further status changes are permitted.`
+            });
         }
 
         if (action === 'accept') {
@@ -382,14 +476,72 @@ exports.handleBookingAction = async (req, res) => {
                 });
             }
 
+            try {
+                // Notify Customer
+                await sendNotification({
+                    recipient: booking.user,
+                    recipientRole: 'customer',
+                    title: 'Booking Accepted',
+                    message: `Specialist ${provider.name} has accepted your booking for ${booking.serviceType}!`,
+                    type: 'booking_accepted',
+                    bookingId: booking._id,
+                    io: req.io
+                });
+
+                // Notify Admin
+                await sendNotification({
+                    recipientRole: 'admin',
+                    title: 'Provider Accepted Booking',
+                    message: `Provider ${provider.name} accepted booking #${booking._id.toString().slice(-6)}.`,
+                    type: 'booking_accepted',
+                    bookingId: booking._id,
+                    io: req.io
+                });
+            } catch (notifErr) {
+                console.warn('Accept notification error:', notifErr.message);
+            }
+
             return res.json({ success: true, message: 'Booking accepted!', booking });
         } else if (action === 'reject') {
-            if (String(booking.provider) === String(provider._id)) {
-                booking.provider = null;
-                booking.status = 'pending';
-                await booking.save();
+            const declineReason = reason || 'Provider is currently unavailable or booked.';
+            booking.provider = null;
+            booking.status = 'pending';
+            await booking.save();
+
+            if (req.io) {
+                req.io.to(`booking_${bookingId}`).emit('status_updated', {
+                    bookingId,
+                    status: 'pending',
+                    message: `Provider was unable to attend: ${declineReason}`
+                });
             }
-            return res.json({ success: true, message: 'Booking declined.', booking });
+
+            try {
+                // Notify Customer
+                await sendNotification({
+                    recipient: booking.user,
+                    recipientRole: 'customer',
+                    title: 'Provider Unavailable',
+                    message: `Specialist ${provider.name} could not accept your booking: "${declineReason}". We are looking for another available provider.`,
+                    type: 'provider_unavailable',
+                    bookingId: booking._id,
+                    io: req.io
+                });
+
+                // Notify Admin
+                await sendNotification({
+                    recipientRole: 'admin',
+                    title: 'Provider Declined Booking',
+                    message: `Provider ${provider.name} declined booking #${booking._id.toString().slice(-6)}. Reason: "${declineReason}". Please reassign to another provider.`,
+                    type: 'provider_unavailable',
+                    bookingId: booking._id,
+                    io: req.io
+                });
+            } catch (notifErr) {
+                console.warn('Reject notification error:', notifErr.message);
+            }
+
+            return res.json({ success: true, message: 'Booking declined. Customer and admin have been notified.', booking });
         } else {
             return res.status(400).json({ success: false, message: 'Invalid action' });
         }

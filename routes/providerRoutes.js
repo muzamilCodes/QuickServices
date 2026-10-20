@@ -8,7 +8,8 @@ const {
     getProviderBookings,
     handleBookingAction,
     submitServiceForApproval,
-    getMyServiceSubmissions
+    getMyServiceSubmissions,
+    updateAvailability
 } = require('../controllers/providerController');
 const authorize = require('../middlewares/authorize');
 const upload = require('../middlewares/multer');
@@ -22,6 +23,7 @@ router.post('/register', registerProvider);
 // Authenticated provider profile & workflow routes
 router.get('/me', authorize, getMyProfile);
 router.put('/me', authorize, updateMyProfile);
+router.put('/me/availability', authorize, updateAvailability);
 router.get('/my-bookings', authorize, getProviderBookings);
 router.put('/bookings/:bookingId', authorize, handleBookingAction);
 

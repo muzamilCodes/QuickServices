@@ -5,6 +5,7 @@ const Offer = require('../models/Offer');
 const Contact = require('../models/Contact');
 const { User } = require('../models/userModel');
 const ProviderService = require('../models/ProviderService');
+const { sendNotification } = require('../utilities/notificationService');
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -102,14 +103,28 @@ exports.deleteUser = async (req, res) => {
 // ===================== ADMIN: GET ALL BOOKINGS =====================
 exports.getAllBookings = async (req, res) => {
     try {
-        const { status, page = 1, limit = 20 } = req.query;
+        const { status, search, page = 1, limit = 20 } = req.query;
+        const mongoose = require('mongoose');
 
         const query = {};
-        if (status) query.status = status;
+        if (status && status !== 'all') query.status = status;
+
+        if (search && search.trim()) {
+            const term = search.trim();
+            const isId = mongoose.Types.ObjectId.isValid(term);
+            query.$or = [
+                ...(isId ? [{ _id: term }] : []),
+                { customerName: new RegExp(term, 'i') },
+                { customerPhone: new RegExp(term, 'i') },
+                { serviceType: new RegExp(term, 'i') },
+                { 'address.fullAddress': new RegExp(term, 'i') },
+                { 'address.city': new RegExp(term, 'i') }
+            ];
+        }
 
         const bookings = await Booking.find(query)
             .populate('user', 'username email mobile')
-            .populate('provider', 'name phone whatsappNumber')
+            .populate('provider', 'name phone whatsappNumber isAvailable isApproved category rating serviceArea')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
@@ -128,7 +143,7 @@ exports.getAllBookings = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error('getAllBookings error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -137,11 +152,18 @@ exports.getAllBookings = async (req, res) => {
 exports.updateBookingStatus = async (req, res) => {
     try {
         const { bookingId } = req.params;
-        const { status, providerId } = req.body;
+        const { status, providerId, reason } = req.body;
 
-        const booking = await Booking.findById(bookingId);
+        const booking = await Booking.findById(bookingId).populate('provider', 'name phone');
         if (!booking) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        if (['completed', 'cancelled'].includes(booking.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `This booking is already marked as ${booking.status}. Its status is locked and cannot be modified further.`
+            });
         }
 
         const previousStatus = booking.status;
@@ -152,7 +174,38 @@ exports.updateBookingStatus = async (req, res) => {
         let loyaltyCoupon = null;
         // Trigger loyalty coupon generation only when status transitions to `completed`
         if (previousStatus !== 'completed' && status === 'completed') {
+            const loyaltyService = require('../utilities/loyaltyService');
             loyaltyCoupon = await loyaltyService.generateLoyaltyCouponIfEligible(booking.user);
+        }
+
+        // Send notifications
+        try {
+            await sendNotification({
+                recipient: booking.user,
+                recipientRole: 'customer',
+                title: `Booking ${status.toUpperCase()}`,
+                message: `Your booking #${booking._id.toString().slice(-6)} status has been updated to "${status}" by Admin.${reason ? ` Note: ${reason}` : ''}`,
+                type: 'general',
+                bookingId: booking._id,
+                io: req.io
+            });
+
+            if (booking.provider) {
+                const prov = await Provider.findById(booking.provider);
+                if (prov && prov.userId) {
+                    await sendNotification({
+                        recipient: prov.userId,
+                        recipientRole: 'provider',
+                        title: `Booking Updated by Admin`,
+                        message: `Booking #${booking._id.toString().slice(-6)} status updated to "${status}".`,
+                        type: 'general',
+                        bookingId: booking._id,
+                        io: req.io
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.warn('Admin status update notification warning:', notifErr.message);
         }
 
         res.json({
@@ -165,6 +218,194 @@ exports.updateBookingStatus = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ===================== ADMIN: REASSIGN BOOKING TO ANOTHER PROVIDER =====================
+exports.reassignBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const { providerId, overrideReason } = req.body;
+
+        if (!providerId) {
+            return res.status(400).json({ success: false, message: 'Provider ID is required' });
+        }
+
+        const newProvider = await Provider.findById(providerId);
+        if (!newProvider) {
+            return res.status(404).json({ success: false, message: 'Provider not found' });
+        }
+
+        if (!newProvider.isApproved) {
+            return res.status(400).json({ success: false, message: 'Cannot assign an unapproved provider' });
+        }
+
+        if (!newProvider.isAvailable && !overrideReason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Provider is currently marked offline. Please provide an explicit override reason to assign.'
+            });
+        }
+
+        const booking = await Booking.findById(bookingId).populate('provider', 'name phone');
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        if (['completed', 'cancelled'].includes(booking.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot reassign a booking that is already ${booking.status}.`
+            });
+        }
+
+        const oldProvider = booking.provider;
+        booking.provider = newProvider._id;
+        booking.status = 'accepted';
+        booking.assignedAt = new Date();
+        await booking.save();
+
+        // Send notifications to all parties
+        try {
+            // Customer
+            await sendNotification({
+                recipient: booking.user,
+                recipientRole: 'customer',
+                title: 'Provider Reassigned',
+                message: `Your booking #${booking._id.toString().slice(-6)} has been reassigned to ${newProvider.name}.`,
+                type: 'booking_reassigned',
+                bookingId: booking._id,
+                io: req.io
+            });
+
+            // New Provider
+            if (newProvider.userId) {
+                await sendNotification({
+                    recipient: newProvider.userId,
+                    recipientRole: 'provider',
+                    title: 'New Booking Assigned by Admin',
+                    message: `Admin assigned booking #${booking._id.toString().slice(-6)} (${booking.serviceType}) to you for customer ${booking.customerName}.`,
+                    type: 'booking_reassigned',
+                    bookingId: booking._id,
+                    io: req.io
+                });
+            }
+
+            // Old Provider
+            if (oldProvider && oldProvider._id && String(oldProvider._id) !== String(newProvider._id)) {
+                const oldDoc = await Provider.findById(oldProvider._id);
+                if (oldDoc && oldDoc.userId) {
+                    await sendNotification({
+                        recipient: oldDoc.userId,
+                        recipientRole: 'provider',
+                        title: 'Booking Reassigned',
+                        message: `Booking #${booking._id.toString().slice(-6)} was reassigned to another specialist by Admin.`,
+                        type: 'booking_reassigned',
+                        bookingId: booking._id,
+                        io: req.io
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.warn('Reassign notification error:', notifErr.message);
+        }
+
+        return res.json({
+            success: true,
+            message: `Booking successfully reassigned to ${newProvider.name}`,
+            booking
+        });
+    } catch (error) {
+        console.error('reassignBooking error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ===================== ADMIN: RESCHEDULE BOOKING =====================
+exports.rescheduleBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const { preferredDate, preferredTime, reason } = req.body;
+
+        if (!preferredDate || !preferredTime) {
+            return res.status(400).json({ success: false, message: 'preferredDate and preferredTime are required' });
+        }
+
+        const booking = await Booking.findById(bookingId).populate('provider', 'name');
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        if (['completed', 'cancelled'].includes(booking.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot reschedule a booking that is already ${booking.status}.`
+            });
+        }
+
+        // Validate that provider does not have a conflict on that date/time
+        if (booking.provider) {
+            const pDate = new Date(preferredDate);
+            const startOfDay = new Date(pDate); startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(pDate); endOfDay.setHours(23, 59, 59, 999);
+            const conflict = await Booking.findOne({
+                _id: { $ne: booking._id },
+                provider: booking.provider._id,
+                preferredDate: { $gte: startOfDay, $lte: endOfDay },
+                preferredTime,
+                status: { $in: ['accepted', 'on-the-way', 'in-progress'] }
+            });
+
+            if (conflict) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Conflict: Provider is already booked for ${preferredTime} on that date.`
+                });
+            }
+        }
+
+        booking.preferredDate = new Date(preferredDate);
+        booking.preferredTime = preferredTime;
+        await booking.save();
+
+        // Send notifications
+        try {
+            await sendNotification({
+                recipient: booking.user,
+                recipientRole: 'customer',
+                title: 'Booking Rescheduled',
+                message: `Your booking #${booking._id.toString().slice(-6)} has been rescheduled to ${new Date(preferredDate).toLocaleDateString()} at ${preferredTime}.${reason ? ` Reason: ${reason}` : ''}`,
+                type: 'booking_rescheduled',
+                bookingId: booking._id,
+                io: req.io
+            });
+
+            if (booking.provider) {
+                const prov = await Provider.findById(booking.provider._id || booking.provider);
+                if (prov && prov.userId) {
+                    await sendNotification({
+                        recipient: prov.userId,
+                        recipientRole: 'provider',
+                        title: 'Booking Rescheduled',
+                        message: `Booking #${booking._id.toString().slice(-6)} has been rescheduled to ${new Date(preferredDate).toLocaleDateString()} at ${preferredTime}.`,
+                        type: 'booking_rescheduled',
+                        bookingId: booking._id,
+                        io: req.io
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.warn('Reschedule notification error:', notifErr.message);
+        }
+
+        return res.json({
+            success: true,
+            message: 'Booking rescheduled successfully',
+            booking
+        });
+    } catch (error) {
+        console.error('rescheduleBooking error:', error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 

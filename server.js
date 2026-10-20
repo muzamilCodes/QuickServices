@@ -227,6 +227,14 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("join_user", (userId) => {
+    if (userId) socket.join(`user_${userId}`);
+  });
+
+  socket.on("join_admin", () => {
+    socket.join("admin_room");
+  });
+
   socket.on("disconnect", () => {
     // console.log("Socket disconnected:", socket.id);
   });
@@ -241,6 +249,7 @@ app.use("/bookings", require("./routes/bookingRoutes"));
 app.use("/providers", require("./routes/providerRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
 app.use("/loyalty", require("./routes/loyaltyRoutes"));
+app.use("/notifications", require("./routes/notificationRoutes"));
 
 // Public routes (no auth required)
 const publicRoutes = require("./routes/publicRoutes");
