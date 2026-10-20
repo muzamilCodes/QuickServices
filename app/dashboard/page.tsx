@@ -138,15 +138,79 @@ export default function DashboardPage() {
       .reduce((sum, b) => sum + (b.amount || 499), 0);
   }, [bookings]);
 
+  // Live Services List
+  const [servicesList, setServicesList] = useState<Service[]>(allServices);
+
+  useEffect(() => {
+    let active = true;
+    const fetchServices = async () => {
+      try {
+        let res = await fetch(`${API_URL}/public/services`);
+        if (!res.ok) res = await fetch(`${API_URL}/services`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.services) && data.services.length > 0) {
+          const mapped: Service[] = data.services.map((s: any) => {
+            const staticMatch = allServices.find(
+              as => as.id === s.id || as.name.toLowerCase() === s.name.toLowerCase()
+            );
+            const calculatedPrice = s.totalEstimatedPrice || s.basePrice || s.price;
+            return {
+              id: s.id || s._id,
+              name: s.name,
+              icon: s.icon || staticMatch?.icon || '🔧',
+              description: s.description || staticMatch?.description || '',
+              details: Array.isArray(s.details) && s.details.length > 0 ? s.details : (staticMatch?.details || [s.description]),
+              price: s.pricingUnit === 'per_hour' || s.priceUnit === 'hour'
+                ? `₹${s.hourlyRate || s.basePrice || s.price || 300}`
+                : `₹${calculatedPrice || 499}`,
+              numericPrice: Number(calculatedPrice || s.hourlyRate) || 499,
+              priceUnit: s.pricingUnit === 'per_hour' || s.priceUnit === 'hour'
+                ? `hr${s.minDurationHours ? ` (min ${s.minDurationHours}h)` : ''}`
+                : (s.pricingUnit === 'per_day' ? 'day' : (s.pricingUnit === 'per_job' ? 'job' : (s.priceUnit || 'visit'))),
+              rating: Number(s.rating) || staticMatch?.rating || 4.8,
+              reviewsCount: staticMatch?.reviewsCount || (s.isProviderSubmitted ? 12 : 68),
+              eta: staticMatch?.eta || 'Fast doorstep dispatch',
+              color: staticMatch?.color || 'from-blue-500 to-indigo-700',
+              category: s.category || staticMatch?.category || 'General Maintenance',
+              popular: s.isProviderSubmitted ? false : (staticMatch?.popular ?? true),
+              image: s.image || staticMatch?.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
+              isProviderSubmitted: Boolean(s.isProviderSubmitted),
+              submittedBy: s.submittedBy || '',
+            };
+          });
+          // Deduplicate by both ID and Name so no duplicate cards or keys can ever occur
+          const merged = [...mapped, ...allServices];
+          const uniqueServices: Service[] = [];
+          const seen = new Set<string>();
+          for (const s of merged) {
+            const idKey = (s.id || s._id || '').toLowerCase().trim();
+            const nameKey = (s.name || '').toLowerCase().trim();
+            if ((idKey && seen.has(idKey)) || (nameKey && seen.has(nameKey))) {
+              continue;
+            }
+            if (idKey) seen.add(idKey);
+            if (nameKey) seen.add(nameKey);
+            uniqueServices.push(s);
+          }
+          if (active) setServicesList(uniqueServices);
+        }
+      } catch (e) {
+        console.warn('Dashboard service fetch error:', e);
+      }
+    };
+    fetchServices();
+    return () => { active = false; };
+  }, [API_URL]);
+
   // Filtered Services List
   const categories = useMemo(() => {
     const set = new Set<string>();
-    allServices.forEach(s => set.add(s.category));
+    servicesList.forEach(s => set.add(s.category));
     return ['All', ...Array.from(set)];
-  }, []);
+  }, [servicesList]);
 
   const filteredServices = useMemo(() => {
-    return allServices.filter(s => {
+    return servicesList.filter(s => {
       const matchesSearch = 
         !searchQuery.trim() ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -155,7 +219,7 @@ export default function DashboardPage() {
       const matchesCategory = selectedCategory === 'All' || s.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, servicesList]);
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
@@ -441,9 +505,9 @@ export default function DashboardPage() {
 
           {/* Service Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredServices.map((service) => (
+            {filteredServices.map((service, idx) => (
               <div
-                key={service.id}
+                key={`${service.id || service._id || 'service'}-${idx}`}
                 className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm hover:shadow-xl transition duration-300 hover:-translate-y-1"
               >
                 {/* Image Header with Badge */}
@@ -452,6 +516,7 @@ export default function DashboardPage() {
                     src={service.image}
                     alt={`${service.name} - QuickServices Verified Home Service`}
                     fill
+                    unoptimized
                     className="object-cover transition duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />

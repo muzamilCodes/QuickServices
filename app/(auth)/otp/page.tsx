@@ -18,11 +18,22 @@ export default function OTPPage() {
 
   useEffect(() => {
     setMounted(true);
-    const storedEmail = localStorage.getItem("verifyEmail") || "";
-    setEmail(storedEmail);
-    if (!storedEmail) {
-      toast.error("Session expired. Please register again.");
-      router.push("/register");
+    let resolvedEmail = "";
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      resolvedEmail = (searchParams.get("email") || localStorage.getItem("verifyEmail") || localStorage.getItem("pendingEmail") || "").trim();
+      if (resolvedEmail) {
+        localStorage.setItem("verifyEmail", resolvedEmail);
+      }
+      const devOtp = localStorage.getItem("devRegisterOtp");
+      if (devOtp) {
+        setOtp(devOtp);
+      }
+    }
+    setEmail(resolvedEmail);
+    if (!resolvedEmail) {
+      toast.error("Session expired. Please register or log in again.");
+      router.push("/login");
     }
   }, [router]);
 
@@ -40,7 +51,7 @@ export default function OTPPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), otp: cleanOtp }),
       });
-      let data: { success?: boolean; message?: string; token?: string; user?: unknown } | null = null;
+      let data: { success?: boolean; message?: string; token?: string; user?: any } | null = null;
       try {
         data = await res.json();
       } catch {
@@ -51,10 +62,17 @@ export default function OTPPage() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("verifyEmail");
+        localStorage.removeItem("pendingEmail");
         localStorage.removeItem("devRegisterOtp");
         checkAuth();
         toast.success("Verified successfully!");
-        router.push("/");
+        if (data.user.isAdmin || data.user.role === "admin") {
+          router.push("/admin");
+        } else if (data.user.role === "provider") {
+          router.push("/dashboard/provider");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         toast.error(data?.message || "Invalid OTP");
       }

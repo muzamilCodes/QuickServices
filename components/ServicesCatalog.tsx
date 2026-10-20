@@ -78,13 +78,17 @@ export default function ServicesCatalog({
     let active = true;
     const fetchServicesFromDb = async () => {
       try {
-        const res = await fetch(`${API_URL}/services`);
+        let res = await fetch(`${API_URL}/public/services`);
+        if (!res.ok) {
+          res = await fetch(`${API_URL}/services`);
+        }
         const data = await res.json();
         if (data.success && Array.isArray(data.services) && data.services.length > 0) {
           const mapped: Service[] = data.services.map((s: any) => {
             const staticMatch = allServices.find(
               as => as.id === s.id || as.name.toLowerCase() === s.name.toLowerCase()
             );
+            const calculatedPrice = s.totalEstimatedPrice || s.basePrice || s.price;
             return {
               id: s.id || s._id,
               name: s.name,
@@ -93,8 +97,8 @@ export default function ServicesCatalog({
               details: Array.isArray(s.details) && s.details.length > 0 ? s.details : (staticMatch?.details || [s.description]),
               price: s.pricingUnit === 'per_hour' || s.priceUnit === 'hour'
                 ? `₹${s.hourlyRate || s.basePrice || s.price || 300}`
-                : `₹${s.basePrice || s.price || 499}`,
-              numericPrice: Number(s.basePrice || s.price || s.hourlyRate) || 499,
+                : `₹${calculatedPrice || 499}`,
+              numericPrice: Number(calculatedPrice || s.hourlyRate) || 499,
               priceUnit: s.pricingUnit === 'per_hour' || s.priceUnit === 'hour'
                 ? `hr${s.minDurationHours ? ` (min ${s.minDurationHours}h)` : ''}`
                 : (s.pricingUnit === 'per_day' ? 'day' : (s.pricingUnit === 'per_job' ? 'job' : (s.priceUnit || 'visit'))),
@@ -110,12 +114,23 @@ export default function ServicesCatalog({
             };
           });
 
-          // Also merge any allServices defaults not yet in DB
-          const existingNames = new Set(mapped.map(m => m.name.toLowerCase()));
-          const remaining = allServices.filter(as => !existingNames.has(as.name.toLowerCase()));
+          // Deduplicate by both ID and Name so no duplicate cards or keys can ever occur
+          const merged = [...mapped, ...allServices];
+          const uniqueServices: Service[] = [];
+          const seen = new Set<string>();
+          for (const s of merged) {
+            const idKey = (s.id || s._id || '').toLowerCase().trim();
+            const nameKey = (s.name || '').toLowerCase().trim();
+            if ((idKey && seen.has(idKey)) || (nameKey && seen.has(nameKey))) {
+              continue;
+            }
+            if (idKey) seen.add(idKey);
+            if (nameKey) seen.add(nameKey);
+            uniqueServices.push(s);
+          }
 
           if (active) {
-            setServicesList([...mapped, ...remaining]);
+            setServicesList(uniqueServices);
           }
         }
       } catch (err) {
@@ -138,10 +153,23 @@ export default function ServicesCatalog({
   const [expressDispatchOnly, setExpressDispatchOnly] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
+  // Dynamic Categories including live ones
+  const dynamicCategories = useMemo(() => {
+    const list = [...categories];
+    const names = new Set(list.map(c => c.name.toLowerCase()));
+    servicesList.forEach(s => {
+      if (s.category && !names.has(s.category.toLowerCase())) {
+        names.add(s.category.toLowerCase());
+        list.push({ name: s.category, icon: s.icon || '🛠️' });
+      }
+    });
+    return list;
+  }, [servicesList]);
+
   // Category counts
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { 'All Categories': servicesList.length };
-    categories.forEach((cat) => {
+    dynamicCategories.forEach((cat) => {
       if (cat.name !== 'All Categories') {
         counts[cat.name] = servicesList.filter(
           (s) => s.category.toLowerCase() === cat.name.toLowerCase()
@@ -149,7 +177,7 @@ export default function ServicesCatalog({
       }
     });
     return counts;
-  }, [servicesList]);
+  }, [dynamicCategories, servicesList]);
 
   // Filter & Sort Logic
   const filteredServices = useMemo(() => {
@@ -365,11 +393,11 @@ export default function ServicesCatalog({
                     Categories
                   </h4>
                   <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    {categories.length - 1} options
+                    {dynamicCategories.length - 1} options
                   </span>
                 </div>
                 <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-                  {categories.map((cat) => {
+                  {dynamicCategories.map((cat) => {
                     const isSelected = selectedCategory === cat.name;
                     const count = categoryCounts[cat.name] || 0;
                     return (
@@ -608,9 +636,9 @@ export default function ServicesCatalog({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-                {(limitCards ? filteredServices.slice(0, limitCards) : filteredServices).map((service) => (
+                {(limitCards ? filteredServices.slice(0, limitCards) : filteredServices).map((service, idx) => (
                   <div
-                    key={service.id}
+                    key={`${service.id || service._id || 'service'}-${idx}`}
                     className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 dark:border-white/8 shadow-sm transition hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1 duration-300 bg-white dark:bg-[#161b22]"
                   >
                     {/* Image Header */}
@@ -619,6 +647,7 @@ export default function ServicesCatalog({
                         src={service.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80'}
                         alt={`${service.name} - QuickServices Verified Home Service Kashmir`}
                         fill
+                        unoptimized
                         className="object-cover transition duration-500 group-hover:scale-105"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80';

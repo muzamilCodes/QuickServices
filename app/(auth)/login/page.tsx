@@ -89,9 +89,14 @@ function LoginForm() {
 
       // Account not verified — redirect to OTP verification
       if (response.status === 401 && result.needsVerification) {
-        localStorage.setItem("pendingEmail", result.email || formData.email.trim());
+        const targetEmail = result.email || formData.email.trim();
+        localStorage.setItem("verifyEmail", targetEmail);
+        localStorage.setItem("pendingEmail", targetEmail);
+        if (result.devOtp) {
+          localStorage.setItem("devRegisterOtp", result.devOtp);
+        }
         toast.error("Account not verified. Check your email for OTP.");
-        router.push(`/otp?email=${encodeURIComponent(result.email || formData.email.trim())}`);
+        router.push(`/otp?email=${encodeURIComponent(targetEmail)}`);
         return;
       }
 
@@ -108,12 +113,8 @@ function LoginForm() {
         toast.success(`Welcome back, ${result.user.username || "User"}!`);
         
         if (result.user.isAdmin || result.user.role === "admin") {
-          if (loginRole === "provider") {
-            router.push("/dashboard/provider");
-          } else {
-            router.push("/admin");
-          }
-        } else if (result.user.role === "provider" || loginRole === "provider") {
+          router.push("/admin");
+        } else if (result.user.role === "provider") {
           router.push("/dashboard/provider");
         } else {
           router.push("/dashboard");
