@@ -243,7 +243,9 @@ app.use("/admin", require("./routes/adminRoutes"));
 app.use("/loyalty", require("./routes/loyaltyRoutes"));
 
 // Public routes (no auth required)
-app.use("/public", require("./routes/publicRoutes"));
+const publicRoutes = require("./routes/publicRoutes");
+app.use("/public", publicRoutes);
+app.get("/services", publicRoutes.getPublicServices);
 
 // Health check
 app.get("/", (req, res) => {

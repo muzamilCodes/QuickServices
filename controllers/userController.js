@@ -161,39 +161,69 @@ exports.login = async (req, res) => {
     });
 
     // If user not found directly, check if a Provider profile exists with this email or phone
+    const Provider = require('../models/Provider');
     if (!user) {
-      const Provider = require('../models/Provider');
       const provider = await Provider.findOne({
         $or: [
           { email: identifier },
           ...(cleanMobile.length === 10 ? [{ phone: cleanMobile }] : [])
         ]
       });
-      if (provider && provider.userId) {
-        user = await User.findById(provider.userId);
+      if (provider) {
+        if (provider.userId) {
+          user = await User.findById(provider.userId);
+        }
+        if (!user && provider.email) {
+          user = await User.findOne({ email: provider.email.toLowerCase() });
+          if (user && !provider.userId) {
+            provider.userId = user._id;
+            await provider.save();
+          }
+        }
       }
     }
 
-    if (!user) return res.status(401).json({ success: false, message: "Invalid credentials. Please check your email/mobile and password." });
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid credentials. Please check your email/mobile and password." });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ success: false, message: "Invalid credentials. Please check your password." });
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid credentials. Please check your password." });
+    }
 
-    // If user is Admin, bypass role separation
-    if (!user.isAdmin) {
-      // Role guidance: If logging in on wrong tab, return friendly error
-      if (role === 'customer' && user.role === 'provider') {
-        return res.status(403).json({
-          success: false,
-          message: "This account is registered as a Service Provider (Pro). Please select the 'Service Provider (Pro)' tab above to log in."
-        });
-      }
+    // Determine effective role & privileges
+    const isUserAdmin = Boolean(user.isAdmin === true || user.role === 'admin');
+    let effectiveRole = isUserAdmin ? 'admin' : (user.role || 'customer');
 
-      if (role === 'provider' && user.role === 'customer') {
-        return res.status(403).json({
-          success: false,
-          message: "This account is registered as a Customer. Please select the 'Customer Login' tab above to log in."
-        });
+    // Check linked provider record
+    let isProviderApproved = true;
+    if (!isUserAdmin) {
+      const provider = await Provider.findOne({
+        $or: [{ userId: user._id }, { email: user.email }]
+      });
+
+      if (provider) {
+        if (!provider.userId) {
+          provider.userId = user._id;
+          await provider.save();
+        }
+
+        if (provider.isApproved === true) {
+          if (user.role !== 'provider') {
+            user.role = 'provider';
+            await user.save();
+          }
+          effectiveRole = 'provider';
+          isProviderApproved = true;
+        } else if (user.role === 'provider' || role === 'provider') {
+          // Block login if provider account is still pending admin approval
+          return res.status(403).json({
+            success: false,
+            isPendingApproval: true,
+            message: "Your Service Provider account is pending Admin approval. You will receive a confirmation email once approved, and can then log in to your Provider Dashboard."
+          });
+        }
       }
     }
 
@@ -212,28 +242,6 @@ exports.login = async (req, res) => {
         devOtp: newOtp,
         message: "Your account is not verified yet. A new OTP has been sent to your email."
       });
-    }
-
-    // Fetch provider approval status if user is a provider
-    let isProviderApproved = true;
-    if (user.role === 'provider') {
-      const Provider = require('../models/Provider');
-      const provider = await Provider.findOne({ $or: [{ userId: user._id }, { email: user.email }] });
-      if (provider) {
-        isProviderApproved = provider.isApproved === true;
-        if (!provider.userId) {
-          provider.userId = user._id;
-          await provider.save();
-        }
-        // Block login if not yet approved by admin
-        if (!isProviderApproved) {
-          return res.status(403).json({
-            success: false,
-            isPendingApproval: true,
-            message: "Your Service Provider account is pending Admin approval. You will receive a confirmation email once approved, and can then log in to your Provider Dashboard."
-          });
-        }
-      }
     }
 
     const token = jwt.sign(
@@ -259,8 +267,8 @@ exports.login = async (req, res) => {
         email: user.email,
         mobile: user.mobile,
         profilePic: user.profilePic,
-        isAdmin: user.isAdmin,
-        role: user.isAdmin ? 'admin' : (user.role || 'customer'),
+        isAdmin: isUserAdmin,
+        role: effectiveRole,
         isApproved: isProviderApproved
       }
     });

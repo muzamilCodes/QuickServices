@@ -4,8 +4,8 @@ const sendEmail = require('../utilities/emailService');
 
 // Public routes - no authentication required
 
-// Get public services (from admin services)
-router.get('/services', async (req, res) => {
+// Get public services (from admin & approved provider services)
+const getPublicServices = async (req, res) => {
     try {
         const Service = require('../models/Service');
         let services = await Service.find({}).sort({ createdAt: -1 });
@@ -27,10 +27,13 @@ router.get('/services', async (req, res) => {
         }
         res.json({ success: true, services });
     } catch (error) {
-        console.error(error);
+        console.error('getPublicServices error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
-});
+};
+
+router.get('/services', getPublicServices);
+router.get('/', getPublicServices);
 
 // Get public offers (only active and non-expired)
 router.get('/offers', async (req, res) => {
@@ -115,3 +118,4 @@ router.post('/contact', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.getPublicServices = getPublicServices;

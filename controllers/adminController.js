@@ -551,37 +551,42 @@ exports.approveProviderService = async (req, res) => {
         }
 
         // Also update provider customServices status to approved and add to services array
+        let provider = null;
         if (submission.providerId) {
-            const provider = await Provider.findById(submission.providerId);
-            if (provider) {
-                provider.services = provider.services || [];
-                if (!provider.services.includes(submission.name)) {
-                    provider.services.push(submission.name);
-                }
-                if (!provider.services.includes(activeServiceId)) {
-                    provider.services.push(activeServiceId);
-                }
+            provider = await Provider.findById(submission.providerId);
+        }
+        if (!provider && submission.providerEmail) {
+            provider = await Provider.findOne({ email: submission.providerEmail.toLowerCase().trim() });
+        }
 
-                if (provider.customServices) {
-                    const svcIdx = provider.customServices.findIndex(
-                        cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
-                              (cs.submissionId && String(cs.submissionId) === String(submission._id))
-                    );
-                    if (svcIdx >= 0) {
-                        provider.customServices[svcIdx].status = 'approved';
-                        provider.customServices[svcIdx].isApproved = true;
-                        provider.customServices[svcIdx].pricingUnit = submission.pricingUnit || 'per_visit';
-                        provider.customServices[svcIdx].hourlyRate = submission.hourlyRate || 0;
-                        provider.customServices[svcIdx].minDurationHours = submission.minDurationHours || 1;
-                        provider.customServices[svcIdx].additionalTimeBilling = submission.additionalTimeBilling || '1 hour';
-                        provider.customServices[svcIdx].visitingCharges = submission.visitingCharges || 0;
-                        provider.customServices[svcIdx].materialCharges = submission.materialCharges || 0;
-                        provider.customServices[svcIdx].estimatedLabourCost = submission.estimatedLabourCost || submission.price;
-                        provider.customServices[svcIdx].totalEstimatedPrice = submission.totalEstimatedPrice || submission.price;
-                    }
-                }
-                await provider.save();
+        if (provider) {
+            provider.services = provider.services || [];
+            if (!provider.services.includes(submission.name)) {
+                provider.services.push(submission.name);
             }
+            if (!provider.services.includes(activeServiceId)) {
+                provider.services.push(activeServiceId);
+            }
+
+            if (provider.customServices) {
+                const svcIdx = provider.customServices.findIndex(
+                    cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
+                          (cs.submissionId && String(cs.submissionId) === String(submission._id))
+                );
+                if (svcIdx >= 0) {
+                    provider.customServices[svcIdx].status = 'approved';
+                    provider.customServices[svcIdx].isApproved = true;
+                    provider.customServices[svcIdx].pricingUnit = submission.pricingUnit || 'per_visit';
+                    provider.customServices[svcIdx].hourlyRate = submission.hourlyRate || 0;
+                    provider.customServices[svcIdx].minDurationHours = submission.minDurationHours || 1;
+                    provider.customServices[svcIdx].additionalTimeBilling = submission.additionalTimeBilling || '1 hour';
+                    provider.customServices[svcIdx].visitingCharges = submission.visitingCharges || 0;
+                    provider.customServices[svcIdx].materialCharges = submission.materialCharges || 0;
+                    provider.customServices[svcIdx].estimatedLabourCost = submission.estimatedLabourCost || submission.price;
+                    provider.customServices[svcIdx].totalEstimatedPrice = submission.totalEstimatedPrice || submission.price;
+                }
+            }
+            await provider.save();
         }
 
         res.json({ success: true, message: 'Service approved and added to catalog' });
@@ -604,18 +609,30 @@ exports.rejectProviderService = async (req, res) => {
         submission.adminNote = adminNote || 'Not approved';
         await submission.save();
 
+        // If it was previously approved into Service catalog, remove it
+        await Service.deleteMany({
+            $or: [
+                { name: submission.name, isProviderSubmitted: true }
+            ]
+        });
+
+        let provider = null;
         if (submission.providerId) {
-            const provider = await Provider.findById(submission.providerId);
-            if (provider && provider.customServices) {
-                const svcIdx = provider.customServices.findIndex(
-                    cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
-                          (cs.submissionId && String(cs.submissionId) === String(submission._id))
-                );
-                if (svcIdx >= 0) {
-                    provider.customServices[svcIdx].status = 'rejected';
-                    provider.customServices[svcIdx].isApproved = false;
-                    await provider.save();
-                }
+            provider = await Provider.findById(submission.providerId);
+        }
+        if (!provider && submission.providerEmail) {
+            provider = await Provider.findOne({ email: submission.providerEmail.toLowerCase().trim() });
+        }
+
+        if (provider && provider.customServices) {
+            const svcIdx = provider.customServices.findIndex(
+                cs => cs.name.toLowerCase() === submission.name.toLowerCase() ||
+                      (cs.submissionId && String(cs.submissionId) === String(submission._id))
+            );
+            if (svcIdx >= 0) {
+                provider.customServices[svcIdx].status = 'rejected';
+                provider.customServices[svcIdx].isApproved = false;
+                await provider.save();
             }
         }
 

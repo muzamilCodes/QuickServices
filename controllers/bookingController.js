@@ -436,6 +436,16 @@ const getBooking = async (req, res) => {
 };
 
 const getServices = async (req, res) => {
+  try {
+    const Service = require('../models/Service');
+    const dbServices = await Service.find({}).sort({ createdAt: -1 });
+    if (dbServices && dbServices.length > 0) {
+      return res.json({ success: true, services: dbServices });
+    }
+  } catch (err) {
+    console.error('getServices db fetch error:', err);
+  }
+
   const services = [
     { id: 'plumber', name: 'Plumber', icon: '🔧', description: 'Leak repair, tap fitting, blocked drains and bathroom plumbing', details: ['Leak repair', 'Tap fitting', 'Drain cleaning'], basePrice: 499, priceUnit: 'visit', rating: 4.8 },
     { id: 'electrician', name: 'Electrician', icon: '⚡', description: 'Switchboards, fans, lights, wiring faults and new installations', details: ['Fan fitting', 'Wiring faults', 'Switchboard repair'], basePrice: 499, priceUnit: 'visit', rating: 4.9 },
