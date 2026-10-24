@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { CircleCheckBig, Mail, PencilLine, Phone, UserRound } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import AccountDeletionSection from '@/components/AccountDeletionSection';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
-  const [isEditing, setIsEditing] = useState(false);
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ username: '', email: '', mobile: '' });
   const [message, setMessage] = useState('');
 
@@ -206,6 +206,10 @@ export default function ProfilePage() {
             )}
           </div>
         </section>
+
+        <div className="mt-6">
+          <AccountDeletionSection />
+        </div>
       </div>
     </div>
   );

@@ -275,6 +275,9 @@ export default function AdminPage() {
             <a href="/admin/users" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
               Users
             </a>
+            <a href="/admin/deletions" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
+              Deletion Requests
+            </a>
             <a href="/admin/contacts" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
               Contacts
             </a>

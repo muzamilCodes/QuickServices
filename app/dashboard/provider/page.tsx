@@ -34,6 +34,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { servicesById } from '@/lib/services';
+import AccountDeletionSection from '@/components/AccountDeletionSection';
 
 interface CustomService {
   name: string;
@@ -1547,6 +1548,7 @@ export default function ProviderDashboardPage() {
 
         {/* ==================== TAB 3: PROFILE MANAGEMENT ==================== */}
         {activeTab === 'profile' && (
+          <div className="space-y-6">
           <form onSubmit={handleProfileSave} className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-10 shadow-lg space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
@@ -1699,6 +1701,8 @@ export default function ProviderDashboardPage() {
               </button>
             </div>
           </form>
+          <AccountDeletionSection />
+          </div>
         )}
 
       </div>
