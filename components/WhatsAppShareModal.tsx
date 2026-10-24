@@ -35,11 +35,11 @@ export default function WhatsAppShareModal({
   if (!isOpen) return null;
 
   const mapsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : '';
-  const refCode = bookingRef || `QS-${Date.now().toString().slice(-6)}`;
+  const refCode = bookingRef?.trim() || '';
 
   let messageText = `*QuickServices Kashmir - Service Request*\n`;
   messageText += `━━━━━━━━━━━━━━━━━━━━━\n`;
-  messageText += `*Booking Ref:* #${refCode}\n`;
+  if (refCode) messageText += `*Booking Ref:* #${refCode}\n`;
   messageText += `*Service:* ${serviceName}\n`;
   if (bookingDate) messageText += `*Date:* ${bookingDate}\n`;
   if (bookingTime) messageText += `*Time Slot:* ${bookingTime}\n`;

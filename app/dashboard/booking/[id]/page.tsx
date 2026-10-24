@@ -128,6 +128,7 @@ export default function BookingDetailPage() {
     switch (status) {
       case 'pending': return 0;
       case 'accepted': return 1;
+      case 'on-the-way': return 2;
       case 'in-progress': return 2;
       case 'completed': return 3;
       case 'cancelled': return -1;
@@ -220,15 +221,18 @@ export default function BookingDetailPage() {
               <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold ${
                 booking.status === 'completed' ? 'bg-emerald-500 text-white' :
                 booking.status === 'in-progress' ? 'bg-purple-500 text-white' :
+                booking.status === 'on-the-way' ? 'bg-blue-600 text-white' :
                 booking.status === 'accepted' ? 'bg-blue-500 text-white' :
                 booking.status === 'cancelled' ? 'bg-rose-500 text-white' :
                 'bg-amber-400 text-slate-950'
               }`}>
                 {booking.status === 'pending' ? 'Looking for Specialist' :
                  booking.status === 'accepted' ? 'Specialist Assigned' :
-                 booking.status === 'in-progress' ? 'On The Way / Active' :
+                 booking.status === 'on-the-way' ? 'Specialist On The Way' :
+                 booking.status === 'in-progress' ? 'Work In Progress' :
                  booking.status === 'completed' ? 'Service Completed' :
-                 'Cancelled'}
+                 booking.status === 'cancelled' ? 'Cancelled' :
+                 String(booking.status)}
               </span>
             </div>
           </div>

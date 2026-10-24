@@ -194,6 +194,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success && data.payload) {
         localStorage.setItem('user', JSON.stringify(data.payload));
+        useAuthStore.getState().checkAuth();
         void loadAdminData();
       } else {
         setMessage(data.message || 'Could not initialize admin.');

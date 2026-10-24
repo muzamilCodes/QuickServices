@@ -30,7 +30,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[] | undefined>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUser, setNewUser] = useState({ username: "", email: "", mobile: "" });
   const [filterAdmin, setFilterAdmin] = useState("all");
   const [editModal, setEditModal] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ mobile: "", street: "", city: "", state: "", pincode: "" });
@@ -57,17 +57,21 @@ export default function AdminUsersPage() {
     }
   }, [filterAdmin]);
 
-  const createUser = async (email: string) => {
+  const createUser = async () => {
+    if (!newUser.username.trim() || !newUser.email.trim() || !/^[0-9]{10}$/.test(newUser.mobile.replace(/\D/g, "").slice(-10))) {
+      setMessage("Username, email and a 10-digit mobile number are required.");
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/admin/users`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(newUser),
       });
       const data = await res.json();
       if (data.success) {
-        setMessage("User created! Check email for setup.");
-        setNewUserEmail("");
+        setMessage(data.tempPassword ? `${data.message} Temporary password: ${data.tempPassword}` : data.message);
+        setNewUser({ username: "", email: "", mobile: "" });
         await fetchUsers();
       } else {
         setMessage(data.message || "Failed to create user");
@@ -195,17 +199,31 @@ setUsers((prev) => (prev || []).map(u => u._id === userId ? {...u, isActive: !is
 
         <div className="rounded-[28px] bg-white/90 p-8 mb-8 shadow-xl">
           <h2 className="text-2xl font-semibold mb-6">Create New User</h2>
-          <div className="flex gap-3 max-w-md">
+          <div className="flex flex-col gap-3 max-w-md">
+            <input
+              type="text"
+              placeholder="Username"
+              value={newUser.username}
+              onChange={(e) => setNewUser((p) => ({ ...p, username: e.target.value }))}
+              className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
             <input
               type="email"
               placeholder="user@example.com"
-              value={newUserEmail}
-              onChange={(e) => setNewUserEmail(e.target.value)}
+              value={newUser.email}
+              onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))}
+              className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+            <input
+              type="tel"
+              placeholder="10-digit mobile number"
+              value={newUser.mobile}
+              onChange={(e) => setNewUser((p) => ({ ...p, mobile: e.target.value }))}
               className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <button
-              onClick={() => createUser(newUserEmail)}
-              className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 whitespace-nowrap"
+              onClick={createUser}
+              className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
               Create User

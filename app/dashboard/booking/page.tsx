@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import { toLocalDateInput } from '@/lib/utils';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import CustomerLocationPicker, { LocationData } from '@/components/CustomerLocationPicker';
 import ProviderCard, { ProviderDetails, AvailabilityInfo } from '@/components/ProviderCard';
@@ -44,7 +45,7 @@ function BookingPageContent() {
   const [fetchError, setFetchError] = useState<string>('');
 
   // Selected Booking Date & Time Slot
-  const todayIso = new Date().toISOString().split('T')[0];
+  const todayIso = toLocalDateInput(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(todayIso);
   const [selectedSlot, setSelectedSlot] = useState<string>('09:00 AM - 11:00 AM');
 
@@ -729,6 +730,7 @@ function BookingPageContent() {
         bookingDate={selectedDate}
         bookingTime={selectedSlot}
         providerWhatsapp={providerData?.whatsappNumber || providerData?.phone}
+        bookingRef={createdBookingId ? createdBookingId.slice(-6).toUpperCase() : undefined}
       />
     </div>
   );

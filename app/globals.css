@@ -40,6 +40,7 @@ html.dark,
   --brand: #4f9cff;
   --brand-strong: #0f62c9;
   --accent: #ff8a3d;
+  --hero: #0b1a2b;
   --border: rgba(255, 255, 255, 0.08);
   --card-bg: #161b22;
   --card-border: rgba(255, 255, 255, 0.08);
@@ -268,6 +269,273 @@ html.dark .border-slate-300 {
 }
 
 /* ============================================================
+   DARK MODE — EXTENDED UTILITY COVERAGE
+   Every selector below maps a light-only Tailwind utility that
+   is actually used in app/ or components/ onto a dark surface.
+   ============================================================ */
+
+/* Neutral surfaces and divider tracks */
+html.dark .bg-slate-300,
+html.dark .bg-gray-300 {
+  background-color: #30363d !important;
+}
+
+html.dark .bg-slate-400 {
+  background-color: #484f58 !important;
+}
+
+html.dark .bg-white\/85 {
+  background-color: rgba(22, 27, 34, 0.9) !important;
+}
+
+/* Pale colored chips/cards -> glowing translucent fills */
+html.dark .bg-red-50,
+html.dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.16) !important;
+}
+
+html.dark .bg-purple-50,
+html.dark .bg-purple-100,
+html.dark .bg-violet-50,
+html.dark .bg-violet-100 {
+  background-color: rgba(168, 85, 247, 0.18) !important;
+}
+
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-100 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+}
+
+html.dark .bg-teal-50,
+html.dark .bg-teal-100,
+html.dark .bg-cyan-50,
+html.dark .bg-cyan-100 {
+  background-color: rgba(20, 184, 166, 0.18) !important;
+}
+
+html.dark .bg-sky-50,
+html.dark .bg-sky-100 {
+  background-color: rgba(14, 165, 233, 0.18) !important;
+}
+
+html.dark .bg-green-50,
+html.dark .bg-green-100,
+html.dark .bg-yellow-50,
+html.dark .bg-yellow-100 {
+  background-color: rgba(234, 179, 8, 0.16) !important;
+}
+
+/* Deep colored text that disappears on dark surfaces */
+html.dark .text-red-600,
+html.dark .text-red-700,
+html.dark .text-red-800,
+html.dark .text-red-900 {
+  color: #f87171 !important;
+}
+
+html.dark .text-purple-600,
+html.dark .text-purple-700,
+html.dark .text-purple-800,
+html.dark .text-violet-600,
+html.dark .text-violet-700,
+html.dark .text-violet-800 {
+  color: #c084fc !important;
+}
+
+html.dark .text-indigo-600,
+html.dark .text-indigo-700,
+html.dark .text-indigo-800 {
+  color: #a5b4fc !important;
+}
+
+html.dark .text-teal-600,
+html.dark .text-teal-700,
+html.dark .text-cyan-600,
+html.dark .text-cyan-700 {
+  color: #2dd4bf !important;
+}
+
+html.dark .text-sky-600,
+html.dark .text-sky-700,
+html.dark .text-sky-800 {
+  color: #7dd3fc !important;
+}
+
+html.dark .text-green-600,
+html.dark .text-green-700,
+html.dark .text-yellow-600,
+html.dark .text-yellow-700,
+html.dark .text-yellow-800 {
+  color: #fde047 !important;
+}
+
+/* Colored hairline borders */
+html.dark .border-blue-100,
+html.dark .border-blue-200,
+html.dark .border-blue-300 {
+  border-color: rgba(59, 130, 246, 0.32) !important;
+}
+
+html.dark .border-emerald-100,
+html.dark .border-emerald-200,
+html.dark .border-emerald-300 {
+  border-color: rgba(16, 185, 129, 0.32) !important;
+}
+
+html.dark .border-amber-100,
+html.dark .border-amber-200,
+html.dark .border-amber-300 {
+  border-color: rgba(245, 158, 11, 0.32) !important;
+}
+
+html.dark .border-rose-100,
+html.dark .border-rose-200,
+html.dark .border-rose-300,
+html.dark .border-red-100,
+html.dark .border-red-200,
+html.dark .border-red-300 {
+  border-color: rgba(239, 68, 68, 0.32) !important;
+}
+
+html.dark .border-orange-100,
+html.dark .border-orange-200,
+html.dark .border-orange-300 {
+  border-color: rgba(249, 115, 22, 0.32) !important;
+}
+
+html.dark .border-purple-100,
+html.dark .border-purple-200,
+html.dark .border-violet-100,
+html.dark .border-violet-200,
+html.dark .border-indigo-100,
+html.dark .border-indigo-200 {
+  border-color: rgba(168, 85, 247, 0.32) !important;
+}
+
+html.dark .ring-blue-100 {
+  --tw-ring-color: rgba(59, 130, 246, 0.3);
+}
+
+/* List dividers (Tailwind v4 emits these as nested :where rules) */
+html.dark .divide-slate-100 > :not(:last-child),
+html.dark .divide-slate-200 > :not(:last-child) {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Light gradient stops would paint white sheets over dark content */
+html.dark .from-slate-50 { --tw-gradient-from: #0f1419; }
+html.dark .to-slate-50 { --tw-gradient-to: #0f1419; }
+html.dark .via-white { --tw-gradient-via: #161b22; }
+html.dark .to-white { --tw-gradient-to: #161b22; }
+
+html.dark .from-blue-50 { --tw-gradient-from: rgba(59, 130, 246, 0.16); }
+html.dark .from-blue-50\/50 { --tw-gradient-from: rgba(59, 130, 246, 0.08); }
+html.dark .to-blue-50 { --tw-gradient-to: rgba(59, 130, 246, 0.16); }
+html.dark .from-orange-50 { --tw-gradient-from: rgba(249, 115, 22, 0.16); }
+html.dark .via-orange-50 { --tw-gradient-via: rgba(249, 115, 22, 0.16); }
+html.dark .to-orange-50 { --tw-gradient-to: rgba(249, 115, 22, 0.16); }
+html.dark .from-amber-50 { --tw-gradient-from: rgba(245, 158, 11, 0.16); }
+html.dark .to-amber-50 { --tw-gradient-to: rgba(245, 158, 11, 0.16); }
+html.dark .from-emerald-50 { --tw-gradient-from: rgba(16, 185, 129, 0.16); }
+html.dark .via-teal-50 { --tw-gradient-via: rgba(20, 184, 166, 0.16); }
+html.dark .to-red-50 { --tw-gradient-to: rgba(239, 68, 68, 0.16); }
+html.dark .to-indigo-100 { --tw-gradient-to: rgba(99, 102, 241, 0.18); }
+
+/* Light-tinted shadows read as glowing halos on a dark page */
+html.dark .shadow-slate-100,
+html.dark .shadow-slate-200,
+html.dark .shadow-slate-200\/50 {
+  --tw-shadow-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Hover states must win over the !important base fills above */
+html.dark .hover\:bg-slate-50:hover {
+  background-color: #161b22 !important;
+}
+
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #1c2333 !important;
+}
+
+html.dark .hover\:bg-slate-200:hover {
+  background-color: #21262d !important;
+}
+
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover {
+  background-color: #1c2333 !important;
+}
+
+html.dark .hover\:bg-white:hover {
+  background-color: #161b22 !important;
+}
+
+html.dark .hover\:bg-blue-100:hover {
+  background-color: rgba(59, 130, 246, 0.26) !important;
+}
+
+html.dark .hover\:bg-emerald-100:hover {
+  background-color: rgba(16, 185, 129, 0.26) !important;
+}
+
+html.dark .hover\:bg-rose-50:hover,
+html.dark .hover\:bg-rose-100:hover {
+  background-color: rgba(239, 68, 68, 0.26) !important;
+}
+
+html.dark .hover\:border-slate-200:hover,
+html.dark .hover\:border-slate-300:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ============================================================
+   DARK MODE — LEAFLET MAP CHROME
+   leaflet.css is injected at runtime (after this stylesheet),
+   so these need !important to win the cascade.
+   ============================================================ */
+html.dark .leaflet-container {
+  background: #0d1117 !important;
+}
+
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background: #161b22 !important;
+  color: #e6edf3 !important;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.55) !important;
+}
+
+html.dark .leaflet-popup-content {
+  color: #e6edf3 !important;
+}
+
+html.dark .leaflet-bar,
+html.dark .leaflet-control-zoom {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html.dark .leaflet-bar a,
+html.dark .leaflet-control-zoom a {
+  background-color: #1c2333 !important;
+  color: #e6edf3 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .leaflet-bar a:hover,
+html.dark .leaflet-control-zoom a:hover {
+  background-color: #21262d !important;
+  color: #ffffff !important;
+}
+
+html.dark .leaflet-control-attribution {
+  background: rgba(13, 17, 23, 0.75) !important;
+  color: #8b949e !important;
+}
+
+html.dark .leaflet-control-attribution a {
+  color: #4f9cff !important;
+}
+
+/* ============================================================
    INPUT & FORM STYLING (THEME SENSITIVE)
    ============================================================ */
 html.dark input, 
@@ -296,17 +564,22 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 2px rgba(79, 156, 255, 0.2);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+/* Anchors must inherit only as a BASE style: Tailwind v4 puts text-color
+   utilities in @layer utilities, and unlayered rules outrank every layer,
+   which would silence classes like `text-slate-500` on links. */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-button {
-  cursor: pointer;
-}
+  button {
+    cursor: pointer;
+  }
 
-input, textarea, select, button {
-  font: inherit;
+  input, textarea, select, button {
+    font: inherit;
+  }
 }
 
 ::selection {

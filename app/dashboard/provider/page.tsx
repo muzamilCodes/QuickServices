@@ -584,7 +584,7 @@ export default function ProviderDashboardPage() {
     <div className="min-h-screen bg-slate-50/70 pb-20">
       
       {/* Top Banner / Pro Profile Summary */}
-      <section className="bg-gradient-to-r from-slate-900 via-slate-850 to-blue-950 text-white pt-10 pb-6 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+      <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 text-white pt-10 pb-6 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             

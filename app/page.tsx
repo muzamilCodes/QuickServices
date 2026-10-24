@@ -70,7 +70,7 @@ export default function HomePage() {
           
           {/* Left Hero Column */}
           <div className="space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-white/5 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-300 shadow-sm backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-blue-50 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 shadow-sm backdrop-blur dark:bg-white/5 dark:text-slate-300">
               <Sparkles className="h-4 w-4 text-orange-500" />
               Trusted help for everyday home & office services
             </div>

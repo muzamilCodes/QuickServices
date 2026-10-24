@@ -89,6 +89,17 @@ export default function CustomerLocationPicker({
     }
   }, [API_URL, onChange, value]);
 
+  // Leaflet handlers are bound once on mount, so they must read the newest
+  // callback/prop through refs instead of closing over the first render's copy.
+  const reverseGeocodeRef = useRef(reverseGeocode);
+  const disabledRef = useRef(disabled);
+  useEffect(() => {
+    reverseGeocodeRef.current = reverseGeocode;
+  }, [reverseGeocode]);
+  useEffect(() => {
+    disabledRef.current = disabled;
+  }, [disabled]);
+
   // Request browser geolocation
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -216,16 +227,16 @@ export default function CustomerLocationPicker({
         const newPos = e.target.getLatLng();
         const lat = Number(newPos.lat.toFixed(6));
         const lng = Number(newPos.lng.toFixed(6));
-        void reverseGeocode(lat, lng);
+        void reverseGeocodeRef.current(lat, lng);
       });
 
       map.on('click', (e: any) => {
-        if (disabled) return;
+        if (disabledRef.current) return;
         const lat = Number(e.latlng.lat.toFixed(6));
         const lng = Number(e.latlng.lng.toFixed(6));
         marker.setLatLng([lat, lng]);
         marker.openPopup();
-        void reverseGeocode(lat, lng);
+        void reverseGeocodeRef.current(lat, lng);
       });
 
       mapInstanceRef.current = map;
@@ -250,6 +261,14 @@ export default function CustomerLocationPicker({
       markerRef.current.setLatLng([value.lat!, value.lng!]);
     }
   }, [value.lat, value.lng, hasCoords]);
+
+  // `draggable` is read once when the marker is created; keep it in sync with the prop.
+  useEffect(() => {
+    const dragging = markerRef.current?.dragging;
+    if (!dragging) return;
+    if (disabled) dragging.disable();
+    else dragging.enable();
+  }, [disabled]);
 
   return (
     <div className="space-y-4">

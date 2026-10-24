@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { toLocalDateInput } from '@/lib/utils';
 import { 
   ShieldCheck, 
   Star, 
@@ -77,7 +78,7 @@ export default function ProviderCard({
   const dateOptions = Array.from({ length: 6 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
-    const iso = d.toISOString().split('T')[0];
+    const iso = toLocalDateInput(d);
     const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     return { iso, label };
   });

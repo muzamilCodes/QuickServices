@@ -1,8 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useSyncExternalStore } from 'react';
 
 export type Theme = 'dark' | 'light';
+
+const STORAGE_KEY = 'app_theme';
 
 interface ThemeContextType {
   theme: Theme;
@@ -16,52 +18,78 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
 });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Original theme is default ('light')
-  const [theme, setThemeState] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
+function readThemeFromDocument(): Theme {
+  if (typeof document === 'undefined') return 'light';
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
 
-  useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem('app_theme') as Theme | null;
-      // Default to 'light' (original website theme) unless user explicitly selected 'dark'
-      const initialTheme = savedTheme === 'dark' ? 'dark' : 'light';
-      setThemeState(initialTheme);
-      applyTheme(initialTheme);
-    } catch {
-      applyTheme('light');
+// The store is the <html> element itself: app/layout.tsx paints the saved theme
+// before hydration, and every consumer reads the same source of truth.
+let currentTheme: Theme = 'light';
+const listeners = new Set<() => void>();
+let observer: MutationObserver | null = null;
+
+function syncThemeColor(t: Theme) {
+  if (typeof document === 'undefined') return;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'dark' ? '#0d1117' : '#0f62c9');
+}
+
+function publish() {
+  const next = readThemeFromDocument();
+  if (next === currentTheme) return;
+  currentTheme = next;
+  syncThemeColor(next);
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  if (!observer) {
+    observer = new MutationObserver(publish);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'class'],
+    });
+  }
+  publish();
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0 && observer) {
+      observer.disconnect();
+      observer = null;
     }
-    setMounted(true);
+  };
+}
+
+const getSnapshot = () => currentTheme;
+// Server markup is always rendered as light (see app/layout.tsx), so hydration
+// matches and the real theme is applied right after.
+const getServerSnapshot = () => 'light' as const;
+
+function applyThemeToDocument(t: Theme) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.classList.remove(t === 'dark' ? 'light' : 'dark');
+  root.classList.add(t);
+  root.setAttribute('data-theme', t);
+  root.style.colorScheme = t;
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const setTheme = useCallback((newTheme: Theme) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, newTheme);
+    } catch {}
+    applyThemeToDocument(newTheme);
+    publish();
   }, []);
 
-  const applyTheme = (t: Theme) => {
-    if (typeof document === 'undefined') return;
-    const root = document.documentElement;
-    if (t === 'dark') {
-      root.classList.remove('light');
-      root.classList.add('dark');
-      root.setAttribute('data-theme', 'dark');
-      root.style.colorScheme = 'dark';
-    } else {
-      root.classList.remove('dark');
-      root.classList.add('light');
-      root.setAttribute('data-theme', 'light');
-      root.style.colorScheme = 'light';
-    }
-  };
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    try {
-      localStorage.setItem('app_theme', newTheme);
-    } catch {}
-    applyTheme(newTheme);
-  };
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-  };
+  const toggleTheme = useCallback(() => {
+    setTheme(readThemeFromDocument() === 'dark' ? 'light' : 'dark');
+  }, [setTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>

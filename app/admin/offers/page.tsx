@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Edit3, Trash2, Loader2, Save, BadgePercent } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { getApiBaseUrl } from "@/lib/apiBase";
+import { toLocalDateInput } from "@/lib/utils";
 
 interface Offer {
   _id?: string;
@@ -120,7 +121,7 @@ export default function AdminOffersPage() {
     setEditingId(offer._id || null);
     setOfferForm({
       ...offer,
-      expiryDate: offer.expiryDate ? new Date(offer.expiryDate).toISOString().split('T')[0] : null,
+      expiryDate: offer.expiryDate ? toLocalDateInput(new Date(offer.expiryDate)) : null,
     });
   };
 

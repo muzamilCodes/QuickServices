@@ -99,30 +99,6 @@ export default function DashboardPage() {
     }
   }, [authLoading, fetchMyBookings, isAuthenticated, router, user]);
 
-  // Prevent admin from ever seeing customer dashboard
-  if (user?.isAdmin || user?.role === 'admin') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-500 border-t-transparent" />
-          <p className="text-xs font-bold text-slate-700">Redirecting to Admin Portal...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Prevent providers from ever seeing customer dashboard
-  if (user?.role === 'provider' && !user?.isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
-          <p className="text-xs font-bold text-slate-700">Redirecting to Provider Workspace...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Derived statistics
   const activeBookings = useMemo(() => {
     return bookings.filter(b => ['pending', 'accepted', 'on-the-way', 'in-progress'].includes(b.status));
@@ -243,6 +219,30 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500 font-semibold">
         Loading QuickServices Dashboard...
+      </div>
+    );
+  }
+
+  // Prevent admin from ever seeing customer dashboard
+  if (user?.isAdmin || user?.role === 'admin') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-500 border-t-transparent" />
+          <p className="text-xs font-bold text-slate-700">Redirecting to Admin Portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Prevent providers from ever seeing customer dashboard
+  if (user?.role === 'provider' && !user?.isAdmin) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          <p className="text-xs font-bold text-slate-700">Redirecting to Provider Workspace...</p>
+        </div>
       </div>
     );
   }
