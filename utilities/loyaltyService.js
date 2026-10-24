@@ -66,8 +66,11 @@ module.exports = {
   applyCouponToBookingData: (bookingData, coupon) => {
     bookingData.appliedCoupon = coupon.code;
     bookingData.isLoyaltyDiscount = true;
-    bookingData.discountAmount = coupon.discountPercent;
-    bookingData.originalAmount = bookingData.amount || 0;
+    // discountAmount is a money value on the Booking schema, not a percentage.
+    const original = Number(bookingData.originalAmount) || Number(bookingData.amount) || 0;
+    const payable = Number(bookingData.amount) || original;
+    bookingData.originalAmount = original;
+    bookingData.discountAmount = Math.max(0, original - payable);
   },
   getUserCoupons,
 };

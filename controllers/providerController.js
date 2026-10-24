@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { sendNotification } = require('../utilities/notificationService');
 
+const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // ===================== REGISTER PROVIDER =====================
 exports.registerProvider = async (req, res) => {
     try {
@@ -363,15 +365,23 @@ exports.getProviderBookings = async (req, res) => {
             serviceTokens.add(cs._id.toString());
         });
 
+        const serviceMatch = [
+            { serviceType: { $in: Array.from(serviceTokens) } },
+        ];
+        if (provider.category) {
+            serviceMatch.push({ serviceType: new RegExp(escapeRegExp(provider.category), 'i') });
+        }
+
         const availableBookings = await Booking.find({
             status: 'pending',
-            $or: [
-                { provider: null },
-                { provider: { $exists: false } }
-            ],
-            $or: [
-                { serviceType: { $in: Array.from(serviceTokens) } },
-                { serviceType: new RegExp(provider.category || '', 'i') }
+            $and: [
+                {
+                    $or: [
+                        { provider: null },
+                        { provider: { $exists: false } }
+                    ]
+                },
+                { $or: serviceMatch }
             ]
         }).populate('user', 'username email mobile').sort({ createdAt: -1 });
 

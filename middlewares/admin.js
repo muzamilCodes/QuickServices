@@ -1,29 +1,21 @@
 const authorize = require("./authorize");
 
-const admin = async (req, res, next) => {
-  try {
-    authorize(req, res, async () => {
-      const userId = req.userId;
+const admin = (req, res, next) => {
+  authorize(req, res, () => {
+    const { User } = require("../models/userModel");
 
-      const { User } = require("../models/userModel");
-      const user = await User.findById(userId);
-
-      if (user && user.isAdmin === true) {
-        return next(); // ✅ IMPORTANT: return lagao
-      } else {
+    User.findById(req.userId)
+      .then((user) => {
+        if (user && user.isAdmin === true) {
+          return next();
+        }
         return res.status(403).json({
           success: false,
           message: "Admin access required"
         });
-      }
-    }); // ❌ yahan se 's' hata diya
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
-  }
+      })
+      .catch(next);
+  });
 };
 
 module.exports = admin;

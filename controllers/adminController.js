@@ -6,16 +6,83 @@ const Contact = require('../models/Contact');
 const { User } = require('../models/userModel');
 const ProviderService = require('../models/ProviderService');
 const { sendNotification } = require('../utilities/notificationService');
+const bcrypt = require('bcrypt');
+const { sendEmail } = require('../utilities/emailService');
 
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({})
-            .select('-password')
+        const filter = {};
+        if (req.query.admin === 'true') filter.isAdmin = true;
+        else if (req.query.admin === 'false') filter.isAdmin = false;
+
+        const users = await User.find(filter)
+            .select('-password -otp -otpExpiry')
             .sort({ createdAt: -1 });
         res.json({ success: true, users });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.createUser = async (req, res) => {
+    try {
+        const { username, email, mobile, isAdmin } = req.body || {};
+        const cleanMobile = String(mobile || '').replace(/\D/g, '').slice(-10);
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+
+        if (!username || !normalizedEmail || !cleanMobile) {
+            return res.status(400).json({ success: false, message: 'Username, email and mobile are required' });
+        }
+        if (!/^[0-9]{10}$/.test(cleanMobile)) {
+            return res.status(400).json({ success: false, message: 'Mobile number must be 10 digits' });
+        }
+
+        const [existingEmail, existingMobile] = await Promise.all([
+            User.findOne({ email: normalizedEmail }),
+            User.findOne({ mobile: cleanMobile })
+        ]);
+        if (existingEmail) return res.status(400).json({ success: false, message: 'A user with this email already exists' });
+        if (existingMobile) return res.status(400).json({ success: false, message: 'A user with this mobile already exists' });
+
+        // Admin-created accounts get a one-time password the admin can share; the
+        // user is expected to change it via Forgot Password after first login.
+        const tempPassword = `Qs${Math.floor(100000 + Math.random() * 900000)}!${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
+
+        const user = await User.create({
+            username: String(username).trim(),
+            email: normalizedEmail,
+            mobile: cleanMobile,
+            password: await bcrypt.hash(tempPassword, 12),
+            isAdmin: Boolean(isAdmin),
+            role: isAdmin ? 'admin' : 'customer',
+            isVerified: true,
+            isActive: true
+        });
+
+        let emailSent = false;
+        try {
+            await sendEmail(
+                normalizedEmail,
+                'QuickServices: Your account is ready',
+                `<p>Hello ${user.username},</p><p>An account has been created for you on QuickServices Kashmir.</p><p>Email: <b>${user.email}</b><br/>Temporary password: <b>${tempPassword}</b></p><p>Please sign in and reset your password from the login page.</p>`,
+                `Your QuickServices account is ready. Temporary password: ${tempPassword}`
+            );
+            emailSent = true;
+        } catch (emailError) {
+            console.error('ADMIN CREATE USER EMAIL ERROR:', emailError?.message || emailError);
+        }
+
+        const { password: _pw, ...safeUser } = user.toObject();
+        return res.status(201).json({
+            success: true,
+            message: emailSent ? 'User created and credentials emailed.' : 'User created. Share the temporary password below.',
+            user: safeUser,
+            tempPassword
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 

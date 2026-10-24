@@ -10,6 +10,18 @@ const bookingOTPs = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const shouldExposeOtpFallback = () => true;
 
+// Live tracking and status updates are scoped to the two people in a booking:
+// the customer who created it and the specialist assigned to it.
+const isBookingParticipant = async (booking, userId) => {
+  if (!booking || !userId) return false;
+  const bookingOwnerId = booking.user?._id ?? booking.user;
+  if (String(bookingOwnerId) === String(userId)) return true;
+  const providerId = booking.provider?._id ?? booking.provider;
+  if (!providerId) return false;
+  const provider = await Provider.findById(providerId).select('userId');
+  return Boolean(provider?.userId) && String(provider.userId) === String(userId);
+};
+
 const validateCouponCode = async (userId, couponCode) => {
   if (!couponCode) return null;
   const coupon = await loyaltyService.validateCouponForUser(userId, couponCode);
@@ -110,6 +122,14 @@ const createBooking = async (req, res) => {
     if (req.body.amount && Number(req.body.amount) > 0) {
       originalAmount = Number(req.body.amount);
     }
+    // The client sends the pre-discount price separately; trust it for the receipt
+    // so a loyalty coupon doesn't rewrite the job's original value.
+    if (req.body.originalAmount && Number(req.body.originalAmount) > 0) {
+      originalAmount = Number(req.body.originalAmount);
+    }
+    const payableAmount = req.body.amount && Number(req.body.amount) > 0
+      ? Math.min(Number(req.body.amount), originalAmount)
+      : originalAmount;
 
     if (!originalAmount || originalAmount <= 0) {
       originalAmount = 499;
@@ -150,7 +170,7 @@ const createBooking = async (req, res) => {
         isEmergency,
         couponCode: req.body.couponCode || null,
         originalAmount,
-        amount: originalAmount,
+        amount: payableAmount,
         dbServiceId: dbService ? dbService._id : null,
         providerId: targetProviderId,
       },
@@ -210,8 +230,9 @@ const createBooking = async (req, res) => {
             status: 'pending',
             appliedCoupon: coupon ? coupon.code : null,
             isLoyaltyDiscount: !!coupon,
-            discountAmount: coupon ? coupon.discountPercent : 0,
+            discountAmount: coupon ? Math.max(0, (bookingData.originalAmount || 0) - (bookingData.amount || 0)) : 0,
             originalAmount: bookingData.originalAmount || 0,
+            amount: bookingData.amount || bookingData.originalAmount || 0,
           });
 
 
@@ -348,7 +369,7 @@ const verifyBookingOTP = async (req, res) => {
       status: 'pending',
       appliedCoupon: coupon ? coupon.code : null,
       isLoyaltyDiscount: !!coupon,
-      discountAmount: coupon ? coupon.discountPercent : 0,
+      discountAmount: coupon ? Math.max(0, (bookingData.originalAmount || 0) - (bookingData.amount || 0)) : 0,
       originalAmount: bookingData.originalAmount || 0,
       amount: bookingData.amount || bookingData.originalAmount || 0,
     });
@@ -643,6 +664,10 @@ const updateLiveLocation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+    if (!(await isBookingParticipant(booking, req.userId))) {
+      return res.status(403).json({ success: false, message: 'Not allowed to update this booking location' });
+    }
+
     const activeStatuses = ['accepted', 'on-the-way', 'in-progress'];
     if (!activeStatuses.includes(booking.status)) {
       return res.status(400).json({
@@ -707,6 +732,10 @@ const getLiveLocation = async (req, res) => {
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!(await isBookingParticipant(booking, req.userId))) {
+      return res.status(403).json({ success: false, message: 'Not allowed to view this booking tracking feed' });
     }
 
     const activeStatuses = ['accepted', 'on-the-way', 'in-progress'];
@@ -777,6 +806,10 @@ const updateBookingStatus = async (req, res) => {
     const booking = await Booking.findById(bookingId).populate('provider', 'name phone');
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!(await isBookingParticipant(booking, req.userId))) {
+      return res.status(403).json({ success: false, message: 'Not allowed to change this booking status' });
     }
 
     if (['completed', 'cancelled'].includes(booking.status)) {

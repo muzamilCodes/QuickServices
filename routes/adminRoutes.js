@@ -23,6 +23,7 @@ const {
     getContacts,
     deleteContact,
     getAllUsers,
+    createUser,
     updateUserDetails,
     updateUserAdmin,
     updateUserActive,
@@ -69,6 +70,7 @@ router.get('/contacts', getContacts);
 router.delete('/contacts/:contactId', deleteContact);
 
 router.get('/users', getAllUsers);
+router.post('/users', createUser);
 router.put('/users/:userId', updateUserDetails);
 router.put('/users/:userId/admin', updateUserAdmin);
 router.put('/users/:userId/active', updateUserActive);

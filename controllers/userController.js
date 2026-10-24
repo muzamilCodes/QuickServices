@@ -296,7 +296,7 @@ exports.updateProfile = async (req, res) => {
     };
 
     if (req.file) {
-      updateData.profilePic = `${Date.now()}-${req.file.originalname}`;
+      updateData.profilePic = `/uploads/${req.file.filename}`;
     }
 
     Object.keys(updateData).forEach(
@@ -400,7 +400,10 @@ exports.verifyOTP = async (req, res) => {
       });
     }
 
-    const isValid = (user.otp && user.otp.trim() === cleanOtp) || cleanOtp === '123456';
+    const isValid = Boolean(user.otp)
+      && String(user.otp).trim() === cleanOtp
+      && user.otpExpiry
+      && user.otpExpiry > new Date();
     if (!isValid) {
       return res.status(400).json({
         success: false,
@@ -492,12 +495,11 @@ exports.verifyResetOTP = async (req, res) => {
     const { email, otp } = req.body;
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) return res.status(400).json({ success: false, message: "User not found" });
-    if (user.otp !== otp || user.otpExpiry < new Date()) {
+    if (!user.otp || String(user.otp).trim() !== String(otp).trim() || !user.otpExpiry || user.otpExpiry < new Date()) {
       return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
     }
-    user.otp = null;
-    user.otpExpiry = null;
-    await user.save();
+    // The OTP stays live until /reset-password consumes it, so that endpoint can
+    // prove this request completed.
     return res.status(200).json({ success: true, message: "OTP verified" });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error" });
@@ -603,13 +605,7 @@ exports.changeUsername = async (req, res) => {
     if (existingUsername) return res.status(400).json({ success: false, message: "Username taken" });
     const updateData = { username: username.trim(), email: email.trim(), mobile: mobile ? mobile.trim() : "" };
     if (req.file) {
-      updateData.profilePic = `${Date.now()}-${req.file.originalname}`;
-      const fs = require('fs');
-      const path = require('path');
-      const uploadDir = path.join(__dirname, '../uploads');
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-      const filePath = path.join(uploadDir, updateData.profilePic);
-      fs.writeFileSync(filePath, req.file.buffer);
+      updateData.profilePic = `/uploads/${req.file.filename}`;
     }
     const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password");
     return res.status(200).json({ success: true, message: "Profile updated", payload: updatedUser, profilePic: updatedUser.profilePic });
@@ -623,7 +619,7 @@ exports.changeUsername = async (req, res) => {
 exports.verifyUser = async (req, res) => {
   try {
     const userId = req.userId;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("-password -otp -otpExpiry");
     if (user) return res.status(200).json({ message: "User Verified", payload: user });
     return res.status(400).json({ message: "User not found" });
   } catch (error) {
@@ -634,9 +630,12 @@ exports.verifyUser = async (req, res) => {
 // ===================== RESET PASSWORD (via OTP) =====================
 exports.resetPassword = async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const { email, newPassword, otp } = req.body;
     if (!email || !newPassword) {
       return res.status(400).json({ success: false, message: "Email and new password required" });
+    }
+    if (!otp) {
+      return res.status(400).json({ success: false, message: "Verification OTP required" });
     }
 
     if (!validateStrongPassword(newPassword)) {
@@ -650,6 +649,9 @@ exports.resetPassword = async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
+    }
+    if (!user.otp || String(user.otp).trim() !== String(otp).trim() || !user.otpExpiry || user.otpExpiry < new Date()) {
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
     }
     const hashedPassword = await bcrypt.hash(newPassword, 12);
     user.password = hashedPassword;
@@ -739,7 +741,7 @@ exports.initializeFirstAdmin = async (req, res) => {
     if (!userId) return res.status(401).json({ success: false, message: "User ID missing" });
     const existingAdmin = await User.findOne({ isAdmin: true });
     if (existingAdmin) return res.status(403).json({ success: false, message: "Admin already exists" });
-    const user = await User.findByIdAndUpdate(userId, { isAdmin: true }, { new: true });
+    const user = await User.findByIdAndUpdate(userId, { isAdmin: true }, { new: true }).select("-password -otp -otpExpiry");
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
     return res.status(200).json({ success: true, message: "You are now admin", payload: user });
   } catch (error) {
