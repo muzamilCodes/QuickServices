@@ -1,5 +1,6 @@
 const express = require("express");
 const controller = require("../controllers/userController");
+const deletionController = require("../controllers/accountDeletionController");
 const authorize  = require("../middlewares/authorize");
 const admin = require("../middlewares/admin");
 const upload = require("../middlewares/multer");
@@ -31,6 +32,9 @@ router.post("/forgot-password", controller.forgotPass);
 router.post("/forgot-pass", controller.forgotPass);
 router.post("/change/password", controller.changePass);
 router.post("/edit/user", authorize, upload.single("profilePic"), controller.changeUsername);
+
+router.get("/account/deletion-request", authorize, deletionController.getMyDeletionRequest);
+router.post("/account/deletion-request", authorize, deletionController.requestAccountDeletion);
 
 router.get("/verify" ,  authorize, controller.verifyUser )
 router.get("/verify/admin" ,  authorize, controller.verifyAdmin )

@@ -34,6 +34,12 @@ const {
     rejectProviderService
 } = require('../controllers/adminController');
 
+const {
+    listDeletionRequests,
+    approveDeletionRequest,
+    rejectDeletionRequest
+} = require('../controllers/accountDeletionController');
+
 const router = express.Router();
 
 // All admin routes require authentication and admin role
@@ -75,5 +81,10 @@ router.put('/users/:userId', updateUserDetails);
 router.put('/users/:userId/admin', updateUserAdmin);
 router.put('/users/:userId/active', updateUserActive);
 router.delete('/users/:userId', deleteUser);
+
+// Account deletion requests raised by customers/providers
+router.get('/deletion-requests', listDeletionRequests);
+router.put('/deletion-requests/:id/approve', approveDeletionRequest);
+router.put('/deletion-requests/:id/reject', rejectDeletionRequest);
 
 module.exports = router;

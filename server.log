@@ -1,0 +1,36 @@
+◇ injected env (25) from .env // tip: ⌘ suppress logs { quiet: true }
+Allowed origins: [
+  'http://localhost:3000',
+  'https://quick-services-two.vercel.app',
+  'https://quick-services-kohl.vercel.app',
+  'https://quick-services-beta.vercel.app',
+  'https://quick-services-indol.vercel.app',
+  'http://localhost:3000'
+]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+🚀 Server with Socket.IO running on port 4100
+📍 Environment: development
+📍 Frontend URL: http://localhost:3000
+✅ MongoDB Connected: localhost / QUICKNEW
+(node:9564) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Gmail SMTP verified and ready.
+Token verified, userId: 6adcb73a9a9373104cf2e20d
+Token verified, userId: 6adcb73a9a9373104cf2e20d
+Token verified, userId: 6adcb73a9a9373104cf2e20d
+Token verified, userId: 6adcb73a9a9373104cf2e20e
+Token verified, userId: 6adcb73a9a9373104cf2e20d
+Token verified, userId: 6adcb73a9a9373104cf2e211
+Token verified, userId: 6adcb73a9a9373104cf2e211
+Token verified, userId: 6adcb73a9a9373104cf2e20e
+Token verified, userId: 6adcb73a9a9373104cf2e211
+Token verified, userId: 6adcb73a9a9373104cf2e20d
+(node:9564) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+Token verified, userId: 6adcb73a9a9373104cf2e211
+Token verified, userId: 6adcb73a9a9373104cf2e211
+Token verified, userId: 6adcb73a9a9373104cf2e211
+Token verified, userId: 6adcb73a9a9373104cf2e211
+✅ Email sent via Gmail to del-p-1792849722377@example.com
+✅ Email sent via Gmail to del-c-1792849722377@example.com
+✅ Email sent via Gmail to del-c-1792849722377@example.com

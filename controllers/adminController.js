@@ -5,6 +5,7 @@ const Offer = require('../models/Offer');
 const Contact = require('../models/Contact');
 const { User } = require('../models/userModel');
 const ProviderService = require('../models/ProviderService');
+const AccountDeletionRequest = require('../models/AccountDeletionRequest');
 const { sendNotification } = require('../utilities/notificationService');
 const bcrypt = require('bcrypt');
 const { sendEmail } = require('../utilities/emailService');
@@ -155,10 +156,34 @@ exports.deleteUser = async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const user = await User.findByIdAndDelete(userId);
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
+
+        // Remove the provider profile and its submitted services too, otherwise a
+        // leftover Provider row can relink a future login to the deleted account.
+        const providers = await Provider.find({ userId });
+        if (providers.length) {
+            await ProviderService.deleteMany({ providerId: { $in: providers.map(p => p._id) } });
+            await Provider.deleteMany({ userId });
+        }
+        await User.deleteOne({ _id: user._id });
+
+        await AccountDeletionRequest.updateMany(
+            { userId: user._id, status: 'pending' },
+            {
+                status: 'approved',
+                reviewedBy: req.userId,
+                reviewedAt: new Date(),
+                accountSnapshot: {
+                    username: user.username,
+                    email: user.email,
+                    mobile: user.mobile,
+                    providerName: providers[0]?.name || ''
+                }
+            }
+        );
 
         res.json({ success: true, message: 'User deleted' });
     } catch (error) {

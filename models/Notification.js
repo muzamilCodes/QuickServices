@@ -33,6 +33,9 @@ const notificationSchema = new mongoose.Schema({
       'provider_unavailable',
       'booking_reassigned',
       'booking_rescheduled',
+      'account_deletion_requested',
+      'account_deleted',
+      'account_deletion_rejected',
       'general'
     ],
     default: 'general'
