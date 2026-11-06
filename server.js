@@ -10,7 +10,8 @@ const connectDb = require("./config/connectDb");
 
 const app = express();
 const server = http.createServer(app);
-const port = process.env.PORT || 4000;
+// 4100 (not 4000) because another local app routinely occupies 3000/4000 on dev machines
+const port = process.env.PORT || 4100;
 
 // Connect DB
 connectDb();
