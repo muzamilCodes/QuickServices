@@ -25,10 +25,6 @@ export default function OTPPage() {
       if (resolvedEmail) {
         localStorage.setItem("verifyEmail", resolvedEmail);
       }
-      const devOtp = localStorage.getItem("devRegisterOtp");
-      if (devOtp) {
-        setOtp(devOtp);
-      }
     }
     setEmail(resolvedEmail);
     if (!resolvedEmail) {
@@ -63,7 +59,6 @@ export default function OTPPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("verifyEmail");
         localStorage.removeItem("pendingEmail");
-        localStorage.removeItem("devRegisterOtp");
         checkAuth();
         toast.success("Verified successfully!");
         if (data.user.isAdmin || data.user.role === "admin") {
@@ -118,7 +113,7 @@ export default function OTPPage() {
               <h1 className="text-3xl font-bold">Verify OTP</h1>
             </div>
             <p className="text-center text-orange-100 mt-2">
-              Enter the 6-digit code sent to your email
+              Enter the 6-digit code sent to {email || "your email"}. Not there? Check Spam or Promotions.
             </p>
           </div>
 

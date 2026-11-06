@@ -73,7 +73,6 @@ export default function ResetPasswordPage() {
       const resetData = await resetRes.json();
       if (resetData.success) {
         localStorage.removeItem("resetEmail");
-        localStorage.removeItem("devResetOtp");
         toast.success("Password reset successfully! Please login.");
         router.push("/login");
       } else {

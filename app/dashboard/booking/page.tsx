@@ -75,7 +75,6 @@ function BookingPageContent() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showOTP, setShowOTP] = useState(false);
   const [otp, setOtp] = useState('');
-  const [devBookingOtp, setDevBookingOtp] = useState('');
   const [createdBookingId, setCreatedBookingId] = useState<string>('');
 
   // WhatsApp Share Modal
@@ -254,7 +253,6 @@ function BookingPageContent() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setDevBookingOtp(data.devOtp || '');
         setShowOTP(true);
       } else {
         setErrorMessage(data.message || 'Unable to place booking request. Please try another time slot.');
@@ -289,7 +287,6 @@ function BookingPageContent() {
 
       const data = await res.json();
       if (data.success) {
-        setDevBookingOtp('');
         setShowOTP(false);
         if (data.booking?._id) {
           setCreatedBookingId(data.booking._id);
@@ -663,17 +660,6 @@ function BookingPageContent() {
                 </p>
               </div>
             </div>
-
-            {devBookingOtp && (
-              <div className="rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3.5 text-center">
-                <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
-                  Instant Verification Code:
-                </p>
-                <p className="mt-1 text-2xl font-black tracking-[0.35em] text-amber-700 dark:text-amber-400 font-mono">
-                  {devBookingOtp}
-                </p>
-              </div>
-            )}
 
             <div>
               <input

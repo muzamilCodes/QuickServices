@@ -90,7 +90,7 @@ export default function RegisterPage() {
         body: JSON.stringify(payload),
       });
 
-      let result: { success?: boolean; message?: string; devOtp?: string } | null = null;
+      let result: { success?: boolean; message?: string; emailSent?: boolean } | null = null;
       try {
         result = await response.json();
       } catch {
@@ -100,10 +100,11 @@ export default function RegisterPage() {
       if (response.ok && result?.success) {
         localStorage.setItem("verifyEmail", payload.email);
         localStorage.setItem("pendingEmail", payload.email);
-        if (result.devOtp) {
-          localStorage.setItem("devRegisterOtp", String(result.devOtp));
+        if (result.emailSent === false) {
+          toast.error("OTP email could not be delivered. Check your Spam folder or use Resend OTP.");
+        } else {
+          toast.success("OTP sent to your email! Please verify.");
         }
-        toast.success("OTP sent to your email! Please verify.");
         setTimeout(() => {
           router.push("/otp");
         }, 500);

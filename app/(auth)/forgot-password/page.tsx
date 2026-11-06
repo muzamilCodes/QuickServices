@@ -30,13 +30,7 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         localStorage.setItem("resetEmail", cleanEmail);
-        if (data.devOtp) {
-          localStorage.setItem("devResetOtp", data.devOtp);
-          toast.error("Email delivery failed. OTP is shown on the next page.");
-        } else {
-          localStorage.removeItem("devResetOtp");
-          toast.success("OTP sent to your email!");
-        }
+        toast.success("OTP sent to your email!");
         router.push("/reset-password");
       } else {
         toast.error(data.message || "User not found");

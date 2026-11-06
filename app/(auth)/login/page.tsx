@@ -96,9 +96,6 @@ function LoginForm() {
         const targetEmail = result.email || formData.email.trim();
         localStorage.setItem("verifyEmail", targetEmail);
         localStorage.setItem("pendingEmail", targetEmail);
-        if (result.devOtp) {
-          localStorage.setItem("devRegisterOtp", result.devOtp);
-        }
         toast.error("Account not verified. Check your email for OTP.");
         router.push(`/otp?email=${encodeURIComponent(targetEmail)}`);
         return;
