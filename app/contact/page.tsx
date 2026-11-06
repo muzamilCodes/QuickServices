@@ -1,13 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Mail, MapPin, MessageSquareText, Phone, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import Breadcrumbs from '@/components/Breadcrumbs';
-
-import { Suspense } from 'react';
 
 const contactCards = [
   { icon: Phone, title: 'Call', value: '+91 9682645127', text: 'For urgent booking or provider support.' },
@@ -17,7 +14,6 @@ const contactCards = [
 
 
 function ContactPageInner() {
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -29,11 +25,12 @@ function ContactPageInner() {
   });
 
   useEffect(() => {
-    const topic = searchParams?.get('topic');
+    // Read the URL directly instead of useSearchParams() so this route never needs a Suspense hole.
+    const topic = new URLSearchParams(window.location.search).get('topic');
     if (topic) {
       setForm((f) => ({ ...f, topic }));
     }
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -177,9 +174,5 @@ function ContactPageInner() {
 }
 
 export default function ContactPage() {
-  return (
-    <Suspense fallback={null}>
-      <ContactPageInner />
-    </Suspense>
-  );
+  return <ContactPageInner />;
 }

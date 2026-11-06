@@ -1,7 +1,7 @@
 'use client';
 
-import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -31,8 +31,13 @@ import WhatsAppShareModal from '@/components/WhatsAppShareModal';
 
 function BookingPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const serviceIdParam = searchParams.get('service') || 'plumber';
+  // Resolved from the URL in an effect instead of useSearchParams(): on this route the
+  // Suspense hole never got adopted, so the page stayed on its "Loading booking engine..." fallback.
+  const [serviceIdParam, setServiceIdParam] = useState('');
+
+  useEffect(() => {
+    setServiceIdParam(new URLSearchParams(window.location.search).get('service') || 'plumber');
+  }, []);
 
   const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
   const formRef = useRef<HTMLFormElement>(null);
@@ -92,7 +97,7 @@ function BookingPageContent() {
 
   // Auth Guard
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated && serviceIdParam) {
       router.push(`/login?redirect=/booking?service=${encodeURIComponent(serviceIdParam)}`);
     }
   }, [authLoading, isAuthenticated, router, serviceIdParam]);
@@ -133,6 +138,7 @@ function BookingPageContent() {
   };
 
   useEffect(() => {
+    if (!serviceIdParam) return;
     void fetchServiceDetails(selectedDate);
   }, [serviceIdParam, selectedDate]);
 
@@ -723,15 +729,5 @@ function BookingPageContent() {
 }
 
 export default function BookingPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center text-slate-500">
-          Loading QuickServices booking engine...
-        </div>
-      }
-    >
-      <BookingPageContent />
-    </Suspense>
-  );
+  return <BookingPageContent />;
 }

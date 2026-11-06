@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   Eye, 
@@ -22,7 +22,6 @@ import { getApiBaseUrl } from "@/lib/apiBase";
 
 function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const checkAuth = useAuthStore((state) => state.checkAuth);
   
   const [isLoading, setIsLoading] = useState(false);
@@ -37,16 +36,16 @@ function LoginForm() {
   });
 
   useEffect(() => {
-    if (searchParams.get("pending") === "pro") {
+    // Read the query directly instead of useSearchParams() so this route never suspends:
+    // a Suspense hole here left the server HTML on screen but inert (submit stayed disabled).
+    if (new URLSearchParams(window.location.search).get("pending") === "pro") {
       setLoginRole("provider");
       setPendingNotice(
         "Your Service Provider registration has been submitted successfully! Your profile is queued for Admin review. Once approved, you will receive a confirmation email and can log in here to access your Provider Dashboard."
       );
     }
-  }, [searchParams]);
-
-  // Without this, clicking before hydration fires a native GET submit and puts credentials in the URL
-  useEffect(() => setHydrated(true), []);
+    setHydrated(true);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -300,9 +299,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      <Suspense fallback={<div className="text-sm font-bold text-slate-500">Loading login...</div>}>
-        <LoginForm />
-      </Suspense>
+      <LoginForm />
     </div>
   );
 }
