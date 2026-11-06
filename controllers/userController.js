@@ -3,10 +3,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendEmail, generateOtpTemplate } = require("../utilities/emailService");
 
-// Production me bhi OTP show karna hai (jab email fail ho jaye)
-// So expose flag ko production == true me bhi allow kar rahe hain.
-const shouldExposeOtpFallback = () => true;
-
 // Email send success/failure return kare
 const sendOtpEmail = async (to, subject, otp, title) => {
   try {
@@ -89,7 +85,7 @@ exports.register = async (req, res) => {
 
       const emailSent = await sendOtpEmail(
         normalizedEmail,
-        `QuickServices: ${otp} is your verification code`,
+        "QuickServices: Verify your email address",
         otp,
         "Account Verification"
       );
@@ -99,7 +95,6 @@ exports.register = async (req, res) => {
         message: emailSent ? "OTP sent successfully to your email inbox." : "Account created! Please verify OTP.",
         email: existingUser.email,
         emailSent,
-        devOtp: otp,
       });
     }
 
@@ -120,7 +115,7 @@ exports.register = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       normalizedEmail,
-      `QuickServices: ${otp} is your verification code`,
+      "QuickServices: Verify your email address",
       otp,
       "Account Verification"
     );
@@ -130,7 +125,6 @@ exports.register = async (req, res) => {
       message: emailSent ? "OTP sent successfully to your email inbox." : "Account created! Please verify OTP.",
       email: newUser.email,
       emailSent,
-      devOtp: otp,
     });
 
   } catch (error) {
@@ -233,13 +227,12 @@ exports.login = async (req, res) => {
       user.otp = newOtp;
       user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
-      void sendOtpEmail(user.email, `QuickServices: ${newOtp} is your verification code`, newOtp, "Login Verification");
+      void sendOtpEmail(user.email, "QuickServices: Verify your email address", newOtp, "Login Verification");
 
       return res.status(401).json({
         success: false,
         needsVerification: true,
         email: user.email,
-        devOtp: newOtp,
         message: "Your account is not verified yet. A new OTP has been sent to your email."
       });
     }
@@ -459,13 +452,13 @@ exports.resendOTP = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     await user.save();
 
     const emailSent = await sendOtpEmail(
       email,
-      `QuickServices: ${otp} is your new verification code`,
+      "QuickServices: Your new verification code",
       otp,
       "New Verification Code"
     );
@@ -524,7 +517,7 @@ exports.forgotPass = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       normalizedEmail,
-      `QuickServices: ${otp} is your password reset code`,
+      "QuickServices: Your password reset code",
       otp,
       "Password Reset Code"
     );

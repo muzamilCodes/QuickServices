@@ -8,7 +8,6 @@ const { sendNotification } = require('../utilities/notificationService');
 
 const bookingOTPs = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-const shouldExposeOtpFallback = () => true;
 
 // Live tracking and status updates are scoped to the two people in a booking:
 // the customer who created it and the specialist assigned to it.
@@ -251,22 +250,22 @@ const createBooking = async (req, res) => {
         }
       }
 
-      if (!shouldExposeOtpFallback()) {
-        return res.status(500).json({
-          success: false,
-          message: 'Unable to send booking OTP email right now. Please try again.',
-        });
-      }
+      // Email did not go out and no OTP-less booking was allowed: the user cannot receive a
+      // code, so fail instead of printing the code in the API response.
+      console.error(`Booking OTP email failed for ${user.email}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Unable to send the booking verification email right now. Please try again.',
+      });
     }
 
-    console.log(`Booking OTP ${emailSent ? 'sent' : 'fallback shown'} for ${user.email}: ${otp}`);
+    console.log(`Booking OTP sent to ${user.email}`);
 
     return res.json({
       success: true,
-      message: emailSent ? 'OTP sent to your email. Please verify to confirm booking.' : 'Email failed. Use the OTP shown on this page.',
+      message: 'OTP sent to your email. Please verify to confirm booking.',
       requiresOTP: true,
       emailSent,
-      devOtp: !emailSent && shouldExposeOtpFallback() ? otp : undefined,
     });
   } catch (error) {
     console.error(error);
