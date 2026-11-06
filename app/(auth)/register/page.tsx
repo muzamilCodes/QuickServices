@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -26,12 +26,16 @@ export default function RegisterPage() {
   const [accountType, setAccountType] = useState<"customer" | "provider">("customer");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     mobile: "",
     password: "",
   });
+
+  // Without this, clicking before hydration fires a native GET submit and puts credentials in the URL
+  useEffect(() => setHydrated(true), []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -86,7 +90,7 @@ export default function RegisterPage() {
         body: JSON.stringify(payload),
       });
 
-      let result: { success?: boolean; message?: string } | null = null;
+      let result: { success?: boolean; message?: string; devOtp?: string } | null = null;
       try {
         result = await response.json();
       } catch {
@@ -95,6 +99,10 @@ export default function RegisterPage() {
 
       if (response.ok && result?.success) {
         localStorage.setItem("verifyEmail", payload.email);
+        localStorage.setItem("pendingEmail", payload.email);
+        if (result.devOtp) {
+          localStorage.setItem("devRegisterOtp", String(result.devOtp));
+        }
         toast.success("OTP sent to your email! Please verify.");
         setTimeout(() => {
           router.push("/otp");
@@ -104,7 +112,7 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Network error. Please try again.");
+      toast.error(`Network error. Cannot reach the server at ${getApiBaseUrl()}.`);
     } finally {
       setIsLoading(false);
     }
@@ -363,7 +371,7 @@ export default function RegisterPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !hydrated}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] py-3 text-sm font-bold text-white shadow-md shadow-blue-500/20 hover:opacity-95 transition disabled:opacity-50"
               >
                 {isLoading ? (

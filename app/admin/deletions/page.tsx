@@ -135,7 +135,9 @@ export default function AdminDeletionsPage() {
   const renderDetail = (label: string, value?: string | number | null) => (
     <div>
       <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-sm font-semibold text-slate-900 dark:text-slate-100">{value || '—'}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-slate-900 dark:text-slate-100">
+        {value === undefined || value === null || value === '' ? '—' : value}
+      </p>
     </div>
   );
 

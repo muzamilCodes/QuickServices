@@ -29,6 +29,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginRole, setLoginRole] = useState<"customer" | "provider">("customer");
   const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -43,6 +44,9 @@ function LoginForm() {
       );
     }
   }, [searchParams]);
+
+  // Without this, clicking before hydration fires a native GET submit and puts credentials in the URL
+  useEffect(() => setHydrated(true), []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -124,7 +128,7 @@ function LoginForm() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Network error. Please check your connection and try again.");
+      toast.error(`Network error. Cannot reach the server at ${getApiBaseUrl()}.`);
     } finally {
       setIsLoading(false);
     }
@@ -260,7 +264,7 @@ function LoginForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !hydrated}
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#0f62c9,#ff8a3d)] py-3 text-sm font-bold text-white shadow-md shadow-blue-500/20 hover:opacity-95 transition disabled:opacity-50"
           >
             {isLoading ? (

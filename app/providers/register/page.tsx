@@ -206,7 +206,7 @@ export default function ProviderRegisterPage() {
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Network error connecting to backend.');
-      toast.error('Network error. Check connection.');
+      toast.error(`Network error. Cannot reach the server at ${getApiBaseUrl()}.`);
     } finally {
       setLoading(false);
     }
