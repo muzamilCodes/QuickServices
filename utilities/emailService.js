@@ -1,10 +1,10 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const emailFrom = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'warmuzamil113@gmail.com';
+const emailFrom = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'Quickservices114@gmail.com';
 const emailFromName = process.env.EMAIL_FROM_NAME || process.env.EMAIL_SENDER_NAME || 'QuickServices';
 
-// 1. Gmail SMTP Transporter
+// Gmail SMTP Transporter
 const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
 const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
 const gmailTransporter = (gmailUser && gmailPass)
@@ -31,10 +31,10 @@ if (gmailTransporter) {
   });
 }
 
-// 2. Brevo SMTP Transporter (Fallback)
-const brevoHost = process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com';
+// Brevo SMTP Transporter (fallback when Gmail is down)
+const brevoHost = process.env.BREVO_SMTP_HOST;
 const brevoPort = Number(process.env.BREVO_SMTP_PORT || 587);
-const brevoUser = process.env.BREVO_SMTP_USER || process.env.EMAIL_FROM;
+const brevoUser = process.env.BREVO_SMTP_USER;
 const brevoPass = process.env.BREVO_SMTP_PASS || process.env.BREVO_SMTP_KEY;
 const brevoTransporter = (brevoHost && brevoUser && brevoPass)
   ? nodemailer.createTransport({
@@ -67,21 +67,23 @@ const sendEmail = async (to, subject, html, text) => {
     'X-Mailer': 'QuickServices Mailer',
   };
 
+  const mail = {
+    from: senderAddress,
+    to,
+    subject,
+    text: plainText,
+    html,
+    headers: mailHeaders,
+  };
+
   // Attempt 1: Gmail SMTP
   if (gmailTransporter) {
     try {
-      await gmailTransporter.sendMail({
-        from: senderAddress,
-        to,
-        subject,
-        text: plainText,
-        html,
-        headers: mailHeaders,
-      });
+      await gmailTransporter.sendMail(mail);
       console.log(`✅ Email sent via Gmail to ${to}`);
       return true;
     } catch (gmailErr) {
-      console.error('⚠️ Gmail SMTP failed, trying Brevo fallback:', gmailErr?.message || gmailErr);
+      console.warn('⚠️ Gmail SMTP failed, trying Brevo fallback:', gmailErr?.message || gmailErr);
     }
   }
 
@@ -108,24 +110,16 @@ const sendEmail = async (to, subject, html, text) => {
         console.log(`✅ Email sent via Brevo API to ${to}`);
         return true;
       }
-      const errText = await resp.text();
-      console.error('⚠️ Brevo API failed:', resp.status, errText);
+      console.warn('⚠️ Brevo API failed:', resp.status, (await resp.text()).slice(0, 200));
     } catch (brevoApiErr) {
-      console.error('⚠️ Brevo API call failed:', brevoApiErr?.message || brevoApiErr);
+      console.warn('⚠️ Brevo API call failed:', brevoApiErr?.message || brevoApiErr);
     }
   }
 
   // Attempt 3: Brevo SMTP
   if (brevoTransporter) {
     try {
-      await brevoTransporter.sendMail({
-        from: senderAddress,
-        to,
-        subject,
-        text: plainText,
-        html,
-        headers: mailHeaders,
-      });
+      await brevoTransporter.sendMail(mail);
       console.log(`✅ Email sent via Brevo SMTP to ${to}`);
       return true;
     } catch (brevoSmtpErr) {
@@ -133,6 +127,9 @@ const sendEmail = async (to, subject, html, text) => {
     }
   }
 
+  if (!gmailTransporter && !brevoTransporter && !process.env.BREVO_API_KEY) {
+    throw new Error('No email transport configured (set GMAIL_USER + GMAIL_APP_PASSWORD, or BREVO_API_KEY).');
+  }
   throw new Error('All email transports failed to send email.');
 };
 

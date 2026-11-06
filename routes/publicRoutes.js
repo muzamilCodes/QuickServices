@@ -94,7 +94,7 @@ router.post('/contact', async (req, res) => {
         // Send notification email (best effort)
         try {
             await sendEmail(
-                process.env.EMAIL_FROM || process.env.BREVO_SMTP_USER,
+                process.env.EMAIL_FROM,
                 `QuickServices Contact: ${topic || 'General support'}`,
                 `
                     <h2>New contact message</h2>
