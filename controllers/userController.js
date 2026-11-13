@@ -128,10 +128,11 @@ exports.register = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error('❌ Register error:', error?.message || error, error?.stack);
     return res.status(500).json({
       success: false,
       message: "Server error",
+      ...(process.env.NODE_ENV !== 'production' && { detail: error?.message }),
     });
   }
 };

@@ -6,7 +6,7 @@ const emailFromName = process.env.EMAIL_FROM_NAME || process.env.EMAIL_SENDER_NA
 
 // Gmail SMTP Transporter
 const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
-const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
+const gmailPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '').replace(/\s/g, '');
 const gmailTransporter = (gmailUser && gmailPass)
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
