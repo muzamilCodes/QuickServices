@@ -2,13 +2,13 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { 
-  Navigation, 
-  MapPin, 
-  Phone, 
-  Clock, 
-  Compass, 
-  ShieldCheck, 
+import {
+  Navigation,
+  MapPin,
+  Phone,
+  Clock,
+  Compass,
+  ShieldCheck,
   AlertTriangle,
   LocateFixed,
   Radio,
@@ -117,7 +117,7 @@ export default function LiveTrackingMap({
 
   const isTrackingActive = ['accepted', 'on-the-way', 'in-progress'].includes(status);
 
-  // Update distance & ETA whenever coordinates change
+
   useEffect(() => {
     if (isValidCoord(providerLoc) && isValidCoord(customerLoc)) {
       const d = calculateDistanceKm(providerLoc.lat, providerLoc.lng, customerLoc.lat, customerLoc.lng);
@@ -126,7 +126,6 @@ export default function LiveTrackingMap({
     }
   }, [providerLoc, customerLoc]);
 
-  // 1. Initialize Leaflet Map safely in React 19 / Next.js
   useEffect(() => {
     let isMounted = true;
 
@@ -442,8 +441,8 @@ export default function LiveTrackingMap({
                 )}
               </div>
               <p className="text-xs text-slate-300">
-                {isTrackingActive 
-                  ? 'Both customer and specialist locations update in real time.' 
+                {isTrackingActive
+                  ? 'Both customer and specialist locations update in real time.'
                   : `Location sharing inactive for booking status: ${status}`}
               </p>
             </div>
@@ -478,8 +477,8 @@ export default function LiveTrackingMap({
 
       {/* Map Interactive Viewport */}
       <div className="relative">
-        <div 
-          ref={mapContainerRef} 
+        <div
+          ref={mapContainerRef}
           className="h-[360px] sm:h-[420px] w-full bg-slate-100 z-0"
         />
 
@@ -496,11 +495,10 @@ export default function LiveTrackingMap({
           <button
             type="button"
             onClick={toggleLocationSharing}
-            className={`flex items-center gap-2 rounded-2xl px-3.5 py-2 text-xs font-bold shadow-lg transition active:scale-95 border ${
-              isSharingLocation 
-                ? 'bg-emerald-600 text-white border-emerald-700' 
+            className={`flex items-center gap-2 rounded-2xl px-3.5 py-2 text-xs font-bold shadow-lg transition active:scale-95 border ${isSharingLocation
+                ? 'bg-emerald-600 text-white border-emerald-700'
                 : 'bg-white text-slate-800 hover:bg-slate-50 border-slate-200'
-            }`}
+              }`}
           >
             <LocateFixed className={`h-4 w-4 ${isSharingLocation ? 'animate-pulse text-white' : 'text-orange-500'}`} />
             <span>{isSharingLocation ? 'Sharing GPS' : 'Share My GPS'}</span>
@@ -524,7 +522,7 @@ export default function LiveTrackingMap({
       {/* Party Contact & Status Actions Footer */}
       <div className="bg-slate-50 p-5 border-t border-slate-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-          
+
           {/* Party details */}
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 font-bold text-blue-700 text-lg">
