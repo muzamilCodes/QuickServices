@@ -15,6 +15,15 @@ export default function OTPPage() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const [email, setEmail] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   useEffect(() => {
     setMounted(true);
@@ -91,6 +100,7 @@ export default function OTPPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success("New OTP sent to your email! Please check your inbox.");
+        setCountdown(60);
       } else {
         toast.error(data?.message || "Failed to resend OTP");
       }
@@ -176,10 +186,14 @@ export default function OTPPage() {
             <div className="text-center mt-6">
               <button
                 onClick={handleResend}
-                disabled={resending}
+                disabled={resending || countdown > 0}
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium transition disabled:opacity-50"
               >
-                {resending ? "Sending new OTP..." : "Didn't receive OTP? Click here to resend"}
+                {resending
+                  ? "Sending new OTP..."
+                  : countdown > 0
+                  ? `Resend OTP in ${countdown}s`
+                  : "Didn't receive OTP? Click here to resend"}
               </button>
             </div>
           </div>

@@ -101,13 +101,13 @@ export default function RegisterPage() {
         localStorage.setItem("verifyEmail", payload.email);
         localStorage.setItem("pendingEmail", payload.email);
         if (result.emailSent === false) {
-          toast.error("OTP email could not be delivered. Check your Spam folder or use Resend OTP.");
+          toast.error("Account created, but OTP email failed. Please use Resend OTP on next screen.");
         } else {
           toast.success("OTP sent to your email! Please verify.");
         }
         setTimeout(() => {
-          router.push("/otp");
-        }, 500);
+          router.push(`/otp?email=${encodeURIComponent(payload.email)}`);
+        }, 300);
       } else {
         toast.error(result?.message || `Registration failed (${response.status})`);
       }
