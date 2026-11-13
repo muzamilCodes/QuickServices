@@ -4,39 +4,24 @@ require('dotenv').config();
 const emailFrom = process.env.EMAIL_FROM || process.env.GMAIL_USER || 'Quickservices114@gmail.com';
 const emailFromName = process.env.EMAIL_FROM_NAME || process.env.EMAIL_SENDER_NAME || 'QuickServices';
 
-// Gmail SMTP Transporter
+// Gmail Transporter (using nodemailer built-in 'gmail' service which handles SSL/TLS ports reliably)
 const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
 const gmailPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '').replace(/\s/g, '');
 const gmailTransporter = (gmailUser && gmailPass)
   ? nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: gmailUser,
-        pass: gmailPass,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-      connectionTimeout: 10000,
+      service: 'gmail',
+      auth: { user: gmailUser, pass: gmailPass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 15000,
     })
   : null;
 
-if (gmailTransporter) {
-  gmailTransporter.verify().then(() => {
-    console.log('✅ Gmail SMTP verified and ready.');
-  }).catch((err) => {
-    console.warn('⚠️ Gmail SMTP verify failed:', err?.message || err);
-  });
-}
-
-// Brevo SMTP Transporter (fallback when Gmail is down)
-const brevoHost = process.env.BREVO_SMTP_HOST;
+// Brevo SMTP Transporter
+const brevoHost = process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com';
 const brevoPort = Number(process.env.BREVO_SMTP_PORT || 587);
 const brevoUser = process.env.BREVO_SMTP_USER;
 const brevoPass = process.env.BREVO_SMTP_PASS || process.env.BREVO_SMTP_KEY;
-const brevoTransporter = (brevoHost && brevoUser && brevoPass)
+const brevoTransporter = (brevoUser && brevoPass)
   ? nodemailer.createTransport({
       host: brevoHost,
       port: brevoPort,
@@ -45,12 +30,12 @@ const brevoTransporter = (brevoHost && brevoUser && brevoPass)
         user: brevoUser,
         pass: brevoPass,
       },
-      tls: {
-        rejectUnauthorized: false,
-      },
-      connectionTimeout: 10000,
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 15000,
     })
   : null;
+
+console.log(`📧 Email transports: Gmail=${!!gmailTransporter}, Brevo-API=${!!process.env.BREVO_API_KEY}, Brevo-SMTP=${!!brevoTransporter}`);
 
 const sendEmail = async (to, subject, html, text) => {
   if (!to) {
@@ -60,8 +45,6 @@ const sendEmail = async (to, subject, html, text) => {
   const senderAddress = `"${emailFromName}" <${emailFrom}>`;
   const plainText = text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-  // Common headers - keep minimal to avoid spam filters
-  // NOTE: X-Priority: 1 / "High Importance" headers ironically trigger spam filters.
   const mailHeaders = {
     'List-Unsubscribe': `<mailto:${emailFrom}?subject=unsubscribe>`,
     'X-Mailer': 'QuickServices Mailer',
@@ -76,7 +59,7 @@ const sendEmail = async (to, subject, html, text) => {
     headers: mailHeaders,
   };
 
-  // Attempt 1: Gmail SMTP
+  // Attempt 1: Gmail SMTP (Direct with service: 'gmail')
   if (gmailTransporter) {
     try {
       await gmailTransporter.sendMail(mail);
@@ -88,7 +71,7 @@ const sendEmail = async (to, subject, html, text) => {
   }
 
   // Attempt 2: Brevo HTTP API
-  if (process.env.BREVO_API_KEY && typeof fetch === 'function') {
+  if (process.env.BREVO_API_KEY) {
     try {
       const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
@@ -110,7 +93,8 @@ const sendEmail = async (to, subject, html, text) => {
         console.log(`✅ Email sent via Brevo API to ${to}`);
         return true;
       }
-      console.warn('⚠️ Brevo API failed:', resp.status, (await resp.text()).slice(0, 200));
+      const errBody = await resp.text();
+      console.warn(`⚠️ Brevo API failed [${resp.status}]:`, errBody.slice(0, 300));
     } catch (brevoApiErr) {
       console.warn('⚠️ Brevo API call failed:', brevoApiErr?.message || brevoApiErr);
     }
@@ -123,14 +107,14 @@ const sendEmail = async (to, subject, html, text) => {
       console.log(`✅ Email sent via Brevo SMTP to ${to}`);
       return true;
     } catch (brevoSmtpErr) {
-      console.error('❌ Brevo SMTP failed:', brevoSmtpErr?.message || brevoSmtpErr);
+      console.warn('⚠️ Brevo SMTP failed:', brevoSmtpErr?.message || brevoSmtpErr);
     }
   }
 
-  if (!gmailTransporter && !brevoTransporter && !process.env.BREVO_API_KEY) {
-    throw new Error('No email transport configured (set GMAIL_USER + GMAIL_APP_PASSWORD, or BREVO_API_KEY).');
+  if (!process.env.BREVO_API_KEY && !brevoTransporter && !gmailTransporter) {
+    throw new Error('No email transport configured. Set BREVO_API_KEY or GMAIL credentials.');
   }
-  throw new Error('All email transports failed to send email.');
+  throw new Error('All email transports failed. Check Render env vars and Brevo/Gmail credentials.');
 };
 
 // Helper: Generates beautiful Inbox-optimized OTP email
