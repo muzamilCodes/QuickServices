@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { 
   ArrowRight, 
   Calendar,
@@ -125,44 +124,58 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Hero Column: USER'S OWN UPLOADED PHOTO */}
-          <div className="flex justify-center">
-            <div className="relative w-72 sm:w-80 lg:w-[380px]">
-              
-              {/* Decorative Glow */}
-              <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-tr from-[#0f62c9] to-[#ff8a3d] opacity-25 blur-xl" />
+          {/* Right Hero Column: Stats & Feature Cards */}
+          <div className="flex justify-center lg:justify-end">
+            <div className="relative w-full max-w-sm space-y-4">
 
-              <div className="relative overflow-hidden rounded-[32px] border-4 border-white dark:border-[#1c2333] bg-white dark:bg-[#161b22] shadow-2xl shadow-slate-300/60 dark:shadow-black/60">
-                <div className="relative h-[420px] sm:h-[480px] w-full">
-                  <Image
-                    src="/hero-user.jpg"
-                    alt="QuickServices Expert"
-                    fill
-                    priority
-                    className="object-cover object-top hover:scale-105 transition duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-                  
-                  {/* Floating Verified Badge on User Photo */}
-                  <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-white/95 dark:bg-[#0d1117]/90 p-3.5 shadow-xl backdrop-blur-md border border-slate-200 dark:border-white/10">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                        </span>
-                        <div>
-                          <p className="text-xs font-bold text-slate-950 dark:text-white">Muzamil War</p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Verified Services Lead</p>
-                        </div>
-                      </div>
-                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-700">
-                        ★ 4.9
-                      </span>
-                    </div>
-                  </div>
+              {/* Decorative glow */}
+              <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-[#0f62c9]/20 to-[#ff8a3d]/15 blur-2xl pointer-events-none" />
 
+              {/* Top stat cards row */}
+              <div className="relative grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#161b22] shadow-lg p-5 flex flex-col gap-1">
+                  <span className="text-3xl font-black text-[#0f62c9]">4.9★</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">Avg Rating</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">From verified customers</span>
                 </div>
+                <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#161b22] shadow-lg p-5 flex flex-col gap-1">
+                  <span className="text-3xl font-black text-[#ff8a3d]">30m</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">Avg Dispatch</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Same-day, doorstep</span>
+                </div>
+              </div>
+
+              {/* Live booking status card */}
+              <div className="relative rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-[#161b22] shadow-xl p-5 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15">
+                  <span className="text-2xl">📲</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                    </span>
+                    <p className="text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Live & Accepting Bookings</p>
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">Srinagar · Handwara · Kupwara</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">OTP confirmed · Zero advance payment</p>
+                </div>
+              </div>
+
+              {/* Services count + trust row */}
+              <div className="relative grid grid-cols-3 gap-3">
+                {[
+                  { emoji: '🔧', label: '20+', sub: 'Services' },
+                  { emoji: '✅', label: '100%', sub: 'Verified Pros' },
+                  { emoji: '🏠', label: '5+', sub: 'Cities' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#161b22] shadow-sm p-3.5 flex flex-col items-center gap-1 text-center">
+                    <span className="text-xl">{item.emoji}</span>
+                    <span className="text-base font-black text-slate-900 dark:text-white">{item.label}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{item.sub}</span>
+                  </div>
+                ))}
               </div>
 
             </div>
@@ -374,13 +387,8 @@ export default function HomePage() {
           <div className="grid gap-8 lg:grid-cols-[1fr_1.8fr] items-center">
             
             <div className="flex flex-col items-center sm:items-start text-center sm:text-left space-y-4">
-              <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-2 border-orange-400 shadow-lg">
-                <Image
-                  src="/hero-user.jpg"
-                  alt="Muzamil War - Founder and Operations Lead at QuickServices"
-                  fill
-                  className="object-cover object-top"
-                />
+              <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-orange-400 shadow-lg bg-gradient-to-br from-[#0f62c9] to-[#ff8a3d]">
+                <span className="text-3xl font-black text-white select-none">MW</span>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Muzamil War</h3>
