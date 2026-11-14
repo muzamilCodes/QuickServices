@@ -514,6 +514,12 @@ function BookingPageContent() {
                   value={location}
                   onChange={setLocation}
                   disabled={submitting}
+                  onAutoDetected={(detectedLoc) => {
+                    setLocation(detectedLoc);
+                    setTimeout(() => {
+                      formRef.current?.requestSubmit();
+                    }, 300);
+                  }}
                 />
               </div>
 

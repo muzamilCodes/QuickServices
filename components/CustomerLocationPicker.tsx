@@ -25,12 +25,14 @@ interface CustomerLocationPickerProps {
   value: LocationData;
   onChange: (location: LocationData) => void;
   disabled?: boolean;
+  onAutoDetected?: (location: LocationData) => void;
 }
 
 export default function CustomerLocationPicker({
   value,
   onChange,
-  disabled = false
+  disabled = false,
+  onAutoDetected,
 }: CustomerLocationPickerProps) {
   const API_URL = getApiBaseUrl();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -53,41 +55,35 @@ export default function CustomerLocationPicker({
   const hasCoords = value.lat !== null && value.lng !== null;
 
   // Reverse geocode lat & lng
-  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+  const reverseGeocode = useCallback(async (lat: number, lng: number, autoSubmit = false) => {
     try {
       setGeocoding(true);
       const res = await fetch(`${API_URL}/public/reverse-geocode?lat=${lat}&lng=${lng}`);
       const data = await res.json();
-      if (data.success && data.address) {
-        onChange({
-          fullAddress: data.address.fullAddress || value.fullAddress,
-          city: data.address.city || value.city || 'Srinagar',
-          pincode: data.address.pincode || value.pincode || '',
-          lat,
-          lng
-        });
-        setLocationStatus({
-          type: 'success',
-          message: 'Location detected and verified successfully.'
-        });
-      } else {
-        onChange({
-          ...value,
-          lat,
-          lng
-        });
+      const newLoc: LocationData = data.success && data.address
+        ? {
+            fullAddress: data.address.fullAddress || value.fullAddress,
+            city: data.address.city || value.city || 'Srinagar',
+            pincode: data.address.pincode || value.pincode || '',
+            lat,
+            lng,
+          }
+        : { ...value, lat, lng };
+
+      onChange(newLoc);
+      setLocationStatus({ type: 'success', message: 'Location detected and verified successfully.' });
+
+      // Auto-submit callback if triggered by "Use My Location" button
+      if (autoSubmit && onAutoDetected) {
+        onAutoDetected(newLoc);
       }
     } catch (err) {
       console.warn('Reverse geocode warning:', err);
-      onChange({
-        ...value,
-        lat,
-        lng
-      });
+      onChange({ ...value, lat, lng });
     } finally {
       setGeocoding(false);
     }
-  }, [API_URL, onChange, value]);
+  }, [API_URL, onChange, value, onAutoDetected]);
 
   // Leaflet handlers are bound once on mount, so they must read the newest
   // callback/prop through refs instead of closing over the first render's copy.
@@ -118,7 +114,8 @@ export default function CustomerLocationPicker({
         const lat = Number(position.coords.latitude.toFixed(6));
         const lng = Number(position.coords.longitude.toFixed(6));
         setDetecting(false);
-        void reverseGeocode(lat, lng);
+        // Pass autoSubmit=true so the booking form is submitted automatically
+        void reverseGeocode(lat, lng, true);
 
         if (mapInstanceRef.current) {
           mapInstanceRef.current.setView([lat, lng], 16);
@@ -272,75 +269,77 @@ export default function CustomerLocationPicker({
 
   return (
     <div className="space-y-4">
-      {/* Geolocation Trigger Button */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/30">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
-            <LocateFixed className="h-5 w-5" />
+      {/* Prominent Location Detect Card */}
+      <div className={`relative overflow-hidden rounded-2xl border-2 transition-all ${
+        detecting || geocoding
+          ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/40'
+          : hasCoords
+          ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
+          : 'border-dashed border-blue-300 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20'
+      }`}>
+        <div className="p-5 flex flex-col sm:flex-row items-center gap-4">
+          <div className={`flex-shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg ${hasCoords ? 'bg-emerald-500' : 'bg-blue-600'}`}>
+            {detecting || geocoding
+              ? <Loader2 className="h-7 w-7 text-white animate-spin" />
+              : hasCoords
+              ? <CheckCircle2 className="h-7 w-7 text-white" />
+              : <LocateFixed className="h-7 w-7 text-white" />}
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-              Service Address & Location
+          <div className="flex-1 text-center sm:text-left">
+            <h4 className="text-base font-black text-slate-900 dark:text-white">
+              {hasCoords ? '📍 Location Captured!' : 'Use My Current Location'}
             </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              Detect GPS coordinates or enter address manually
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {detecting
+                ? 'Requesting GPS access...'
+                : geocoding
+                ? 'Resolving your address...'
+                : hasCoords
+                ? `${value.city || 'Location set'} · ${value.lat?.toFixed(4)}, ${value.lng?.toFixed(4)}`
+                : 'Tap below to auto-fill your address, city & pincode'}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={detecting || geocoding || disabled}
+            className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold shadow-md transition active:scale-95 disabled:opacity-60 whitespace-nowrap ${
+              hasCoords
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {detecting || geocoding ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{detecting ? 'Detecting...' : 'Resolving...'}</span>
+              </>
+            ) : hasCoords ? (
+              <>
+                <Navigation className="h-4 w-4" />
+                <span>Re-detect</span>
+              </>
+            ) : (
+              <>
+                <Compass className="h-4 w-4" />
+                <span>Detect Location</span>
+              </>
+            )}
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={handleDetectLocation}
-          disabled={detecting || geocoding || disabled}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700 active:scale-95 disabled:opacity-60 whitespace-nowrap"
-        >
-          {detecting || geocoding ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{detecting ? 'Requesting GPS...' : 'Resolving Address...'}</span>
-            </>
-          ) : (
-            <>
-              <Compass className="h-4 w-4" />
-              <span>Detect My Current Location</span>
-            </>
-          )}
-        </button>
+        {hasCoords && (
+          <div className="bg-emerald-100 dark:bg-emerald-900/30 px-5 py-2 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 border-t border-emerald-200 dark:border-emerald-800">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="font-medium">Address auto-filled below. Review and edit if needed before booking.</span>
+          </div>
+        )}
       </div>
 
-      {/* Status Alert Banner */}
-      {locationStatus.type !== 'idle' && (
-        <div
-          className={`flex items-start gap-2.5 rounded-2xl p-3.5 text-xs font-medium border ${
-            locationStatus.type === 'success'
-              ? 'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
-              : 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300'
-          }`}
-        >
-          {locationStatus.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-          ) : (
-            <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-          )}
-          <div className="flex-1">
-            <p>{locationStatus.message}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Coordinates Display Bar */}
-      {hasCoords && (
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-[11px] font-mono text-slate-600 dark:text-slate-300">
-          <div className="flex items-center gap-1.5">
-            <Navigation className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            <span>GPS Coordinates:</span>
-            <span className="font-bold text-slate-900 dark:text-white">
-              {value.lat?.toFixed(5)}, {value.lng?.toFixed(5)}
-            </span>
-          </div>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500">
-            Marker is draggable on the map
-          </span>
+      {/* Error/Warning Status Only (success is shown via card state above) */}
+      {locationStatus.type !== 'idle' && locationStatus.type !== 'success' && (
+        <div className="flex items-start gap-2.5 rounded-2xl p-3.5 text-xs font-medium border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">
+          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <p>{locationStatus.message}</p>
         </div>
       )}
 
@@ -348,17 +347,29 @@ export default function CustomerLocationPicker({
       <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner bg-slate-100 dark:bg-slate-900">
         <div
           ref={mapContainerRef}
-          className="h-56 sm:h-64 w-full z-0"
-          style={{ minHeight: '220px' }}
+          className="h-52 sm:h-60 w-full z-0"
+          style={{ minHeight: '200px' }}
         />
         <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400">
-          <span>💡 Tap/drag the marker on map to pinpoint your exact doorstep.</span>
-          <span>OpenStreetMap & Nominatim</span>
+          <span>💡 Tap on map or drag pin to refine exact location</span>
+          <span className="hidden sm:inline">OpenStreetMap</span>
         </div>
       </div>
 
+      {/* GPS Coordinates Bar */}
+      {hasCoords && (
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-[11px] font-mono text-slate-600 dark:text-slate-300">
+          <Navigation className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+          <span>GPS: <span className="font-bold text-slate-900 dark:text-white">{value.lat?.toFixed(5)}, {value.lng?.toFixed(5)}</span></span>
+        </div>
+      )}
+
       {/* Manual Editable Address Inputs */}
       <div className="space-y-3 pt-1">
+        <div className="flex items-center gap-2">
+          <Edit3 className="h-3.5 w-3.5 text-slate-400" />
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Review &amp; Edit Address</span>
+        </div>
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
             Full Service Address <span className="text-red-500">*</span>
@@ -367,23 +378,23 @@ export default function CustomerLocationPicker({
             type="text"
             required
             disabled={disabled}
-            placeholder="House/Flat No., Street, Mohalla, Landmark"
+            placeholder="House/Flat No., Street, Mohalla, Village, Landmark"
             className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition focus:border-blue-500 dark:focus:border-blue-400 shadow-sm"
             value={value.fullAddress}
             onChange={(e) => onChange({ ...value, fullAddress: e.target.value })}
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              City / Tehsil <span className="text-red-500">*</span>
+              City / Town <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               required
               disabled={disabled}
-              placeholder="e.g. Srinagar, Handwara, Baramulla"
+              placeholder="e.g. Handwara, Kupwara"
               className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition focus:border-blue-500 dark:focus:border-blue-400 shadow-sm"
               value={value.city}
               onChange={(e) => onChange({ ...value, city: e.target.value })}
@@ -392,13 +403,13 @@ export default function CustomerLocationPicker({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Pincode / Postal Code <span className="text-red-500">*</span>
+              Pincode <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               required
               disabled={disabled}
-              placeholder="e.g. 190001"
+              placeholder="e.g. 193221"
               maxLength={6}
               className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition focus:border-blue-500 dark:focus:border-blue-400 shadow-sm font-mono"
               value={value.pincode}
