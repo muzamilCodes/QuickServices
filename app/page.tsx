@@ -192,116 +192,152 @@ export default function HomePage() {
       </div>
 
       {/* =========================================================================
-          SECTION 3: HOW IT WORKS — PREMIUM REDESIGN
+          SECTION 3: HOW IT WORKS — MOBILE-FIRST REDESIGN
       ========================================================================= */}
-      <section className="relative overflow-hidden bg-[#0a0f1e] py-24 px-4 sm:px-6 lg:px-8">
-        {/* Background decorations */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-[#0f62c9]/10 blur-[120px]" />
-          <div className="absolute -bottom-32 -right-32 h-[500px] w-[500px] rounded-full bg-[#ff8a3d]/10 blur-[120px]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-px w-3/4 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#060b18] to-[#0d1424] py-20 px-4 sm:px-6 lg:px-8">
+
+        {/* Background blobs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-blue-600/10 blur-[100px]" />
+          <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-orange-500/10 blur-[100px]" />
         </div>
 
-        <div className="relative mx-auto max-w-7xl">
+        <div className="relative mx-auto max-w-5xl">
 
-          {/* Section Label */}
-          <div className="text-center mb-16">
-            <span className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest text-orange-400 mb-5">
+          {/* Section Header */}
+          <div className="text-center mb-12 sm:mb-16 space-y-4">
+            <span className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-widest text-orange-400">
               ⚡ HOW IT WORKS
             </span>
-            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
               Book your service in{' '}
               <span className="bg-gradient-to-r from-[#4f9cff] to-[#ff8a3d] bg-clip-text text-transparent">
                 3 simple steps
               </span>
             </h2>
-            <p className="mt-4 text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
-              From choosing your service to live tracking your technician — the entire experience is fast, transparent, and secure.
+            <p className="text-sm sm:text-base text-slate-400 max-w-lg mx-auto leading-relaxed">
+              Fast, transparent, and secure — from choosing a service to live-tracking your technician.
             </p>
           </div>
 
-          {/* Steps */}
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+          {/* Steps — vertical on mobile, horizontal on desktop */}
+          <div className="relative flex flex-col lg:flex-row items-stretch gap-4 lg:gap-0">
 
-            {/* Connector Line (desktop only) */}
-            <div className="hidden md:block absolute top-[3.75rem] left-[20%] right-[20%] h-px bg-gradient-to-r from-[#0f62c9] via-[#ff8a3d] to-[#0f62c9] opacity-30 z-0" />
+            {/* Step 1 */}
+            <div className="group relative flex-1 flex flex-col lg:items-center">
+              {/* Mobile: left line connector */}
+              <div className="absolute left-7 top-20 bottom-0 w-0.5 bg-gradient-to-b from-blue-500/40 to-transparent lg:hidden" />
 
-            {[
-              {
-                step: '01',
-                emoji: '🔍',
-                title: 'Choose Your Service',
-                desc: 'Browse 20+ verified home repair and maintenance categories. Filter by price, location, rating, and availability — then pick the best match.',
-                color: 'from-blue-500 to-blue-700',
-                glowColor: 'shadow-blue-500/30',
-                dotColor: 'bg-blue-500',
-              },
-              {
-                step: '02',
-                emoji: '📍',
-                title: 'Share Your Location',
-                desc: 'Enter your doorstep address, preferred date and time slot, and a brief note about the job. Review price before confirming.',
-                color: 'from-orange-400 to-orange-600',
-                glowColor: 'shadow-orange-500/30',
-                dotColor: 'bg-orange-400',
-              },
-              {
-                step: '03',
-                emoji: '📲',
-                title: 'Confirm OTP & Track Live',
-                desc: 'Verify your booking via OTP sent to your inbox. Get your assigned technician\'s contact, and watch them arrive in real-time on the map.',
-                color: 'from-emerald-400 to-teal-600',
-                glowColor: 'shadow-emerald-500/30',
-                dotColor: 'bg-emerald-400',
-              },
-            ].map((step, idx) => (
-              <div
-                key={step.step}
-                className="relative z-10 group flex flex-col rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl"
-                style={{ animationDelay: `${idx * 150}ms` }}
-              >
-                {/* Step number + emoji */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${step.color} shadow-lg ${step.glowColor} text-2xl select-none`}>
-                    {step.emoji}
-                  </div>
-                  <span className="text-5xl font-black text-white/5 select-none tabular-nums">{step.step}</span>
+              <div className="relative flex flex-row lg:flex-col items-start lg:items-center gap-5 lg:gap-0 rounded-2xl lg:rounded-none p-5 lg:p-0 bg-white/4 lg:bg-transparent border border-white/8 lg:border-0 hover:bg-white/8 transition lg:hover:bg-transparent">
+
+                {/* Icon circle */}
+                <div className="relative shrink-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg shadow-blue-500/30 text-2xl z-10">
+                  🔍
+                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-[10px] font-black text-white border-2 border-[#060b18]">1</span>
                 </div>
 
-                {/* Dot indicator */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`h-2 w-2 rounded-full ${step.dotColor} animate-pulse`} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Step {idx + 1}</span>
+                {/* Text */}
+                <div className="flex-1 lg:text-center lg:mt-5 lg:px-4">
+                  <h3 className="text-base sm:text-lg font-extrabold text-white leading-snug mb-1.5">
+                    Choose Your Service
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    Browse 20+ categories — plumbing, electrical, cleaning, and more. Filter by rating or location and pick your expert.
+                  </p>
                 </div>
-
-                <h3 className="text-lg font-extrabold text-white mb-3 leading-snug">
-                  {step.title}
-                </h3>
-                <p className="text-sm text-slate-400 leading-relaxed flex-1">
-                  {step.desc}
-                </p>
-
-                {/* Bottom arrow */}
-                {idx < 2 && (
-                  <div className="md:hidden mt-6 flex justify-center">
-                    <span className="text-slate-600 text-xl">↓</span>
-                  </div>
-                )}
               </div>
+            </div>
+
+            {/* Desktop connector arrow 1→2 */}
+            <div className="hidden lg:flex items-center justify-center w-10 shrink-0 self-center">
+              <div className="flex flex-col items-center gap-1">
+                <div className="h-px w-8 bg-gradient-to-r from-blue-500 to-orange-400" />
+                <span className="text-slate-500 text-xs">→</span>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="group relative flex-1 flex flex-col lg:items-center">
+              {/* Mobile: left line connector */}
+              <div className="absolute left-7 top-20 bottom-0 w-0.5 bg-gradient-to-b from-orange-400/40 to-transparent lg:hidden" />
+
+              <div className="relative flex flex-row lg:flex-col items-start lg:items-center gap-5 lg:gap-0 rounded-2xl lg:rounded-none p-5 lg:p-0 bg-white/4 lg:bg-transparent border border-white/8 lg:border-0 hover:bg-white/8 transition lg:hover:bg-transparent">
+
+                {/* Icon circle */}
+                <div className="relative shrink-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/30 text-2xl z-10">
+                  📍
+                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[10px] font-black text-white border-2 border-[#060b18]">2</span>
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 lg:text-center lg:mt-5 lg:px-4">
+                  <h3 className="text-base sm:text-lg font-extrabold text-white leading-snug mb-1.5">
+                    Share Your Location
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    Tap &ldquo;Detect My Location&rdquo; for instant GPS fill — or type your address. Pick a date, time slot, and describe the job.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop connector arrow 2→3 */}
+            <div className="hidden lg:flex items-center justify-center w-10 shrink-0 self-center">
+              <div className="flex flex-col items-center gap-1">
+                <div className="h-px w-8 bg-gradient-to-r from-orange-400 to-emerald-400" />
+                <span className="text-slate-500 text-xs">→</span>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="group relative flex-1 flex flex-col lg:items-center">
+              <div className="relative flex flex-row lg:flex-col items-start lg:items-center gap-5 lg:gap-0 rounded-2xl lg:rounded-none p-5 lg:p-0 bg-white/4 lg:bg-transparent border border-white/8 lg:border-0 hover:bg-white/8 transition lg:hover:bg-transparent">
+
+                {/* Icon circle */}
+                <div className="relative shrink-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 shadow-lg shadow-emerald-500/30 text-2xl z-10">
+                  📲
+                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-black text-white border-2 border-[#060b18]">3</span>
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 lg:text-center lg:mt-5 lg:px-4">
+                  <h3 className="text-base sm:text-lg font-extrabold text-white leading-snug mb-1.5">
+                    Confirm OTP &amp; Track Live
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    Verify via OTP from your inbox. Get the technician&apos;s direct contact number and watch them arrive on a live map.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Quick proof strip */}
+          <div className="mt-10 flex flex-wrap justify-center gap-3 sm:gap-6">
+            {[
+              { icon: '⚡', text: 'Same-day dispatch' },
+              { icon: '🔐', text: 'OTP secured' },
+              { icon: '💬', text: 'Direct specialist call' },
+              { icon: '₹', text: 'No advance needed' },
+            ].map((item) => (
+              <span key={item.text} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-300">
+                <span>{item.icon}</span>{item.text}
+              </span>
             ))}
           </div>
 
           {/* CTA Row */}
-          <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => router.push('/services')}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0f62c9] to-[#ff8a3d] px-8 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-900/40 hover:opacity-95 transition active:scale-95"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#0f62c9] to-[#ff8a3d] px-8 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-900/40 hover:opacity-95 transition active:scale-95"
             >
               🚀 Book a Service Now
             </button>
             <button
               onClick={() => router.push('/contact')}
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-bold text-white hover:bg-white/10 transition"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-bold text-white hover:bg-white/10 transition"
             >
               📞 Talk to us first
             </button>
