@@ -579,9 +579,44 @@ const deleteBooking = async (req, res) => {
 const getBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const booking = await Booking.findOne({ _id: bookingId, user: req.userId })
-      .populate('user', 'username email mobile')
-      .populate('provider', 'name phone whatsappNumber');
+    const mongoose = require('mongoose');
+
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({ success: false, message: 'Invalid booking ID' });
+    }
+
+    // Determine who is requesting: admin, provider, or customer
+    const { User } = require('../models/userModel');
+    const reqUser = await User.findById(req.userId).select('role isAdmin');
+
+    let booking = null;
+
+    if (reqUser && (reqUser.isAdmin || reqUser.role === 'admin')) {
+      // Admin can see any booking
+      booking = await Booking.findById(bookingId)
+        .populate('user', 'username email mobile')
+        .populate('provider', 'name phone whatsappNumber');
+    } else if (reqUser && reqUser.role === 'provider') {
+      // Provider can see bookings assigned to them
+      const Provider = require('../models/Provider');
+      const providerDoc = await Provider.findOne({ userId: req.userId });
+      if (providerDoc) {
+        booking = await Booking.findOne({ _id: bookingId, provider: providerDoc._id })
+          .populate('user', 'username email mobile')
+          .populate('provider', 'name phone whatsappNumber');
+      }
+      // Fallback: also check if booking's user matches (provider registered as customer first)
+      if (!booking) {
+        booking = await Booking.findOne({ _id: bookingId, user: req.userId })
+          .populate('user', 'username email mobile')
+          .populate('provider', 'name phone whatsappNumber');
+      }
+    } else {
+      // Customer: can only see their own bookings
+      booking = await Booking.findOne({ _id: bookingId, user: req.userId })
+        .populate('user', 'username email mobile')
+        .populate('provider', 'name phone whatsappNumber');
+    }
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
