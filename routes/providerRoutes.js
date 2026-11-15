@@ -9,7 +9,11 @@ const {
     handleBookingAction,
     submitServiceForApproval,
     getMyServiceSubmissions,
-    updateAvailability
+    updateAvailability,
+    updateCustomService,
+    deleteCustomService,
+    addStandardService,
+    removeStandardService
 } = require('../controllers/providerController');
 const authorize = require('../middlewares/authorize');
 const upload = require('../middlewares/multer');
@@ -30,6 +34,12 @@ router.put('/bookings/:bookingId', authorize, handleBookingAction);
 // Provider service submission
 router.post('/submit-service', authorize, submitServiceForApproval);
 router.get('/my-service-submissions', authorize, getMyServiceSubmissions);
+
+// Provider service edit & delete
+router.put('/custom-services/:index', authorize, updateCustomService);
+router.delete('/custom-services/:index', authorize, deleteCustomService);
+router.post('/standard-services/:serviceId', authorize, addStandardService);
+router.delete('/standard-services/:serviceId', authorize, removeStandardService);
 
 // Image upload helper
 router.post('/upload-image', authorize, upload.single('image'), (req, res) => {

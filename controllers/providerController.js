@@ -729,3 +729,196 @@ exports.getMyServiceSubmissions = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// ===================== UPDATE A CUSTOM SERVICE =====================
+exports.updateCustomService = async (req, res) => {
+    try {
+        const { index } = req.params;
+        const idx = parseInt(index, 10);
+        const provider = await Provider.findOne({ userId: req.userId });
+        if (!provider) return res.status(404).json({ success: false, message: 'Provider profile not found.' });
+
+        if (!provider.customServices || isNaN(idx) || idx < 0 || idx >= provider.customServices.length) {
+            return res.status(400).json({ success: false, message: 'Invalid service index.' });
+        }
+
+        const oldService = provider.customServices[idx];
+        const {
+            name,
+            category,
+            image,
+            pricingUnit,
+            hourlyRate,
+            minDurationHours,
+            additionalTimeBilling,
+            visitingCharges,
+            materialCharges,
+            basePrice,
+            price,
+            description,
+            details
+        } = req.body;
+
+        const effectiveLabourCost = pricingUnit === 'per_hour'
+            ? (Math.max(0, Number(hourlyRate) || 0) * Math.max(1, Number(minDurationHours) || 1))
+            : (Math.max(0, Number(basePrice || price) || 0));
+
+        const finalTotal = effectiveLabourCost +
+            Math.max(0, Number(visitingCharges) || 0) +
+            Math.max(0, Number(materialCharges) || 0);
+
+        const detailsList = Array.isArray(details)
+            ? details
+            : (details ? String(details).split(',').map(s => s.trim()).filter(Boolean) : oldService.details);
+
+        const updatedServiceObj = {
+            ...(oldService.toObject ? oldService.toObject() : oldService),
+            name: name ? name.trim() : oldService.name,
+            category: category ? category.trim() : oldService.category,
+            image: image !== undefined ? image : oldService.image,
+            pricingUnit: pricingUnit || oldService.pricingUnit || 'per_visit',
+            hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : oldService.hourlyRate,
+            minDurationHours: minDurationHours !== undefined ? Number(minDurationHours) : oldService.minDurationHours,
+            additionalTimeBilling: additionalTimeBilling || oldService.additionalTimeBilling || '1 hour',
+            visitingCharges: visitingCharges !== undefined ? Number(visitingCharges) : oldService.visitingCharges,
+            materialCharges: materialCharges !== undefined ? Number(materialCharges) : oldService.materialCharges,
+            estimatedLabourCost: effectiveLabourCost,
+            totalEstimatedPrice: finalTotal,
+            price: finalTotal,
+            priceUnit: pricingUnit === 'per_hour' ? 'hour' : (pricingUnit === 'per_day' ? 'day' : (pricingUnit === 'per_job' ? 'job' : 'visit')),
+            description: description !== undefined ? description : oldService.description,
+            details: detailsList
+        };
+
+        provider.customServices[idx] = updatedServiceObj;
+        await provider.save();
+
+        // Also update ProviderService if linked
+        const ProviderService = require('../models/ProviderService');
+        if (oldService.submissionId) {
+            await ProviderService.findByIdAndUpdate(oldService.submissionId, {
+                name: updatedServiceObj.name,
+                category: updatedServiceObj.category,
+                image: updatedServiceObj.image,
+                price: updatedServiceObj.price,
+                pricingUnit: updatedServiceObj.pricingUnit,
+                hourlyRate: updatedServiceObj.hourlyRate,
+                minDurationHours: updatedServiceObj.minDurationHours,
+                additionalTimeBilling: updatedServiceObj.additionalTimeBilling,
+                visitingCharges: updatedServiceObj.visitingCharges,
+                materialCharges: updatedServiceObj.materialCharges,
+                estimatedLabourCost: updatedServiceObj.estimatedLabourCost,
+                totalEstimatedPrice: updatedServiceObj.totalEstimatedPrice,
+                description: updatedServiceObj.description,
+                details: updatedServiceObj.details
+            });
+        }
+
+        // Also update Service if created in global catalog
+        const Service = require('../models/Service');
+        await Service.updateMany(
+            { providerId: provider._id, name: oldService.name },
+            {
+                name: updatedServiceObj.name,
+                category: updatedServiceObj.category,
+                image: updatedServiceObj.image,
+                basePrice: updatedServiceObj.price,
+                pricingUnit: updatedServiceObj.pricingUnit,
+                hourlyRate: updatedServiceObj.hourlyRate,
+                minDurationHours: updatedServiceObj.minDurationHours,
+                additionalTimeBilling: updatedServiceObj.additionalTimeBilling,
+                visitingCharges: updatedServiceObj.visitingCharges,
+                materialCharges: updatedServiceObj.materialCharges,
+                estimatedLabourCost: updatedServiceObj.estimatedLabourCost,
+                totalEstimatedPrice: updatedServiceObj.totalEstimatedPrice,
+                description: updatedServiceObj.description,
+                details: updatedServiceObj.details
+            }
+        );
+
+        return res.json({ success: true, message: 'Service updated successfully!', service: updatedServiceObj, provider });
+    } catch (error) {
+        console.error('updateCustomService error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ===================== DELETE A CUSTOM SERVICE =====================
+exports.deleteCustomService = async (req, res) => {
+    try {
+        const { index } = req.params;
+        const idx = parseInt(index, 10);
+        const provider = await Provider.findOne({ userId: req.userId });
+        if (!provider) return res.status(404).json({ success: false, message: 'Provider profile not found.' });
+
+        if (!provider.customServices || isNaN(idx) || idx < 0 || idx >= provider.customServices.length) {
+            return res.status(400).json({ success: false, message: 'Invalid service index.' });
+        }
+
+        const removedService = provider.customServices[idx];
+        provider.customServices.splice(idx, 1);
+
+        // Also remove name from provider.services if present
+        if (removedService.name && provider.services) {
+            provider.services = provider.services.filter(s => s.toLowerCase() !== removedService.name.toLowerCase());
+        }
+
+        await provider.save();
+
+        // Also remove from ProviderService & Service catalog
+        const ProviderService = require('../models/ProviderService');
+        if (removedService.submissionId) {
+            await ProviderService.findByIdAndDelete(removedService.submissionId);
+        } else if (removedService.name) {
+            await ProviderService.deleteMany({ providerId: provider._id, name: removedService.name });
+        }
+
+        const Service = require('../models/Service');
+        if (removedService.name) {
+            await Service.deleteMany({ providerId: provider._id, name: removedService.name });
+        }
+
+        return res.json({ success: true, message: 'Service removed successfully!', provider });
+    } catch (error) {
+        console.error('deleteCustomService error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ===================== ADD / REMOVE STANDARD CATALOG SERVICE =====================
+exports.addStandardService = async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        const provider = await Provider.findOne({ userId: req.userId });
+        if (!provider) return res.status(404).json({ success: false, message: 'Provider profile not found.' });
+
+        const cleanId = String(serviceId).toLowerCase().trim();
+        provider.services = provider.services || [];
+        if (!provider.services.some(s => s.toLowerCase() === cleanId)) {
+            provider.services.push(cleanId);
+            await provider.save();
+        }
+
+        return res.json({ success: true, message: `Service added to your active offerings!`, provider });
+    } catch (error) {
+        console.error('addStandardService error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.removeStandardService = async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+        const provider = await Provider.findOne({ userId: req.userId });
+        if (!provider) return res.status(404).json({ success: false, message: 'Provider profile not found.' });
+
+        const cleanId = String(serviceId).toLowerCase().trim();
+        provider.services = (provider.services || []).filter(s => s.toLowerCase() !== cleanId);
+        await provider.save();
+
+        return res.json({ success: true, message: `Service removed from your offerings.`, provider });
+    } catch (error) {
+        console.error('removeStandardService error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
