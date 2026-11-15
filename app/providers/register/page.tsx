@@ -18,7 +18,9 @@ import {
   Lock, 
   Sparkles,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiBaseUrl } from '@/lib/apiBase';
@@ -63,6 +65,7 @@ export default function ProviderRegisterPage() {
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -313,14 +316,24 @@ export default function ProviderRegisterPage() {
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Create Password * (A / a / 1 / @)
                 </label>
-                <input
-                  type="password"
-                  required
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  placeholder="Min 8 chars: A-Z, a-z, 0-9, symbol"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-600 focus:outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="Min 8 chars: A-Z, a-z, 0-9, symbol"
+                    className="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-11 text-sm focus:border-blue-600 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
 
                 {/* Live Password Rules Indicator */}
                 {form.password && (

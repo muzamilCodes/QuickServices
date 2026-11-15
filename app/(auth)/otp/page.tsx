@@ -39,6 +39,11 @@ export default function OTPPage() {
     if (!resolvedEmail) {
       toast.error("Session expired. Please register or log in again.");
       router.push("/login");
+    } else {
+      // Prefetch destination dashboards in background while user types OTP
+      router.prefetch("/dashboard");
+      router.prefetch("/dashboard/provider");
+      router.prefetch("/admin");
     }
   }, [router]);
 
@@ -68,15 +73,23 @@ export default function OTPPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("verifyEmail");
         localStorage.removeItem("pendingEmail");
-        checkAuth();
+        
+        // Update auth state immediately in memory so dashboard doesn't delay
+        useAuthStore.setState({
+          user: data.user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
         toast.success("Verified successfully!");
-        if (data.user.isAdmin || data.user.role === "admin") {
-          router.push("/admin");
-        } else if (data.user.role === "provider") {
-          router.push("/dashboard/provider");
-        } else {
-          router.push("/dashboard");
-        }
+        
+        const target = (data.user.isAdmin || data.user.role === "admin")
+          ? "/admin"
+          : (data.user.role === "provider")
+          ? "/dashboard/provider"
+          : "/dashboard";
+
+        router.replace(target);
       } else {
         toast.error(data?.message || "Invalid OTP");
       }

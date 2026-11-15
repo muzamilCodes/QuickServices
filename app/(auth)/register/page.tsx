@@ -34,8 +34,11 @@ export default function RegisterPage() {
     password: "",
   });
 
-  // Without this, clicking before hydration fires a native GET submit and puts credentials in the URL
-  useEffect(() => setHydrated(true), []);
+  // Prefetch OTP page and ensure hydration
+  useEffect(() => {
+    setHydrated(true);
+    router.prefetch("/otp");
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,9 +108,7 @@ export default function RegisterPage() {
         } else {
           toast.success("OTP sent to your email! Please verify.");
         }
-        setTimeout(() => {
-          router.push(`/otp?email=${encodeURIComponent(payload.email)}`);
-        }, 300);
+        router.push(`/otp?email=${encodeURIComponent(payload.email)}`);
       } else {
         toast.error(result?.message || `Registration failed (${response.status})`);
       }
