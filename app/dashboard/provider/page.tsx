@@ -28,12 +28,16 @@ import {
   Upload,
   Timer,
   Calculator,
-  Tag
+  Tag,
+  Pencil,
+  X,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 import { getApiBaseUrl } from '@/lib/apiBase';
-import { servicesById } from '@/lib/services';
+import { servicesById, allServices } from '@/lib/services';
 import AccountDeletionSection from '@/components/AccountDeletionSection';
 
 interface CustomService {
@@ -147,6 +151,35 @@ export default function ProviderDashboardPage() {
   const calculatedTotalEstimatedPrice = calculatedLabourCost +
     Math.max(0, Number(newService.visitingCharges) || 0) +
     Math.max(0, Number(newService.materialCharges) || 0);
+
+  // Edit Service State & Modal
+  const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [savingEditService, setSavingEditService] = useState(false);
+  const [selectedCatalogToAdd, setSelectedCatalogToAdd] = useState('');
+  const [editServiceForm, setEditServiceForm] = useState({
+    name: '',
+    category: 'Plumbing',
+    image: '',
+    pricingUnit: 'per_hour' as 'per_hour' | 'per_visit' | 'per_day' | 'per_job',
+    hourlyRate: 300,
+    minDurationHours: 2,
+    additionalTimeBilling: '1 hour' as '30 minutes' | '1 hour',
+    visitingCharges: 0,
+    materialCharges: 0,
+    basePrice: 499,
+    description: '',
+    details: ''
+  });
+
+  // Calculate edited service total price
+  const calculatedEditLabourCost = editServiceForm.pricingUnit === 'per_hour'
+    ? (Math.max(0, Number(editServiceForm.hourlyRate) || 0) * Math.max(1, Number(editServiceForm.minDurationHours) || 1))
+    : Math.max(0, Number(editServiceForm.basePrice) || 0);
+
+  const calculatedEditTotalEstimatedPrice = calculatedEditLabourCost +
+    Math.max(0, Number(editServiceForm.visitingCharges) || 0) +
+    Math.max(0, Number(editServiceForm.materialCharges) || 0);
 
   // Edit profile state
   const [editForm, setEditForm] = useState({
@@ -472,30 +505,245 @@ export default function ProviderDashboardPage() {
     }
   };
 
-  // Handle Deleting a Custom Service
-  const handleDeleteCustomService = async (index: number) => {
-    if (!confirm('Remove this service from your offerings?')) return;
+  // Image upload for editing a service
+  const handleEditServiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditServiceForm((prev) => ({ ...prev, image: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+
     try {
       const token = localStorage.getItem('token');
-      const existing = provider?.customServices || [];
-      const updated = existing.filter((_, i) => i !== index);
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${API_URL}/providers/upload-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        const fullUrl = data.url.startsWith('http') ? data.url : `${API_URL}${data.url}`;
+        setEditServiceForm((prev) => ({ ...prev, image: fullUrl }));
+        toast.success('Service photo uploaded!');
+      }
+    } catch {
+      // preview already set
+    }
+  };
 
-      const res = await fetch(`${API_URL}/providers/me`, {
+  // Open Edit Service Modal with prefilled values
+  const handleOpenEditModal = (service: CustomService, index: number) => {
+    setEditingServiceIndex(index);
+    const isHourly = service.pricingUnit === 'per_hour' || service.priceUnit === 'hour';
+    setEditServiceForm({
+      name: service.name || '',
+      category: service.category || 'General Maintenance',
+      image: service.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=600&q=80',
+      pricingUnit: (service.pricingUnit as any) || (isHourly ? 'per_hour' : 'per_visit'),
+      hourlyRate: service.hourlyRate || (isHourly ? service.price : 300),
+      minDurationHours: service.minDurationHours || 1,
+      additionalTimeBilling: (service.additionalTimeBilling as any) || '1 hour',
+      visitingCharges: service.visitingCharges || 0,
+      materialCharges: service.materialCharges || 0,
+      basePrice: service.price || 499,
+      description: service.description || '',
+      details: Array.isArray(service.details) ? service.details.join(', ') : ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Save changes to edited service
+  const handleSaveEditService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingServiceIndex === null) return;
+    if (!editServiceForm.name.trim()) {
+      toast.error('Please enter service name');
+      return;
+    }
+
+    setSavingEditService(true);
+    try {
+      const token = localStorage.getItem('token');
+      const detailsList = editServiceForm.details
+        ? editServiceForm.details.split(',').map(s => s.trim()).filter(Boolean)
+        : [editServiceForm.description || editServiceForm.name];
+
+      const payload = {
+        name: editServiceForm.name.trim(),
+        category: editServiceForm.category || 'General Maintenance',
+        image: editServiceForm.image,
+        pricingUnit: editServiceForm.pricingUnit,
+        hourlyRate: Number(editServiceForm.hourlyRate) || 0,
+        minDurationHours: Number(editServiceForm.minDurationHours) || 1,
+        additionalTimeBilling: editServiceForm.additionalTimeBilling,
+        visitingCharges: Number(editServiceForm.visitingCharges) || 0,
+        materialCharges: Number(editServiceForm.materialCharges) || 0,
+        basePrice: Number(editServiceForm.basePrice) || 0,
+        price: calculatedEditTotalEstimatedPrice,
+        priceUnit: editServiceForm.pricingUnit === 'per_hour' ? 'hour' : (editServiceForm.pricingUnit === 'per_day' ? 'day' : (editServiceForm.pricingUnit === 'per_job' ? 'job' : 'visit')),
+        description: editServiceForm.description || editServiceForm.name.trim(),
+        details: detailsList
+      };
+
+      // Try dedicated endpoint first
+      let res = await fetch(`${API_URL}/providers/custom-services/${editingServiceIndex}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ customServices: updated })
+        body: JSON.stringify(payload)
       });
+
+      // Fallback to /providers/me if dedicated endpoint returns 404
+      if (res.status === 404) {
+        const existing = [...(provider?.customServices || [])];
+        if (existing[editingServiceIndex]) {
+          existing[editingServiceIndex] = {
+            ...existing[editingServiceIndex],
+            ...payload
+          };
+          res = await fetch(`${API_URL}/providers/me`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ customServices: existing })
+          });
+        }
+      }
 
       const data = await res.json();
       if (data.success) {
-        toast.success('Service removed');
+        toast.success('Service updated successfully!');
+        setIsEditModalOpen(false);
+        setEditingServiceIndex(null);
         void fetchProviderData();
+      } else {
+        toast.error(data.message || 'Failed to update service');
       }
     } catch {
-      toast.error('Network error');
+      toast.error('Network error saving service');
+    } finally {
+      setSavingEditService(false);
+    }
+  };
+
+  // Handle Deleting a Custom Service
+  const handleDeleteCustomService = async (index: number) => {
+    if (!confirm('Are you sure you want to remove this service from your offerings?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      let res = await fetch(`${API_URL}/providers/custom-services/${index}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Fallback to /providers/me
+      if (res.status === 404) {
+        const existing = provider?.customServices || [];
+        const updated = existing.filter((_, i) => i !== index);
+        res = await fetch(`${API_URL}/providers/me`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ customServices: updated })
+        });
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Service deleted successfully!');
+        void fetchProviderData();
+      } else {
+        toast.error(data.message || 'Failed to delete service');
+      }
+    } catch {
+      toast.error('Network error deleting service');
+    }
+  };
+
+  // Remove a standard catalog service
+  const handleRemoveStandardService = async (serviceId: string) => {
+    if (!confirm(`Remove '${servicesById[serviceId]?.name || serviceId}' from your active offerings?`)) return;
+    try {
+      const token = localStorage.getItem('token');
+      let res = await fetch(`${API_URL}/providers/standard-services/${encodeURIComponent(serviceId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Fallback to updating provider.services via /providers/me
+      if (res.status === 404) {
+        const updated = (provider?.services || []).filter(s => s.toLowerCase() !== serviceId.toLowerCase());
+        res = await fetch(`${API_URL}/providers/me`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ services: updated })
+        });
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Removed ${servicesById[serviceId]?.name || serviceId}!`);
+        void fetchProviderData();
+      } else {
+        toast.error(data.message || 'Failed to remove service');
+      }
+    } catch {
+      toast.error('Network error removing service');
+    }
+  };
+
+  // Add a standard catalog service
+  const handleAddStandardService = async (serviceId: string) => {
+    if (!serviceId) return;
+    try {
+      const token = localStorage.getItem('token');
+      let res = await fetch(`${API_URL}/providers/standard-services/${encodeURIComponent(serviceId)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Fallback to updating provider.services via /providers/me
+      if (res.status === 404) {
+        const existing = provider?.services || [];
+        if (!existing.some(s => s.toLowerCase() === serviceId.toLowerCase())) {
+          res = await fetch(`${API_URL}/providers/me`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ services: [...existing, serviceId] })
+          });
+        }
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Added ${servicesById[serviceId]?.name || serviceId} to your services!`);
+        setSelectedCatalogToAdd('');
+        void fetchProviderData();
+      } else {
+        toast.error(data.message || 'Failed to add service');
+      }
+    } catch {
+      toast.error('Network error adding service');
     }
   };
 
@@ -1403,20 +1651,113 @@ export default function ProviderDashboardPage() {
               </form>
             </div>
 
-            {/* List of Active Services */}
+            {/* ==================== 1. STANDARD CATALOG SERVICES ==================== */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-950 flex items-center gap-2">
+                    <Wrench className="h-5 w-5 text-blue-600" /> Standard Catalog Services
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    QuickServices official services jo aap provide karte hain. Aap inhein anytime add ya remove kar sakte hain.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 border border-blue-200 shrink-0">
+                  {provider?.services?.length || 0} Catalog Services Active
+                </span>
+              </div>
+
+              {/* Add Standard Service Selector */}
+              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex-1 w-full">
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                    + Add More Services From Catalog
+                  </label>
+                  <select
+                    value={selectedCatalogToAdd}
+                    onChange={(e) => setSelectedCatalogToAdd(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:border-blue-600 focus:outline-none"
+                  >
+                    <option value="">-- Choose a service to offer --</option>
+                    {allServices
+                      .filter(s => !(provider?.services || []).some(ps => ps.toLowerCase() === s.id.toLowerCase() || ps.toLowerCase() === s.name.toLowerCase()))
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.icon} {s.name} ({s.category}) — {s.price}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  disabled={!selectedCatalogToAdd}
+                  onClick={() => void handleAddStandardService(selectedCatalogToAdd)}
+                  className="w-full sm:w-auto mt-2 sm:mt-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:pointer-events-none shadow-sm shrink-0"
+                >
+                  <Plus className="h-4 w-4" /> Add to My Services
+                </button>
+              </div>
+
+              {/* List of Standard Services */}
+              {(!provider?.services || provider.services.length === 0) ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500 text-xs">
+                  Aapne abhi koi standard catalog service choose nahi ki hai. Upar wale dropdown se add karein!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {provider.services.map((svcKey) => {
+                    const matched = servicesById[svcKey] || allServices.find(s => s.id === svcKey || s.name.toLowerCase() === svcKey.toLowerCase());
+                    const name = matched?.name || svcKey;
+                    const icon = matched?.icon || '🔧';
+                    const category = matched?.category || 'General';
+                    const price = matched?.price || '₹499';
+
+                    return (
+                      <div key={svcKey} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-2xl shrink-0">
+                            {icon}
+                          </span>
+                          <div className="min-w-0">
+                            <h4 className="font-extrabold text-slate-900 text-sm truncate">{name}</h4>
+                            <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                              <span>{category}</span>
+                              <span>•</span>
+                              <span className="font-bold text-emerald-700 font-mono">{price}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveStandardService(svcKey)}
+                          title="Remove from offerings"
+                          className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/60 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100 hover:text-rose-800 transition shrink-0"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ==================== 2. CUSTOM SERVICE OFFERINGS ==================== */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-extrabold text-slate-950 flex items-center gap-2">
-                  <Layers className="h-5 w-5 text-orange-500" /> Active Service Offerings
+                  <Layers className="h-5 w-5 text-orange-500" /> Custom Service Offerings
                 </h3>
                 <span className="text-xs font-bold text-slate-500">
-                  {provider?.customServices?.length || 0} services configured
+                  {provider?.customServices?.length || 0} custom services configured
                 </span>
               </div>
 
               {(!provider?.customServices || provider.customServices.length === 0) ? (
                 <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 text-xs">
-                  Aapne abhi koi custom service add nahi ki hai. Upar wale form se apni service add karein!
+                  Aapne abhi koi custom service add nahi ki hai. Upar wale form se apni custom service create karein!
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1528,12 +1869,21 @@ export default function ProviderDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="p-5 pt-0 border-t border-slate-100 flex justify-end">
+                        {/* Action Buttons: Edit & Delete */}
+                        <div className="p-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                           <button
-                            onClick={() => handleDeleteCustomService(idx)}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-800 transition"
+                            type="button"
+                            onClick={() => handleOpenEditModal(svc, idx)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-900 transition shadow-xs"
                           >
-                            <Trash2 className="h-3.5 w-3.5" /> Remove
+                            <Pencil className="h-3.5 w-3.5" /> Edit Service
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteCustomService(idx)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/60 px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100 hover:text-rose-800 transition shadow-xs"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
                           </button>
                         </div>
                       </div>
@@ -1706,6 +2056,253 @@ export default function ProviderDashboardPage() {
         )}
 
       </div>
+
+      {/* ==================== EDIT SERVICE MODAL ==================== */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-950">
+                    Edit Service Offering
+                  </h3>
+                  <p className="text-xs text-slate-500">Update pricing, description, category, and details.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingServiceIndex(null);
+                }}
+                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveEditService} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Service Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editServiceForm.name}
+                    onChange={(e) => setEditServiceForm({ ...editServiceForm, name: e.target.value })}
+                    className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Category *</label>
+                  <input
+                    type="text"
+                    required
+                    list="provider-edit-category-options"
+                    value={editServiceForm.category}
+                    onChange={(e) => setEditServiceForm({ ...editServiceForm, category: e.target.value })}
+                    className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                  />
+                  <datalist id="provider-edit-category-options">
+                    {CATEGORY_OPTIONS.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+
+              {/* Pricing Unit Selection */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                  Pricing Unit
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'per_hour', label: 'Per Hour', icon: '⏱️' },
+                    { id: 'per_visit', label: 'Per Visit', icon: '🚪' },
+                    { id: 'per_day', label: 'Per Day', icon: '📅' },
+                    { id: 'per_job', label: 'Per Job', icon: '🛠️' },
+                  ].map((unit) => {
+                    const isSelected = editServiceForm.pricingUnit === unit.id;
+                    return (
+                      <button
+                        key={unit.id}
+                        type="button"
+                        onClick={() => setEditServiceForm({ ...editServiceForm, pricingUnit: unit.id as any })}
+                        className={`rounded-2xl p-2.5 text-left border transition flex items-center gap-2 ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50/70 text-blue-950 font-bold ring-2 ring-blue-400/40'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="text-lg">{unit.icon}</span>
+                        <span className="text-xs">{unit.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Dynamic Rates Input */}
+              {editServiceForm.pricingUnit === 'per_hour' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Hourly Rate (₹) *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={editServiceForm.hourlyRate}
+                      onChange={(e) => setEditServiceForm({ ...editServiceForm, hourlyRate: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Minimum Booking Hours *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="12"
+                      required
+                      value={editServiceForm.minDurationHours}
+                      onChange={(e) => setEditServiceForm({ ...editServiceForm, minDurationHours: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Base Price (₹) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={editServiceForm.basePrice}
+                    onChange={(e) => setEditServiceForm({ ...editServiceForm, basePrice: Number(e.target.value) })}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {/* Extra Charges */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Visiting / Inspection Fee (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editServiceForm.visitingCharges}
+                    onChange={(e) => setEditServiceForm({ ...editServiceForm, visitingCharges: Number(e.target.value) })}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Estimated Material Fee (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editServiceForm.materialCharges}
+                    onChange={(e) => setEditServiceForm({ ...editServiceForm, materialCharges: Number(e.target.value) })}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Total Estimated Price Preview */}
+              <div className="rounded-2xl bg-emerald-600 text-white p-4 shadow-md flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-200 uppercase tracking-wider block">Total Estimated Price</span>
+                  <span className="text-xl font-black font-mono">₹{calculatedEditTotalEstimatedPrice}</span>
+                </div>
+                <span className="text-xs text-emerald-100 bg-white/10 px-3 py-1 rounded-full">
+                  {editServiceForm.pricingUnit === 'per_hour' ? `for ${editServiceForm.minDurationHours}h min` : `per ${editServiceForm.pricingUnit.replace('per_', '')}`}
+                </span>
+              </div>
+
+              {/* Image & Description */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Service Photo</label>
+                <div className="flex items-center gap-3">
+                  <div className="relative h-14 w-20 rounded-xl overflow-hidden border border-slate-300 bg-slate-100 shrink-0">
+                    <img
+                      src={editServiceForm.image || '/hero-user.jpg'}
+                      alt="Preview"
+                      className="h-full w-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/hero-user.jpg'; }}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs">
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Upload New Photo</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleEditServiceImageUpload} />
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="or paste image URL"
+                      value={editServiceForm.image}
+                      onChange={(e) => setEditServiceForm({ ...editServiceForm, image: e.target.value })}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-blue-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Short Description *</label>
+                <input
+                  type="text"
+                  required
+                  value={editServiceForm.description}
+                  onChange={(e) => setEditServiceForm({ ...editServiceForm, description: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">What&apos;s Included (comma separated)</label>
+                <input
+                  type="text"
+                  value={editServiceForm.details}
+                  onChange={(e) => setEditServiceForm({ ...editServiceForm, details: e.target.value })}
+                  placeholder="e.g. Diagnosis, Spare parts warranty, Doorstep service"
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setEditingServiceIndex(null);
+                  }}
+                  className="rounded-2xl border border-slate-300 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEditService}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>{savingEditService ? 'Saving...' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
