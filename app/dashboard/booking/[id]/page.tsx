@@ -74,6 +74,7 @@ export default function BookingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const API_URL = getApiBaseUrl();
 
@@ -90,9 +91,13 @@ export default function BookingDetailPage() {
       const data = await res.json();
       if (data.success && data.booking) {
         setBooking(data.booking);
+        setFetchError(null);
+      } else {
+        setFetchError(data.message || 'Booking not found');
       }
     } catch (error) {
       console.error('Fetch booking error:', error);
+      setFetchError('Unable to load booking. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -151,13 +156,23 @@ export default function BookingDetailPage() {
         <div className="max-w-md rounded-3xl bg-white p-8 text-center shadow-xl">
           <AlertCircle className="mx-auto h-12 w-12 text-rose-500" />
           <h2 className="mt-4 text-xl font-bold text-slate-900">Booking Not Found</h2>
-          <p className="mt-2 text-sm text-slate-600">We couldn&apos;t locate this booking under your account.</p>
-          <button 
-            onClick={() => router.push("/dashboard/history")} 
-            className="mt-6 inline-flex rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Go to Booking History
-          </button>
+          <p className="mt-2 text-sm text-slate-600">
+            {fetchError || "We couldn&apos;t locate this booking under your account."}
+          </p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <button
+              onClick={() => fetchBooking()}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            >
+              <RotateCw className="h-4 w-4" /> Retry
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/history")}
+              className="inline-flex rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Go to Booking History
+            </button>
+          </div>
         </div>
       </div>
     );
