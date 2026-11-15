@@ -85,7 +85,7 @@ exports.register = async (req, res) => {
 
       const emailSent = await sendOtpEmail(
         normalizedEmail,
-        "QuickServices: Verify your email address",
+        `${otp} is your QuickServices verification code`,
         otp,
         "Account Verification"
       );
@@ -115,7 +115,7 @@ exports.register = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       normalizedEmail,
-      "QuickServices: Verify your email address",
+      `${otp} is your QuickServices verification code`,
       otp,
       "Account Verification"
     );
@@ -228,7 +228,7 @@ exports.login = async (req, res) => {
       user.otp = newOtp;
       user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
-      void sendOtpEmail(user.email, "QuickServices: Verify your email address", newOtp, "Login Verification");
+      void sendOtpEmail(user.email, `${newOtp} is your QuickServices verification code`, newOtp, "Login Verification");
 
       return res.status(401).json({
         success: false,
@@ -313,7 +313,7 @@ exports.updateProfile = async (req, res) => {
       const { html, text } = generateOtpTemplate(otp, 'Verify Your New Email Address');
       await sendEmail(
         normalizedNewEmail,
-        'QuickServices: Confirm your new email address',
+        `${otp} is your QuickServices email change code`,
         html,
         text
       );
@@ -444,10 +444,12 @@ exports.sendOTP = async (req, res) => {
 
     await user.save();
 
+    const { html, text } = generateOtpTemplate(otp, "Login Verification");
     await sendEmail(
       email,
-      "Your OTP for Login",
-      `<p>Your OTP is: <strong>${otp}</strong></p><p>Valid for 10 minutes.</p>`
+      `${otp} is your QuickServices login code`,
+      html,
+      text
     );
 
     return res.status(200).json({ message: "OTP sent to your email" });
@@ -572,7 +574,7 @@ exports.resendOTP = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       email,
-      "QuickServices: Your new verification code",
+      `${otp} is your QuickServices verification code`,
       otp,
       "New Verification Code"
     );
@@ -631,7 +633,7 @@ exports.forgotPass = async (req, res) => {
 
     const emailSent = await sendOtpEmail(
       normalizedEmail,
-      "QuickServices: Your password reset code",
+      `${otp} is your QuickServices password reset code`,
       otp,
       "Password Reset Code"
     );

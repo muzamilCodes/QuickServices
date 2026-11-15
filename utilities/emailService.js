@@ -12,7 +12,9 @@ const gmailTransporter = (gmailUser && gmailPass)
       service: 'gmail',
       auth: { user: gmailUser, pass: gmailPass },
       tls: { rejectUnauthorized: false },
-      connectionTimeout: 15000,
+      connectionTimeout: 3500, // Fast 3.5s timeout on cloud so user never waits 15s
+      greetingTimeout: 3000,
+      socketTimeout: 5000,
     })
   : null;
 
@@ -31,7 +33,9 @@ const brevoTransporter = (brevoUser && brevoPass)
         pass: brevoPass,
       },
       tls: { rejectUnauthorized: false },
-      connectionTimeout: 15000,
+      connectionTimeout: 4000,
+      greetingTimeout: 3000,
+      socketTimeout: 5000,
     })
   : null;
 
@@ -45,16 +49,11 @@ const sendEmail = async (to, subject, html, text) => {
   const senderAddress = `"${emailFromName}" <${emailFrom}>`;
   const plainText = text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-  // Anti-spam headers — improves inbox delivery rate
+  // Clean transactional headers - aligned Message-ID domain and NO bulk/unsubscribe flags
+  const senderDomain = emailFrom.includes('@') ? emailFrom.split('@')[1] : 'gmail.com';
   const mailHeaders = {
-    'List-Unsubscribe': `<mailto:${emailFrom}?subject=unsubscribe>`,
-    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    'X-Mailer': 'QuickServices',
-    'X-Priority': '1',
-    'Importance': 'high',
-    'Precedence': 'bulk',
-    'Organization': 'QuickServices Kashmir',
-    'Message-ID': `<${Date.now()}.${Math.random().toString(36).slice(2)}@quickservices.in>`,
+    'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    'Message-ID': `<${Date.now()}.${Math.random().toString(36).slice(2, 10)}@${senderDomain}>`,
   };
 
   const mail = {
