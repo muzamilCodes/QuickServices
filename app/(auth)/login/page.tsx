@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Eye, 
-  EyeOff, 
-  Lock, 
-  Mail, 
-  LogIn, 
-  BriefcaseBusiness, 
-  UserCheck, 
-  Clock3, 
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  LogIn,
+  BriefcaseBusiness,
+  UserCheck,
+  Clock3,
   ArrowRight,
   AlertCircle,
   CheckCircle2
@@ -23,7 +23,7 @@ import { getApiBaseUrl } from "@/lib/apiBase";
 function LoginForm() {
   const router = useRouter();
   const checkAuth = useAuthStore((state) => state.checkAuth);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginRole, setLoginRole] = useState<"customer" | "provider">("customer");
@@ -36,8 +36,7 @@ function LoginForm() {
   });
 
   useEffect(() => {
-    // Read the query directly instead of useSearchParams() so this route never suspends:
-    // a Suspense hole here left the server HTML on screen but inert (submit stayed disabled).
+
     if (new URLSearchParams(window.location.search).get("pending") === "pro") {
       setLoginRole("provider");
       setPendingNotice(
@@ -54,7 +53,7 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPendingNotice(null);
-    
+
     if (!formData.email || !formData.password) {
       toast.error("Please fill all fields");
       return;
@@ -111,7 +110,7 @@ function LoginForm() {
         localStorage.setItem("user", JSON.stringify(result.user));
         checkAuth();
         toast.success(`Welcome back, ${result.user.username || "User"}!`);
-        
+
         if (result.user.isAdmin || result.user.role === "admin") {
           router.push("/admin");
         } else if (result.user.role === "provider") {
@@ -132,7 +131,7 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-md">
-      
+
       {/* Brand Header */}
       <div className="text-center mb-6">
         <Link href="/" className="inline-flex items-center gap-2 mb-3">
@@ -176,11 +175,10 @@ function LoginForm() {
             setLoginRole("customer");
             setPendingNotice(null);
           }}
-          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
-            loginRole === "customer"
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${loginRole === "customer"
               ? "bg-white text-blue-700 shadow-sm"
               : "text-slate-600 hover:text-slate-900"
-          }`}
+            }`}
         >
           <UserCheck className="h-3.5 w-3.5" />
           <span>Customer Login</span>
@@ -188,11 +186,10 @@ function LoginForm() {
         <button
           type="button"
           onClick={() => setLoginRole("provider")}
-          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
-            loginRole === "provider"
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${loginRole === "provider"
               ? "bg-orange-500 text-white shadow-sm"
               : "text-slate-600 hover:text-slate-900"
-          }`}
+            }`}
         >
           <BriefcaseBusiness className="h-3.5 w-3.5" />
           <span>Service Provider (Pro)</span>
@@ -202,7 +199,7 @@ function LoginForm() {
       {/* Login Form Card */}
       <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-xl shadow-slate-200/50 border border-slate-100">
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           {/* Email Field */}
           {/* Email or Mobile Field */}
           <div>
