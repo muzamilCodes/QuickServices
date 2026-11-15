@@ -60,10 +60,18 @@ exports.registerProvider = async (req, res) => {
 
         let provider = null;
         if (user) {
+            // GUARD: Never overwrite an admin account or a customer who hasn't consented to become a provider
+            if (user.isAdmin || user.role === 'admin') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'An account with this email already exists. Please use a different email address.'
+                });
+            }
             // Check if already registered as provider
             provider = await Provider.findOne({ $or: [{ userId: user._id }, { email: normalizedEmail }] });
+            // Only update non-sensitive fields; keep existing password if provider is re-registering
             user.role = 'provider';
-            user.password = hashedPassword;
+            user.password = hashedPassword; // allow password reset on re-registration
             user.isVerified = true;
             if (cleanMobile) user.mobile = cleanMobile;
             await user.save();
@@ -71,6 +79,13 @@ exports.registerProvider = async (req, res) => {
             // Check if mobile already exists on another account
             const existingMobileUser = await User.findOne({ mobile: cleanMobile });
             if (existingMobileUser) {
+                // GUARD: Never overwrite admin by mobile clash
+                if (existingMobileUser.isAdmin || existingMobileUser.role === 'admin') {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'This phone number is already associated with an existing account. Please use a different phone number.'
+                    });
+                }
                 // Reuse existing user, update their email and password for provider
                 user = existingMobileUser;
                 user.email = normalizedEmail;
