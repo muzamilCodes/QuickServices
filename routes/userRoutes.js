@@ -22,6 +22,7 @@ router.post("/login", controller.login);
 router.post("/logout",controller.logout);
 router.post("/update-profile", authorize, upload.single("profilePic"), controller.updateProfile);
 router.put("/update-profile", authorize, upload.single("profilePic"), controller.updateProfile);
+router.post("/confirm-email-change", authorize, controller.confirmEmailChange);
 
 router.post("/send-otp", controller.sendOTP);
 router.post("/verify-otp", controller.verifyOTP);

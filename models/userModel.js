@@ -48,7 +48,12 @@ const userSchema = new mongoose.Schema(
 
     otp: { type: String },
     otpExpiry: { type: Date },
-    isVerified: { type: Boolean, default: false }
+    isVerified: { type: Boolean, default: false },
+
+    // Email change verification fields
+    pendingEmail: { type: String, default: null },      // new email waiting for OTP confirm
+    pendingEmailOtp: { type: String, default: null },   // OTP sent to new email
+    pendingEmailOtpExpiry: { type: Date, default: null },
   },
   { timestamps: true }
 );

@@ -278,36 +278,149 @@ exports.updateProfile = async (req, res) => {
     const userId = req.userId;
     const { username, email, mobile } = req.body;
 
-    const existingEmail = await User.findOne({ email, _id: { $ne: userId } });
-    if (existingEmail) {
-      return res.status(400).json({ success: false, message: "Email already in use" });
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const updateData = {
-      username: username || undefined,
-      email: email || undefined,
-      mobile: mobile || undefined
-    };
+    // --- Email Change: Send OTP to new email first, don't update yet ---
+    const normalizedNewEmail = email ? email.trim().toLowerCase() : null;
+    const emailChanging = normalizedNewEmail && normalizedNewEmail !== currentUser.email;
 
-    if (req.file) {
-      updateData.profilePic = `/uploads/${req.file.filename}`;
+    if (emailChanging) {
+      // Check no other account uses this email
+      const taken = await User.findOne({ email: normalizedNewEmail, _id: { $ne: userId } });
+      if (taken) {
+        return res.status(400).json({ success: false, message: 'This email is already in use by another account.' });
+      }
+
+      // Generate OTP and store as pending
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      currentUser.pendingEmail = normalizedNewEmail;
+      currentUser.pendingEmailOtp = otp;
+      currentUser.pendingEmailOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+      // Save non-email fields immediately
+      if (username) currentUser.username = username.trim();
+      if (mobile) {
+        const cleanMobile = mobile.replace(/\D/g, '').slice(-10);
+        if (cleanMobile.length === 10) currentUser.mobile = cleanMobile;
+      }
+      if (req.file) currentUser.profilePic = `/uploads/${req.file.filename}`;
+      await currentUser.save();
+
+      // Send OTP to the NEW email
+      const { html, text } = generateOtpTemplate(otp, 'Verify Your New Email Address');
+      await sendEmail(
+        normalizedNewEmail,
+        'QuickServices: Confirm your new email address',
+        html,
+        text
+      );
+
+      return res.status(200).json({
+        success: true,
+        emailChangePending: true,
+        message: `A verification code has been sent to ${normalizedNewEmail}. Please verify to complete the email change.`,
+        pendingEmail: normalizedNewEmail,
+        user: {
+          _id: currentUser._id,
+          username: currentUser.username,
+          email: currentUser.email, // still old email until confirmed
+          mobile: currentUser.mobile,
+          profilePic: currentUser.profilePic,
+          isAdmin: currentUser.isAdmin,
+          role: currentUser.role,
+        },
+      });
     }
 
-    Object.keys(updateData).forEach(
-      key => updateData[key] === undefined && delete updateData[key]
-    );
+    // --- Normal update (no email change) ---
+    const updateData = {};
+    if (username) updateData.username = username.trim();
+    if (mobile) {
+      const cleanMobile = mobile.replace(/\D/g, '').slice(-10);
+      if (cleanMobile.length === 10) updateData.mobile = cleanMobile;
+    }
+    if (req.file) updateData.profilePic = `/uploads/${req.file.filename}`;
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password");
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select('-password');
 
     return res.status(200).json({
       success: true,
-      message: "Profile updated",
-      user: updatedUser
+      message: 'Profile updated successfully.',
+      user: updatedUser,
     });
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    console.error('updateProfile error:', error?.message || error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ===================== CONFIRM EMAIL CHANGE OTP =====================
+exports.confirmEmailChange = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { otp } = req.body;
+
+    if (!otp) {
+      return res.status(400).json({ success: false, message: 'OTP required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.pendingEmail || !user.pendingEmailOtp) {
+      return res.status(400).json({ success: false, message: 'No pending email change found.' });
+    }
+
+    const cleanOtp = String(otp).trim();
+    const isValid =
+      String(user.pendingEmailOtp).trim() === cleanOtp &&
+      user.pendingEmailOtpExpiry &&
+      user.pendingEmailOtpExpiry > new Date();
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP. Please try again.' });
+    }
+
+    // Apply the new email
+    const newEmail = user.pendingEmail;
+    user.email = newEmail;
+    user.pendingEmail = null;
+    user.pendingEmailOtp = null;
+    user.pendingEmailOtpExpiry = null;
+    await user.save();
+
+    // Issue a fresh token with the new email
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.SECRET_KEY,
+      { expiresIn: '7d' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email updated successfully. Please use your new email to log in.',
+      token,
+      user: {
+        _id: user._id,
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        mobile: user.mobile,
+        profilePic: user.profilePic,
+        isAdmin: user.isAdmin,
+        role: user.role,
+      },
+    });
+
+  } catch (error) {
+    console.error('confirmEmailChange error:', error?.message || error);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

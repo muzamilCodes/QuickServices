@@ -45,9 +45,16 @@ const sendEmail = async (to, subject, html, text) => {
   const senderAddress = `"${emailFromName}" <${emailFrom}>`;
   const plainText = text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
+  // Anti-spam headers — improves inbox delivery rate
   const mailHeaders = {
     'List-Unsubscribe': `<mailto:${emailFrom}?subject=unsubscribe>`,
-    'X-Mailer': 'QuickServices Mailer',
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    'X-Mailer': 'QuickServices',
+    'X-Priority': '1',
+    'Importance': 'high',
+    'Precedence': 'bulk',
+    'Organization': 'QuickServices Kashmir',
+    'Message-ID': `<${Date.now()}.${Math.random().toString(36).slice(2)}@quickservices.in>`,
   };
 
   const mail = {
