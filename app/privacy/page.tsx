@@ -128,8 +128,8 @@ export default function PrivacyPage() {
                 If you have questions, feedback, or data deletion requests under applicable privacy laws, please contact our team:
               </p>
               <div className="mt-4 rounded-2xl bg-slate-50 p-4 border border-slate-200/80 space-y-2 text-slate-800 text-xs sm:text-sm">
-                <p><strong>QuickServices Data Privacy Lead:</strong> Muzamil War</p>
-                <p><strong>Email:</strong> <a href="mailto:Quickservices@gmail.com" className="text-blue-600 hover:underline">Quickservices@gmail.com</a></p>
+                <p><strong>QuickServices Data Privacy Lead:</strong> War Muzamil</p>
+                <p><strong>Email:</strong> <a href="mailto:Quickservices114@gmail.com" className="text-blue-600 hover:underline">Quickservices114@gmail.com</a></p>
                 <p><strong>Helpline:</strong> <a href="tel:+919682645127" className="text-blue-600 hover:underline">+91 9682645127</a></p>
                 <p><strong>Registered Operating Hub:</strong> Handwara Qalamabad Road, Kupwara, Jammu & Kashmir 193221</p>
               </div>

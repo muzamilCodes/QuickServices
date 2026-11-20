@@ -121,7 +121,7 @@ export default function TermsPage() {
             </div>
             <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
               <p>
-                In the rare event of service dissatisfaction, property damage, or billing disputes, customers must notify our resolution desk within 48 hours via our contact helpline (+91 9682645127) or email (Quickservices@gmail.com). QuickServices will arrange a complimentary inspection visit or corrective service.
+                In the rare event of service dissatisfaction, property damage, or billing disputes, customers must notify our resolution desk within 48 hours via our contact helpline (+91 9682645127) or email (Quickservices114@gmail.com). QuickServices will arrange a complimentary inspection visit or corrective service.
               </p>
             </div>
           </div>

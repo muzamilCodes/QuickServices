@@ -19,7 +19,8 @@ import {
   Truck,
   Wrench,
   CheckCircle,
-  XCircle
+  XCircle,
+  IndianRupee
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { getApiBaseUrl } from "@/lib/apiBase";
@@ -56,6 +57,12 @@ interface BookingDetail {
   paymentStatus?: string;
   isEmergency?: boolean;
   createdAt: string;
+  additionalCharge?: {
+    reason?: string;
+    amount?: number;
+    status?: 'pending' | 'approved' | 'rejected';
+    requestedAt?: string;
+  };
 }
 
 const STEPS = [
@@ -75,6 +82,7 @@ export default function BookingDetailPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
 
   const API_URL = getApiBaseUrl();
 
@@ -127,6 +135,23 @@ export default function BookingDetailPage() {
     navigator.clipboard.writeText(phone);
     setCopiedPhone(true);
     setTimeout(() => setCopiedPhone(false), 2000);
+  };
+
+  const resolveAdditionalCharge = async (action: 'approve' | 'reject') => {
+    if (!bookingId) return;
+    setApproving(true);
+    try {
+      const res = await fetch(`${API_URL}/bookings/${bookingId}/additional-charge/resolve`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBooking(true);
+      }
+    } catch {}
+    finally { setApproving(false); }
   };
 
   const getStepIndex = (status: string) => {
@@ -506,6 +531,74 @@ export default function BookingDetailPage() {
             <p className="mt-2 text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
               &quot;{booking.description}&quot;
             </p>
+          </div>
+        )}
+
+        {/* Additional Charge Banner */}
+        {booking.additionalCharge && booking.additionalCharge.status === 'pending' && (
+          <div className="rounded-3xl border border-amber-300 bg-amber-50 p-6 shadow-lg">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-slate-900">Additional Charge Requested</h4>
+                <p className="mt-1 text-sm text-slate-700">
+                  Your service provider has requested an additional charge for extra work required.
+                </p>
+                {booking.additionalCharge.reason && (
+                  <p className="mt-2 text-sm font-medium text-slate-800">
+                    <span className="text-slate-500">Reason:</span> {booking.additionalCharge.reason}
+                  </p>
+                )}
+                {booking.additionalCharge.amount != null && (
+                  <p className="mt-1 text-lg font-bold text-amber-700">
+                    Extra Amount: ₹{booking.additionalCharge.amount}
+                  </p>
+                )}
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => void resolveAdditionalCharge('approve')}
+                    disabled={approving}
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    {approving ? 'Processing...' : 'Approve Charge'}
+                  </button>
+                  <button
+                    onClick={() => void resolveAdditionalCharge('reject')}
+                    disabled={approving}
+                    className="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-rose-50 px-6 py-2.5 text-sm font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    {approving ? 'Processing...' : 'Reject'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {booking.additionalCharge && booking.additionalCharge.status === 'approved' && (
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-emerald-600" />
+              <p className="text-sm font-semibold text-emerald-800">
+                Additional charge of ₹{booking.additionalCharge.amount} approved.
+                {booking.additionalCharge.reason && ` Reason: ${booking.additionalCharge.reason}`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {booking.additionalCharge && booking.additionalCharge.status === 'rejected' && (
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <XCircle className="h-5 w-5 text-slate-500" />
+              <p className="text-sm font-medium text-slate-600">
+                Additional charge request was rejected.
+              </p>
+            </div>
           </div>
         )}
 

@@ -106,12 +106,13 @@ export default function AdminPage() {
 
       setAuthorized(true);
 
-      const [dashboardRes, bookingsRes, providersRes, usersRes, contactsRes] = await Promise.all([
+      const [dashboardRes, bookingsRes, providersRes, usersRes, contactsRes, analyticsRes] = await Promise.all([
         fetch(`${API_URL}/admin/dashboard`, { headers: getHeaders() }),
         fetch(`${API_URL}/admin/bookings?limit=8`, { headers: getHeaders() }),
         fetch(`${API_URL}/admin/providers`, { headers: getHeaders() }),
         fetch(`${API_URL}/user/getAll`, { headers: getHeaders() }),
         fetch(`${API_URL}/admin/contacts?limit=6`, { headers: getHeaders() }),
+        fetch(`${API_URL}/admin/analytics`, { headers: getHeaders() }),
       ]);
 
       const dashboardData = (await dashboardRes.json()) as { success?: boolean; stats?: AdminStats };
@@ -119,12 +120,14 @@ export default function AdminPage() {
       const providersData = (await providersRes.json()) as { success?: boolean; providers?: Provider[] };
       const usersData = (await usersRes.json()) as { success?: boolean; data?: UserRow[] };
       const contactsData = (await contactsRes.json()) as { success?: boolean; contacts?: any[] };
+      const analyticsData = (await analyticsRes.json()) as { success?: boolean; analytics?: any };
 
       if (dashboardData.success && dashboardData.stats) setStats(dashboardData.stats);
       if (bookingsData.success && bookingsData.bookings) setBookings(bookingsData.bookings);
       if (providersData.success && providersData.providers) setProviders(providersData.providers);
       if (usersData.success && usersData.data) setUsers(usersData.data);
       if (contactsData.success && contactsData.contacts) setContacts(contactsData.contacts);
+      if (analyticsData.success && analyticsData.analytics) setAnalytics(analyticsData.analytics);
     } catch {
       setMessage('Unable to load admin dashboard. Check that the backend server is running.');
     } finally {
@@ -282,6 +285,9 @@ export default function AdminPage() {
             <a href="/admin/contacts" className="rounded-full bg-white/20 px-5 py-3 text-sm font-medium text-white hover:bg-white/30 transition">
               Contacts
             </a>
+            <a href="/admin/complaints" className="rounded-full bg-red-500/70 px-5 py-3 text-sm font-medium text-white hover:bg-red-500/90 transition">
+              Complaints
+            </a>
           </nav>
         </section>
 
@@ -295,6 +301,31 @@ export default function AdminPage() {
                 <p className="mt-1 text-sm text-slate-500">{label}</p>
               </div>
             ))}
+          </section>
+        )}
+
+        {analytics && (
+          <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-[24px] border border-black/5 bg-white/90 p-5 shadow-lg shadow-slate-100">
+              <CalendarDays className="h-5 w-5 text-orange-500" />
+              <p className="mt-4 text-3xl font-semibold text-slate-950">{analytics.todayBookings ?? '—'}</p>
+              <p className="mt-1 text-sm text-slate-500">Today&apos;s Bookings</p>
+            </div>
+            <div className="rounded-[24px] border border-black/5 bg-white/90 p-5 shadow-lg shadow-slate-100">
+              <ClipboardList className="h-5 w-5 text-emerald-600" />
+              <p className="mt-4 text-3xl font-semibold text-slate-950">₹{analytics.totalRevenue ?? '—'}</p>
+              <p className="mt-1 text-sm text-slate-500">Total Revenue</p>
+            </div>
+            <div className="rounded-[24px] border border-black/5 bg-white/90 p-5 shadow-lg shadow-slate-100">
+              <BadgeCheck className="h-5 w-5 text-blue-600" />
+              <p className="mt-4 text-3xl font-semibold text-slate-950">{analytics.monthlyBookings ?? '—'}</p>
+              <p className="mt-1 text-sm text-slate-500">This Month</p>
+            </div>
+            <div className="rounded-[24px] border border-black/5 bg-white/90 p-5 shadow-lg shadow-slate-100">
+              <CircleAlert className="h-5 w-5 text-rose-500" />
+              <p className="mt-4 text-3xl font-semibold text-slate-950">{analytics.cancellationRate != null ? `${analytics.cancellationRate}%` : '—'}</p>
+              <p className="mt-1 text-sm text-slate-500">Cancellation Rate</p>
+            </div>
           </section>
         )}
 

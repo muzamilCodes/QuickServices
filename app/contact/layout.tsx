@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Contact QuickServices | Support & Helpdesk in Kashmir',
   description:
-    'Need urgent home repairs or booking assistance? Contact QuickServices Kashmir helpline at +91 9682645127 or email Quickservices@gmail.com for fast support.',
+    'Need urgent home repairs or booking assistance? Contact QuickServices Kashmir helpline at +91 9682645127 or email Quickservices114@gmail.com for fast support.',
   alternates: {
     canonical: '/contact',
   },

@@ -905,7 +905,11 @@ export default function ProviderDashboardPage() {
                 <div className="h-8 w-px bg-white/20" />
                 <div className="px-3">
                   <p className="text-slate-400 font-semibold">Rating</p>
-                  <p className="text-xl font-black text-amber-300">★ {provider?.rating || '4.8'}</p>
+                  <p className="text-xl font-black text-amber-300">
+                    {provider?.totalRatings && provider.totalRatings > 0
+                      ? `★ ${provider.rating} (${provider.totalRatings})`
+                      : 'No reviews yet'}
+                  </p>
                 </div>
               </div>
             </div>

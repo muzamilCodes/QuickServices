@@ -66,7 +66,7 @@ const faqs = [
   },
   {
     q: 'Who is behind QuickServices and how are pros vetted?',
-    a: 'QuickServices was founded and is locally led by Muzamil War. Every professional passes strict background screening, identity verification, and hands-on skill evaluations.',
+    a: 'QuickServices was founded and is locally led by War Muzamil. Every professional passes strict background screening, identity verification, and hands-on skill evaluations.',
   },
 ];
 
@@ -549,7 +549,7 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white flex items-center gap-2 justify-center sm:justify-start">
-                  <span>Muzamil War</span>
+                  <span>War Muzamil</span>
                   <Award className="h-4 w-4 text-orange-400" />
                 </h3>
                 <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mt-0.5">

@@ -16,7 +16,7 @@ export default function JsonLd() {
     description:
       'QuickServices connects homeowners and businesses in Kashmir with verified plumbers, electricians, appliance technicians, and cleaning specialists with upfront pricing and OTP verification.',
     telephone: '+919682645127',
-    email: 'Quickservices@gmail.com',
+    email: 'Quickservices114@gmail.com',
     priceRange: '₹249 - ₹999',
     address: {
       '@type': 'PostalAddress',
@@ -40,7 +40,7 @@ export default function JsonLd() {
     ],
     founder: {
       '@type': 'Person',
-      name: 'Muzamil War',
+      name: 'War Muzamil',
       jobTitle: 'Founder & Verified Services Lead',
       url: BASE_URL,
     },
@@ -141,7 +141,7 @@ export default function JsonLd() {
         name: 'Who founded QuickServices and how are specialists vetted?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'QuickServices was founded by Muzamil War to bring verified, accountable doorstep trades to Kashmir. Every technician undergoes background checks and skill verification.',
+          text: 'QuickServices was founded by War Muzamil to bring verified, accountable doorstep trades to Kashmir. Every technician undergoes background checks and skill verification.',
         },
       },
     ],
@@ -170,7 +170,7 @@ export default function JsonLd() {
     ],
     founder: {
       '@type': 'Person',
-      name: 'Muzamil War',
+      name: 'War Muzamil',
       jobTitle: 'Founder & CEO',
       knowsAbout: ['Home Maintenance', 'Plumbing Diagnostics', 'Electrical Systems', 'Appliance Servicing']
     }
