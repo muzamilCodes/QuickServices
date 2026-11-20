@@ -83,6 +83,7 @@ export default function AdminPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem('token')}`,

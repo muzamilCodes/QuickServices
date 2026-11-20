@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, CalendarDays, MapPin, Star, Trash2, XCircle } from 'lucide-react';
+import { ArrowRight, CalendarDays, MapPin, MessageSquare, Star, Trash2, XCircle, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { servicesById } from '@/lib/services';
 import { getApiBaseUrl } from '@/lib/apiBase';
@@ -15,6 +15,8 @@ interface Booking {
   description?: string;
   customerPhone?: string;
   customerName?: string;
+  review?: { rating: number; comment?: string };
+  complaint?: { reason: string; description: string };
   provider?: {
     name: string;
     phone: string;
@@ -27,6 +29,20 @@ interface Booking {
   };
 }
 
+interface ReviewFormState {
+  bookingId: string;
+  rating: number;
+  comment: string;
+  submitting: boolean;
+}
+
+interface ComplaintFormState {
+  bookingId: string;
+  reason: string;
+  description: string;
+  submitting: boolean;
+}
+
 export default function HistoryPage() {
   const API_URL = getApiBaseUrl();
   const router = useRouter();
@@ -35,6 +51,10 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState('');
   const [message, setMessage] = useState('');
+
+  // Review & complaint forms
+  const [reviewForm, setReviewForm] = useState<ReviewFormState | null>(null);
+  const [complaintForm, setComplaintForm] = useState<ComplaintFormState | null>(null);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -69,12 +89,12 @@ export default function HistoryPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: 'bg-amber-50 text-amber-700',
-      accepted: 'bg-blue-50 text-blue-700',
+      pending: 'bg-amber-50 text-amber-700 border border-amber-200',
+      accepted: 'bg-blue-50 text-blue-700 border border-blue-200',
       'on-the-way': 'bg-blue-600 text-white animate-pulse',
-      'in-progress': 'bg-violet-50 text-violet-700',
-      completed: 'bg-emerald-50 text-emerald-700',
-      cancelled: 'bg-rose-50 text-rose-700',
+      'in-progress': 'bg-violet-50 text-violet-700 border border-violet-200',
+      completed: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      cancelled: 'bg-rose-50 text-rose-700 border border-rose-200',
     };
     return colors[status] || 'bg-slate-100 text-slate-700';
   };
@@ -134,6 +154,72 @@ export default function HistoryPage() {
     }
   };
 
+  const submitReview = async () => {
+    if (!reviewForm) return;
+    setReviewForm(f => f ? { ...f, submitting: true } : null);
+    try {
+      const res = await fetch(`${API_URL}/bookings/${reviewForm.bookingId}/review`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rating: reviewForm.rating, comment: reviewForm.comment }),
+      });
+      const data = (await res.json()) as { success?: boolean; message?: string };
+      if (data.success) {
+        setMessage('Review submitted! Thank you.');
+        setBookings(curr =>
+          curr.map(b =>
+            b._id === reviewForm.bookingId
+              ? { ...b, review: { rating: reviewForm.rating, comment: reviewForm.comment } }
+              : b
+          )
+        );
+        setReviewForm(null);
+      } else {
+        setMessage(data.message || 'Could not submit review.');
+        setReviewForm(f => f ? { ...f, submitting: false } : null);
+      }
+    } catch {
+      setMessage('Review submission failed. Please try again.');
+      setReviewForm(f => f ? { ...f, submitting: false } : null);
+    }
+  };
+
+  const submitComplaint = async () => {
+    if (!complaintForm) return;
+    setComplaintForm(f => f ? { ...f, submitting: true } : null);
+    try {
+      const res = await fetch(`${API_URL}/bookings/${complaintForm.bookingId}/complaint`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: complaintForm.reason, description: complaintForm.description }),
+      });
+      const data = (await res.json()) as { success?: boolean; message?: string };
+      if (data.success) {
+        setMessage('Complaint reported. Our team will review it shortly.');
+        setBookings(curr =>
+          curr.map(b =>
+            b._id === complaintForm.bookingId
+              ? { ...b, complaint: { reason: complaintForm.reason, description: complaintForm.description } }
+              : b
+          )
+        );
+        setComplaintForm(null);
+      } else {
+        setMessage(data.message || 'Could not submit complaint.');
+        setComplaintForm(f => f ? { ...f, submitting: false } : null);
+      }
+    } catch {
+      setMessage('Complaint submission failed. Please try again.');
+      setComplaintForm(f => f ? { ...f, submitting: false } : null);
+    }
+  };
+
   if (isLoading || loading) {
     return <div className="flex min-h-screen items-center justify-center text-slate-500">Loading your bookings...</div>;
   }
@@ -189,12 +275,12 @@ export default function HistoryPage() {
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-3xl">
                         {servicesById[booking.serviceType]?.icon || '🧰'}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 className="text-xl font-semibold text-slate-950">
                             {servicesById[booking.serviceType]?.name || booking.serviceType}
                           </h2>
-                          <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(booking.status)}`}>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusColor(booking.status)}`}>
                             {booking.status}
                           </span>
                           {servicesById[booking.serviceType] && (
@@ -247,10 +333,26 @@ export default function HistoryPage() {
                             </a>
                           </div>
                         )}
+
+                        {/* Existing review badge */}
+                        {booking.review?.rating && (
+                          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
+                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                            You rated {booking.review.rating}/5
+                          </div>
+                        )}
+
+                        {/* Existing complaint badge */}
+                        {booking.complaint?.reason && (
+                          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-700">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            Complaint filed: {booking.complaint.reason}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 lg:justify-end">
+                    <div className="flex flex-wrap gap-3 lg:justify-end lg:flex-col lg:items-end">
                       <button
                         onClick={() => router.push(`/dashboard/booking/${booking._id}`)}
                         className="inline-flex items-center gap-2 self-start rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
@@ -261,6 +363,27 @@ export default function HistoryPage() {
                         </span>
                         Track Live Status
                       </button>
+
+                      {booking.status === 'completed' && !booking.review?.rating && (
+                        <button
+                          onClick={() => setReviewForm({ bookingId: booking._id, rating: 5, comment: '', submitting: false })}
+                          className="inline-flex items-center gap-2 self-start rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100"
+                        >
+                          <Star className="h-4 w-4" />
+                          Leave Review
+                        </button>
+                      )}
+
+                      {booking.status === 'completed' && !booking.complaint?.reason && (
+                        <button
+                          onClick={() => setComplaintForm({ bookingId: booking._id, reason: '', description: '', submitting: false })}
+                          className="inline-flex items-center gap-2 self-start rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-100"
+                        >
+                          <AlertTriangle className="h-4 w-4" />
+                          Report Issue
+                        </button>
+                      )}
+
                       {booking.status === 'pending' && (
                         <button
                           onClick={() => void cancelBooking(booking._id)}
@@ -290,6 +413,92 @@ export default function HistoryPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Inline Review Form */}
+                  {reviewForm?.bookingId === booking._id && (
+                    <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50/60 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <MessageSquare className="h-4 w-4 text-amber-600" />
+                        <h3 className="font-bold text-slate-900 text-sm">Leave a Review</h3>
+                      </div>
+                      {/* Star Rating */}
+                      <div className="flex gap-1 mb-3">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            onClick={() => setReviewForm(f => f ? { ...f, rating: star } : null)}
+                            className="transition hover:scale-110"
+                          >
+                            <Star
+                              className={`h-7 w-7 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                            />
+                          </button>
+                        ))}
+                        <span className="ml-2 self-center text-sm font-semibold text-amber-700">{reviewForm.rating}/5</span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={reviewForm.comment}
+                        onChange={e => setReviewForm(f => f ? { ...f, comment: e.target.value } : null)}
+                        placeholder="Share your experience... (optional)"
+                        className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 resize-none"
+                      />
+                      <div className="mt-3 flex gap-2 justify-end">
+                        <button
+                          onClick={() => setReviewForm(null)}
+                          className="rounded-full border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => void submitReview()}
+                          disabled={reviewForm.submitting}
+                          className="rounded-full bg-amber-500 px-5 py-2 text-xs font-bold text-white transition hover:bg-amber-600 disabled:opacity-60"
+                        >
+                          {reviewForm.submitting ? 'Submitting...' : 'Submit Review'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Inline Complaint Form */}
+                  {complaintForm?.bookingId === booking._id && (
+                    <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50/60 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-rose-600" />
+                        <h3 className="font-bold text-slate-900 text-sm">Report an Issue</h3>
+                      </div>
+                      <input
+                        type="text"
+                        value={complaintForm.reason}
+                        onChange={e => setComplaintForm(f => f ? { ...f, reason: e.target.value } : null)}
+                        placeholder="Short reason (e.g. Poor quality, No-show)"
+                        className="w-full rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 mb-3"
+                      />
+                      <textarea
+                        rows={3}
+                        value={complaintForm.description}
+                        onChange={e => setComplaintForm(f => f ? { ...f, description: e.target.value } : null)}
+                        placeholder="Please describe the issue in detail..."
+                        className="w-full rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-none"
+                      />
+                      <div className="mt-3 flex gap-2 justify-end">
+                        <button
+                          onClick={() => setComplaintForm(null)}
+                          className="rounded-full border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => void submitComplaint()}
+                          disabled={complaintForm.submitting || !complaintForm.reason || !complaintForm.description}
+                          className="rounded-full bg-rose-600 px-5 py-2 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
+                        >
+                          {complaintForm.submitting ? 'Submitting...' : 'Submit Report'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

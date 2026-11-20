@@ -33,10 +33,10 @@ export const metadata: Metadata = {
     'Home cleaning Srinagar',
     'Verified local technician',
     'Doorstep repair Kashmir',
-    'Muzamil War',
+    'War Muzamil',
   ],
-  authors: [{ name: 'Muzamil War', url: SITE_URL }],
-  creator: 'Muzamil War',
+  authors: [{ name: 'War Muzamil', url: SITE_URL }],
+  creator: 'War Muzamil',
   publisher: 'QuickServices',
   formatDetection: {
     telephone: true,

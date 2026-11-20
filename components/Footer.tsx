@@ -57,14 +57,14 @@ export default function Footer() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Mail className="h-3 w-3 text-slate-500" />
-              Quickservices@gmail.com
+              Quickservices114@gmail.com
             </span>
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="h-3 w-3 text-slate-500" />
               Handwara, Qalamabad
             </span>
           </div>
-          <p className="text-slate-600">© 2026 QuickServices · Founded by Muzamil War</p>
+          <p className="text-slate-600">© 2026 QuickServices · Founded by War Muzamil</p>
         </div>
 
       </div>
