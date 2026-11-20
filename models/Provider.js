@@ -59,11 +59,11 @@ const providerSchema = new mongoose.Schema({
     },
     rating: {
         type: Number,
-        default: 4.8
+        default: 0
     },
     totalRatings: {
         type: Number,
-        default: 12
+        default: 0
     },
     experience: {
         type: Number,
@@ -74,7 +74,7 @@ const providerSchema = new mongoose.Schema({
     }],
     qualifications: {
         type: String,
-        default: 'Certified Professional Technician'
+        default: ''
     },
     serviceArea: {
         type: String,
@@ -92,11 +92,11 @@ const providerSchema = new mongoose.Schema({
     },
     pricingDetails: {
         type: String,
-        default: 'Starting at ₹499 per visit. Transparent upfront rates.'
+        default: ''
     },
     description: {
         type: String,
-        default: 'Experienced verified technician offering fast doorstep repair and maintenance.'
+        default: ''
     },
     portfolio: [{
         type: String

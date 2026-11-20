@@ -13,7 +13,11 @@ const {
     getBooking,
     updateLiveLocation,
     getLiveLocation,
-    updateBookingStatus
+    updateBookingStatus,
+    addReview,
+    addComplaint,
+    requestAdditionalCharge,
+    resolveAdditionalCharge
 } = require('../controllers/bookingController');
 
 // All routes require authentication
@@ -32,5 +36,11 @@ router.delete('/:bookingId', deleteBooking);
 router.post('/:bookingId/location', updateLiveLocation);
 router.get('/:bookingId/live-location', getLiveLocation);
 router.put('/:bookingId/status', updateBookingStatus);
+
+// Review, complaint, additional charge
+router.post('/:bookingId/review', addReview);
+router.post('/:bookingId/complaint', addComplaint);
+router.post('/:bookingId/additional-charge', requestAdditionalCharge);
+router.post('/:bookingId/additional-charge/resolve', resolveAdditionalCharge);
 
 module.exports = router;

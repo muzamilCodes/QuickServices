@@ -911,6 +911,99 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+// POST review for completed booking
+const addReview = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    const booking = await Booking.findOne({ _id: bookingId, user: req.userId });
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (booking.status !== 'completed') return res.status(400).json({ success: false, message: 'You can only review completed bookings' });
+    if (booking.review && booking.review.rating) return res.status(400).json({ success: false, message: 'You have already reviewed this booking' });
+    booking.review = { rating: Number(rating), comment: comment || '', createdAt: new Date() };
+    // Update provider rating
+    if (booking.provider) {
+      const prov = await Provider.findById(booking.provider);
+      if (prov) {
+        const totalRatings = (prov.totalRatings || 0) + 1;
+        const newRating = (((prov.rating || 0) * (prov.totalRatings || 0)) + Number(rating)) / totalRatings;
+        prov.rating = Math.round(newRating * 10) / 10;
+        prov.totalRatings = totalRatings;
+        await prov.save();
+      }
+    }
+    await booking.save();
+    return res.json({ success: true, message: 'Review submitted successfully', booking });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST complaint for a booking
+const addComplaint = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { reason, description } = req.body;
+    if (!reason || !description) return res.status(400).json({ success: false, message: 'Reason and description are required' });
+    const booking = await Booking.findOne({ _id: bookingId, user: req.userId });
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (booking.complaint && booking.complaint.reason) return res.status(400).json({ success: false, message: 'A complaint already exists for this booking' });
+    booking.complaint = { reason, description, status: 'open', createdAt: new Date() };
+    await booking.save();
+    try {
+      await sendNotification({ recipientRole: 'admin', title: 'New Complaint', message: `Complaint for booking #${booking._id.toString().slice(-6)}: ${reason}`, type: 'complaint', bookingId: booking._id, io: req.io });
+    } catch {}
+    return res.json({ success: true, message: 'Complaint submitted successfully', booking });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST additional charge request (provider only)
+const requestAdditionalCharge = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { reason, material, labour, amount, image } = req.body;
+    if (!reason || !amount || Number(amount) <= 0) return res.status(400).json({ success: false, message: 'Reason and amount are required' });
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    // Verify provider owns this booking
+    const prov = await Provider.findOne({ userId: req.userId });
+    if (!prov || String(booking.provider) !== String(prov._id)) return res.status(403).json({ success: false, message: 'Not authorized' });
+    if (booking.additionalCharge && booking.additionalCharge.status === 'pending') return res.status(400).json({ success: false, message: 'An additional charge request is already pending approval' });
+    booking.additionalCharge = { reason, material: Number(material) || 0, labour: Number(labour) || 0, amount: Number(amount), image: image || '', status: 'pending', requestedAt: new Date() };
+    await booking.save();
+    try {
+      await sendNotification({ recipient: booking.user, recipientRole: 'customer', title: 'Additional Charge Requested', message: `Your provider has requested an additional charge of ₹${amount} for: ${reason}. Please approve or reject.`, type: 'additional_charge', bookingId: booking._id, io: req.io });
+    } catch {}
+    return res.json({ success: true, message: 'Additional charge request sent to customer', booking });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST approve/reject additional charge (customer only)
+const resolveAdditionalCharge = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { action } = req.body; // 'approve' or 'reject'
+    if (!['approve', 'reject'].includes(action)) return res.status(400).json({ success: false, message: 'Action must be approve or reject' });
+    const booking = await Booking.findOne({ _id: bookingId, user: req.userId });
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking.additionalCharge || booking.additionalCharge.status !== 'pending') return res.status(400).json({ success: false, message: 'No pending additional charge request found' });
+    booking.additionalCharge.status = action === 'approve' ? 'approved' : 'rejected';
+    booking.additionalCharge.resolvedAt = new Date();
+    if (action === 'approve') {
+      booking.amount = (booking.amount || 0) + (booking.additionalCharge.amount || 0);
+    }
+    await booking.save();
+    return res.json({ success: true, message: `Additional charge ${action}d`, booking });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createBooking,
   verifyBookingOTP,
@@ -922,5 +1015,9 @@ module.exports = {
   updateLiveLocation,
   getLiveLocation,
   updateBookingStatus,
+  addReview,
+  addComplaint,
+  requestAdditionalCharge,
+  resolveAdditionalCharge,
 };
 

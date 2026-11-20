@@ -101,6 +101,38 @@ const bookingSchema = new mongoose.Schema({
     isLoyaltyDiscount: {
         type: Boolean,
         default: false
+    },
+    images: [{ type: String }],
+    subService: { type: String },
+    review: {
+        rating: Number,
+        comment: String,
+        images: [String],
+        createdAt: Date
+    },
+    complaint: {
+        reason: String,
+        description: String,
+        status: { type: String, enum: ['open', 'under_review', 'resolved', 'rejected'], default: 'open' },
+        createdAt: Date
+    },
+    additionalCharge: {
+        reason: String,
+        material: Number,
+        labour: Number,
+        amount: Number,
+        image: String,
+        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+        requestedAt: Date,
+        resolvedAt: Date
+    },
+    cancelledAt: Date,
+    cancelReason: String,
+    invoice: {
+        invoiceId: String,
+        generatedAt: Date,
+        tax: Number,
+        finalAmount: Number
     }
 }, { timestamps: true });
 

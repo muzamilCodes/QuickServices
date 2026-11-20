@@ -975,3 +975,61 @@ exports.rejectProviderService = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// ===================== ADMIN: COMPLAINTS =====================
+exports.getComplaints = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ 'complaint.reason': { $exists: true } })
+      .populate('user', 'username email mobile')
+      .populate('provider', 'name phone')
+      .sort({ 'complaint.createdAt': -1 });
+    const complaints = bookings.map(b => ({ bookingId: b._id, customerName: b.customerName, serviceType: b.serviceType, complaint: b.complaint, status: b.status, createdAt: b.createdAt, user: b.user, provider: b.provider }));
+    res.json({ success: true, complaints });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+exports.updateComplaintStatus = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+    const allowed = ['open', 'under_review', 'resolved', 'rejected'];
+    if (!allowed.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status' });
+    const booking = await Booking.findById(bookingId);
+    if (!booking || !booking.complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
+    booking.complaint.status = status;
+    await booking.save();
+    res.json({ success: true, message: 'Complaint status updated', booking });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+exports.getAnalytics = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const [totalBookings, monthlyBookings, todayBookings, completedBookings, cancelledBookings, totalRevenue, pendingProviders, totalUsers, totalProviders] = await Promise.all([
+      Booking.countDocuments(),
+      Booking.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      Booking.countDocuments({ createdAt: { $gte: startOfDay } }),
+      Booking.countDocuments({ status: 'completed' }),
+      Booking.countDocuments({ status: 'cancelled' }),
+      Booking.aggregate([{ $match: { status: 'completed' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Provider.countDocuments({ isApproved: false }),
+      require('../models/userModel').User.countDocuments(),
+      Provider.countDocuments()
+    ]);
+    // Top services
+    const topServices = await Booking.aggregate([{ $group: { _id: '$serviceType', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 5 }]);
+    res.json({ success: true, analytics: { totalBookings, monthlyBookings, todayBookings, completedBookings, cancelledBookings, totalRevenue: totalRevenue[0]?.total || 0, pendingProviders, totalUsers, totalProviders, topServices, cancellationRate: totalBookings > 0 ? Math.round((cancelledBookings / totalBookings) * 100) : 0 } });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+exports.markContactRead = async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const { status, adminNote } = req.body;
+    const contact = await Contact.findByIdAndUpdate(contactId, { isRead: true, status: status || 'read', adminNote }, { new: true });
+    if (!contact) return res.status(404).json({ success: false, message: 'Contact not found' });
+    res.json({ success: true, contact });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};

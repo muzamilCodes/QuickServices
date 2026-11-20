@@ -31,7 +31,12 @@ const {
     // Provider service submissions
     getProviderServiceSubmissions,
     approveProviderService,
-    rejectProviderService
+    rejectProviderService,
+    // Complaints & analytics
+    getComplaints,
+    updateComplaintStatus,
+    getAnalytics,
+    markContactRead
 } = require('../controllers/adminController');
 
 const {
@@ -74,6 +79,12 @@ router.delete('/offers/:id', deleteOffer);
 // Contacts management
 router.get('/contacts', getContacts);
 router.delete('/contacts/:contactId', deleteContact);
+router.put('/contacts/:contactId', markContactRead);
+
+// Complaints & analytics
+router.get('/complaints', getComplaints);
+router.patch('/complaints/:bookingId', updateComplaintStatus);
+router.get('/analytics', getAnalytics);
 
 router.get('/users', getAllUsers);
 router.post('/users', createUser);
