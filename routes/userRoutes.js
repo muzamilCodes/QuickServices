@@ -36,6 +36,17 @@ router.post("/edit/user", authorize, upload.single("profilePic"), controller.cha
 
 router.get("/account/deletion-request", authorize, deletionController.getMyDeletionRequest);
 router.post("/account/deletion-request", authorize, deletionController.requestAccountDeletion);
+router.delete("/account/me", authorize, controller.deleteMyAccount);
+
+// Addresses
+router.get("/addresses", authorize, controller.getAddresses);
+router.post("/addresses", authorize, controller.addAddress);
+router.put("/addresses/:addressId", authorize, controller.updateAddress);
+router.delete("/addresses/:addressId", authorize, controller.deleteAddress);
+router.put("/addresses/:addressId/default", authorize, controller.setDefaultAddress);
+
+// Notifications alias
+router.get("/notifications", authorize, controller.getUserNotifications);
 
 router.get("/verify" ,  authorize, controller.verifyUser )
 router.get("/verify/admin" ,  authorize, controller.verifyAdmin )

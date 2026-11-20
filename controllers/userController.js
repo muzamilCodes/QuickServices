@@ -858,3 +858,202 @@ exports.initializeFirstAdmin = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// ===================== ADDRESS MANAGEMENT =====================
+exports.getAddresses = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('addresses address');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    let addresses = user.addresses || [];
+    if (addresses.length === 0 && user.address?.street) {
+      const full = [user.address.street, user.address.city, user.address.state, user.address.pincode].filter(Boolean).join(', ');
+      addresses = [{
+        label: 'Home',
+        fullAddress: full,
+        city: user.address.city || 'Handwara',
+        pincode: user.address.pincode || '',
+        isDefault: true
+      }];
+    }
+    return res.json({ success: true, addresses });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.addAddress = async (req, res) => {
+  try {
+    const { label, fullAddress, city, pincode, landmark, location, isDefault } = req.body;
+    if (!fullAddress) return res.status(400).json({ success: false, message: 'Full address is required' });
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (!user.addresses) user.addresses = [];
+
+    const shouldBeDefault = Boolean(isDefault || user.addresses.length === 0);
+    if (shouldBeDefault) {
+      user.addresses.forEach(a => { a.isDefault = false; });
+    }
+
+    user.addresses.push({
+      label: label || 'Home',
+      fullAddress,
+      city: city || 'Handwara',
+      pincode: pincode || '',
+      landmark: landmark || '',
+      location: location || {},
+      isDefault: shouldBeDefault
+    });
+
+    await user.save();
+    return res.json({ success: true, message: 'Address added successfully', addresses: user.addresses });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const { label, fullAddress, city, pincode, landmark, location, isDefault } = req.body;
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const address = user.addresses.id(addressId);
+    if (!address) return res.status(404).json({ success: false, message: 'Address not found' });
+
+    if (label !== undefined) address.label = label;
+    if (fullAddress !== undefined) address.fullAddress = fullAddress;
+    if (city !== undefined) address.city = city;
+    if (pincode !== undefined) address.pincode = pincode;
+    if (landmark !== undefined) address.landmark = landmark;
+    if (location !== undefined) address.location = location;
+
+    if (isDefault) {
+      user.addresses.forEach(a => { a.isDefault = false; });
+      address.isDefault = true;
+    }
+
+    await user.save();
+    return res.json({ success: true, message: 'Address updated', addresses: user.addresses });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    user.addresses.pull({ _id: addressId });
+    if (user.addresses.length > 0 && !user.addresses.some(a => a.isDefault)) {
+      user.addresses[0].isDefault = true;
+    }
+
+    await user.save();
+    return res.json({ success: true, message: 'Address deleted', addresses: user.addresses });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.setDefaultAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const target = user.addresses.id(addressId);
+    if (!target) return res.status(404).json({ success: false, message: 'Address not found' });
+
+    user.addresses.forEach(a => { a.isDefault = false; });
+    target.isDefault = true;
+
+    await user.save();
+    return res.json({ success: true, message: 'Default address updated', addresses: user.addresses });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ===================== USER NOTIFICATIONS =====================
+exports.getUserNotifications = async (req, res) => {
+  try {
+    const Notification = require('../models/Notification');
+    const userId = req.userId;
+    const user = await User.findById(userId).select('role isAdmin');
+
+    const query = {
+      $or: [
+        { recipient: userId }
+      ]
+    };
+
+    if (user?.isAdmin || user?.role === 'admin') {
+      query.$or.push({ recipientRole: 'admin' }, { recipientRole: 'all' });
+    } else if (user?.role === 'provider') {
+      query.$or.push({ recipientRole: 'provider', recipient: null });
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    const unreadCount = await Notification.countDocuments({
+      ...query,
+      read: false
+    });
+
+    return res.json({
+      success: true,
+      notifications,
+      unreadCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ===================== USER SELF DELETE ACCOUNT =====================
+exports.deleteMyAccount = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { password } = req.body;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (password) {
+      const bcrypt = require('bcryptjs');
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ success: false, message: 'Incorrect password' });
+    }
+
+    const Booking = require('../models/Booking');
+    const activeCount = await Booking.countDocuments({
+      user: userId,
+      status: { $in: ['pending', 'accepted', 'on-the-way', 'in-progress'] }
+    });
+    if (activeCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete account with active in-progress service bookings. Please cancel or wait for them to finish first.'
+      });
+    }
+
+    await User.findByIdAndDelete(userId);
+    return res.json({ success: true, message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

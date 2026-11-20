@@ -46,6 +46,21 @@ const userSchema = new mongoose.Schema(
       pincode: { type: String }
     },
 
+    addresses: [
+      {
+        label: { type: String, default: 'Home' },
+        fullAddress: { type: String, required: true },
+        city: { type: String, default: 'Handwara' },
+        pincode: { type: String },
+        landmark: { type: String },
+        location: {
+          lat: { type: Number },
+          lng: { type: Number }
+        },
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
+
     otp: { type: String },
     otpExpiry: { type: Date },
     isVerified: { type: Boolean, default: false },
